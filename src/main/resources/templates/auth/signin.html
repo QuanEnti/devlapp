@@ -1,0 +1,181 @@
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng nhập hoặc đăng ký - DevCollab</title>
+  <style>
+    body {
+      font-family: "Inter", Arial, sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 40px 50px;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      text-align: center;
+    }
+    h2 { margin-bottom: 10px; font-size: 22px; }
+    p.desc { color: #666; margin-bottom: 30px; font-size: 14px; }
+    button, input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 30px;
+      border: 1px solid #ddd;
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+    button {
+      background: #000;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: #333; }
+    .social {
+      background: #f1f1f1;
+      color: #333;
+      border: none;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #ccc;
+    }
+    .divider span {
+      padding: 0 10px;
+      color: #666;
+      font-size: 13px;
+    }
+    #msg {
+      margin-top: 10px;
+      font-size: 14px;
+      min-height: 20px;
+      color: #444;
+    }
+    footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Đăng nhập hoặc đăng ký</h2>
+    <p class="desc">Bạn có thể tiếp tục bằng tài khoản Google hoặc email cá nhân của mình.</p>
+
+    <button class="social" onclick="window.location.href='/oauth2/authorization/google'">
+      Tiếp tục với Google
+    </button>
+    <button class="social" disabled>Tiếp tục với Microsoft</button>
+    <button class="social" disabled>Tiếp tục với Apple</button>
+    <button class="social" disabled>Tiếp tục với điện thoại</button>
+
+    <div class="divider"><span>HOẶC</span></div>
+
+    <form id="signinForm">
+      <input type="email" id="email" placeholder="Nhập email của bạn" required />
+      <button type="submit" id="continueBtn">Tiếp tục</button>
+    </form>
+
+    <p id="msg"></p>
+
+    <footer>
+      Điều khoản sử dụng | Chính sách riêng tư
+    </footer>
+  </div>
+
+ <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("signinForm");
+  const msg = document.getElementById("msg");
+  const btn = document.getElementById("continueBtn");
+  const emailInput = document.getElementById("email");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msg.textContent = "";
+    msg.style.color = "#333";
+
+    const email = emailInput.value.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      msg.textContent = "Vui lòng nhập email hợp lệ.";
+      msg.style.color = "red";
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Đang kiểm tra...";
+
+    try {
+      const res = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error("Server trả lỗi " + res.status);
+
+      const data = await res.json();
+      console.log("Phản hồi API:", data);
+
+      // ✅ Chuyển toàn bộ key về lowercase để tránh lỗi chữ hoa
+      const provider = (data.provider || "").toLowerCase();
+      const status = (data.status || "").toUpperCase();
+
+      if (provider === "google" && data.redirect) {
+        msg.textContent = "Đang chuyển hướng đến Google...";
+        msg.style.color = "green";
+        setTimeout(() => (window.location.href = data.redirect), 600);
+      } 
+      else if (provider === "local" && status === "PASSWORD_REQUIRED") {
+        // ✅ Lưu email và chuyển qua trang login
+        localStorage.setItem("email", email);
+        msg.textContent = "Vui lòng nhập mật khẩu để đăng nhập...";
+        msg.style.color = "blue";
+        setTimeout(() => (window.location.href = "/view/login"), 800);
+      } 
+      else if (provider === "local" && status === "REGISTER_NEW") {
+        localStorage.setItem("email", email);
+        msg.textContent = "Email chưa được đăng ký. Chuyển sang trang tạo tài khoản.";
+        msg.style.color = "#444";
+        setTimeout(() => (window.location.href = "/view/register"), 800);
+      } 
+      else if (provider === "otp" && status === "OTP_SENT") {
+        localStorage.setItem("email", email);
+        msg.textContent = "Mã OTP đã được gửi đến email của bạn.";
+        msg.style.color = "green";
+        setTimeout(() => (window.location.href = "/view/verify-otp"), 800);
+      } 
+      else {
+        msg.textContent = "Phản hồi không xác định từ máy chủ.";
+        msg.style.color = "orange";
+      }
+    } catch (err) {
+      console.error("Lỗi:", err);
+      msg.textContent = "Không thể kết nối đến máy chủ.";
+      msg.style.color = "red";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Tiếp tục";
+    }
+  });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,142 @@
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Tạo mật khẩu - DevCollab</title>
+  <style>
+    body {
+      font-family: "Inter", Arial, sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 40px 50px;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      text-align: center;
+    }
+    h2 { margin-bottom: 10px; }
+    p { color: #666; margin-bottom: 25px; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 30px;
+      border: 1px solid #ccc;
+      margin-bottom: 14px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 30px;
+      border: none;
+      background: #000;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: #222; }
+    #msg {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #444;
+      min-height: 20px;
+    }
+    a {
+      text-decoration: none;
+      color: #555;
+      font-size: 13px;
+      margin-top: 12px;
+      display: inline-block;
+    }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Tạo mật khẩu</h2>
+    <p>Nhập mật khẩu để tạo tài khoản mới cho <strong id="userEmail"></strong></p>
+
+    <input type="password" id="password" placeholder="Nhập mật khẩu" required>
+    <input type="password" id="confirmPassword" placeholder="Xác nhận mật khẩu" required>
+
+    <button id="registerBtn" onclick="registerUser()">Đăng ký</button>
+    <p id="msg"></p>
+
+    <a href="/view/signin">← Quay lại đăng nhập</a>
+  </div>
+
+  <script>
+    const email = localStorage.getItem('email');
+    document.getElementById('userEmail').textContent = email || '';
+
+    async function registerUser() {
+      const password = document.getElementById('password').value.trim();
+      const confirmPassword = document.getElementById('confirmPassword').value.trim();
+      const msg = document.getElementById('msg');
+      const btn = document.getElementById('registerBtn');
+
+      msg.textContent = '';
+      msg.style.color = '#444';
+
+      if (!email) {
+        msg.textContent = 'Thiếu email. Vui lòng quay lại bước trước.';
+        msg.style.color = 'red';
+        return;
+      }
+      if (!password || password.length < 6) {
+        msg.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.';
+        msg.style.color = 'red';
+        return;
+      }
+      if (password !== confirmPassword) {
+        msg.textContent = 'Mật khẩu xác nhận không khớp.';
+        msg.style.color = 'red';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Đang tạo tài khoản...';
+      msg.textContent = 'Đang gửi mã OTP...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        console.log('📨 Register OTP:', data);
+
+        if (res.ok) {
+          localStorage.setItem('verify_mode', 'register');
+          msg.style.color = 'green';
+          msg.textContent = 'Đã gửi mã OTP đến email của bạn.';
+          setTimeout(() => window.location.href = '/view/verify-otp', 800);
+        } else {
+          msg.style.color = 'red';
+          msg.textContent = data.error || 'Không thể gửi OTP.';
+        }
+      } catch (err) {
+        console.error('Lỗi gửi OTP:', err);
+        msg.style.color = 'red';
+        msg.textContent = 'Không thể kết nối máy chủ.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Đăng ký';
+      }
+    }
+  </script>
+</body>
+</html>

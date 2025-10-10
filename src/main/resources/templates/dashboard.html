@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DevCollab Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f7fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #fff;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 360px;
+    }
+    img {
+      border-radius: 50%;
+      width: 90px;
+      height: 90px;
+      margin-bottom: 10px;
+      border: 3px solid #007bff;
+    }
+    h2 {
+      margin-bottom: 5px;
+    }
+    p {
+      margin: 5px 0;
+      color: #555;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <img id="avatar" src="" alt="Avatar">
+    <h2 id="name">User Name</h2>
+    <p id="email">user@example.com</p>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+
+  if (token) {
+    localStorage.setItem("jwtToken", token);
+    window.history.replaceState({}, document.title, "/dashboard.html");
+  } else {
+    const existingToken = localStorage.getItem("jwtToken");
+    if (!existingToken) {
+      alert("Session expired. Please login again.");
+      window.location.href = "/login.html";
+    }
+  }
+</script>
+</body>
+</html>

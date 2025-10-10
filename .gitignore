@@ -1,0 +1,43 @@
+# ====== Java / Spring Boot build ======
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+
+# ====== IDEs ======
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+nbproject/
+dist/
+nbbuild/
+
+# ====== Logs & temp ======
+*.log
+*.tmp
+*.bak
+*.pid
+
+# ====== Sensitive configs ======
+application.properties
+application.yml
+.env
+*.key
+*.pem
+*.crt
+*.p12
+*.jks
+
+# ====== OS & misc ======
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ====== Node / Frontend ======
+node_modules/
+dist/

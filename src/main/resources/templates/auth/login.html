@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng nhập bằng mật khẩu - DevCollab</title>
+  <style>
+    body {
+      font-family: "Inter", Arial, sans-serif;
+      background: #f7f8fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 40px 50px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      text-align: center;
+    }
+    h2 { margin-bottom: 10px; }
+    p { color: #666; margin-bottom: 30px; }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 30px;
+      border: 1px solid #ddd;
+      font-size: 15px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+    }
+    button {
+      background: black;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: #333; }
+    .social-btn {
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #333;
+    }
+    .social-btn:hover { background: #f5f5f5; }
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #ccc;
+    }
+    .divider span {
+      margin: 0 10px;
+      color: #666;
+      font-size: 13px;
+    }
+    #msg {
+      font-size: 14px;
+      color: #444;
+      min-height: 18px;
+      margin-top: 10px;
+    }
+    a {
+      text-decoration: none;
+      font-size: 13px;
+      color: #555;
+    }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Nhập mật khẩu của bạn</h2>
+    <p>Bạn có thể đăng nhập bằng mật khẩu hoặc tài khoản Google.</p>
+
+    <input type="email" id="email" name="email" readonly>
+    <input type="password" id="password" placeholder="Mật khẩu">
+    <a th:href="@{/view/forgot-password}">Bạn quên mật khẩu?</a>
+
+    <button type="button" onclick="login()">Tiếp tục</button>
+
+    <div class="divider"><span>HOẶC</span></div>
+
+    <button class="social-btn"
+            th:onclick="|window.location.href='@{/oauth2/authorization/google}'|">
+      Tiếp tục với Google
+    </button>
+
+    <button class="social-btn" disabled>Tiếp tục với Microsoft</button>
+    <button class="social-btn" disabled>Tiếp tục với Apple</button>
+
+    <p id="msg"></p>
+  </div>
+
+  <script>
+    const email = localStorage.getItem('email');
+    document.getElementById('email').value = email || '';
+
+    async function login() {
+      const password = document.getElementById('password').value.trim();
+      const msg = document.getElementById('msg');
+
+      msg.textContent = '';
+      if (!email || !password) {
+        msg.textContent = 'Vui lòng nhập đầy đủ thông tin.';
+        msg.style.color = 'red';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        console.log('Login response:', data);
+
+        if (data.token) {
+          msg.textContent = 'Đăng nhập thành công!';
+          msg.style.color = 'green';
+          localStorage.setItem('token', data.token);
+          setTimeout(() => window.location.href = '/view/dashboard', 1000);
+        } else if (data.status === 'VERIFY_REQUIRED') {
+          msg.textContent = 'Vui lòng xác minh email của bạn.';
+          msg.style.color = 'orange';
+          setTimeout(() => window.location.href = '/view/verify-otp', 1000);
+        } else if (data.error) {
+          msg.textContent = data.error;
+          msg.style.color = 'red';
+        } else {
+          msg.textContent = 'Phản hồi không xác định từ máy chủ.';
+          msg.style.color = 'orange';
+        }
+
+      } catch (err) {
+        console.error('Error:', err);
+        msg.textContent = 'Không thể kết nối máy chủ.';
+        msg.style.color = 'red';
+      }
+    }
+  </script>
+</body>
+</html>
