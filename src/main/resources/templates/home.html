@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevCollab - All-in-One Project Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* ==================================== */ /* Màu nền tối tổng thể */
+      .dark-bg {
+        background-color: #0f0f1a;
+      }
+      .header-bg {
+        background-color: #1a1a2e;
+      } /* Màu nền cho KHỐI LỚN (Hero, Trusted By, Unleash Efficiency) */
+      .large-block-bg {
+        background-color: #f7f7f9; /* Màu trắng/xám nhạt */
+        color: #1a1a1a;
+      } /* Màu nền cho Card tính năng (Trắng) */
+      .card-bg-light {
+        background-color: #ffffff;
+        color: #1a1a1a;
+      } /* Màu nền cho hình bo góc BÊN TRONG (Xám nhạt cho 5 blocks Unleash Efficiency) */
+      .inner-feature-bg {
+        background-color: #f0f0f5;
+        color: #333333;
+      } /* Shadow tùy chỉnh cho các khối lớn */
+      .custom-shadow-lg {
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      } /* Shadow cụ thể cho hình ảnh mockup trong Hero Section (Bóng đổ đỏ) */
+      .custom-shadow-for-mockup {
+        box-shadow: 0 15px 45px rgba(255, 100, 100, 0.4); /* Đỏ nhạt */
+      }
+      .primary-btn-bg {
+        background-color: #5b8ff9;
+      } /* Định dạng cho hình ảnh bên trong */
+      .responsive-img-rounded {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 0.75rem; /* rounded-xl */
+      } /* Vòng tròn phần trăm */
+      .progress-circle {
+        width: 2rem; /* w-8 */
+        height: 2rem; /* h-8 */
+        border-radius: 50%;
+        background: conic-gradient(#5b8ff9 86%, #e0e0e0 0%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 600; /* font-semibold */
+        color: #1a1a1a;
+        box-shadow: inset 0 0 0 2px white; /* Border trắng bên trong */
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+      } /* ==================================== */
+    </style>
+  </head>
+  <body class="dark-bg text-gray-100">
+    <header class="header-bg p-4 shadow-lg sticky top-0 z-10">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <!-- Logo -->
+    <div class="text-xl font-bold text-white">DevCollab</div>
+
+    <!-- Menu -->
+    <nav class="hidden md:flex space-x-6 text-sm text-gray-300">
+      <a href="#" class="hover:text-white">Features</a>
+      <a href="#" class="hover:text-white">Pricing</a>
+      <a href="#" class="hover:text-white">About Us</a>
+      <a href="#" class="hover:text-white">Contact</a>
+    </nav>
+
+    <!-- Nút bên phải -->
+    <div class="flex items-center space-x-3">
+      <!-- Nút Login -->
+      <a
+        href="#"
+        class="text-sm font-semibold text-white border border-blue-400 px-4 py-2 rounded-full hover:bg-blue-600 hover:border-blue-600 transition duration-300"
+      >
+        Login
+      </a>
+
+      <!-- Nút Download -->
+      <a
+        href="#"
+        class="primary-btn-bg hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-full font-semibold transition duration-300"
+      >
+        Register
+      </a>
+    </div>
+  </div>
+</header>
+
+    <section class="max-w-7xl mx-auto py-6 px-4 md:px-0">
+      <div
+        class="large-block-bg text-black rounded-3xl p-8 md:p-12 custom-shadow-lg"
+      >
+        <div
+          class="flex flex-col lg:flex-row items-center justify-between space-y-10 lg:space-y-0"
+        >
+          <div class="lg:w-2/5 p-2 lg:pr-10 text-left">
+            <h1
+              class="text-5xl md:text-6xl font-extrabold leading-tight mt-4 mb-6"
+            >
+              All-in-One <br />
+              Project Management
+            </h1>
+            <p class="text-lg text-gray-600 mb-10 max-w-md">
+              Streamline your meetings, manage projects efficiently, and
+              optimize your workflow—all in one place.
+            </p>
+            <div class="flex space-x-4 items-center">
+              <button
+                class="primary-btn-bg hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl transition duration-300 shadow-md"
+              >
+                Get Started
+              </button>
+              <button
+                class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-8 rounded-xl transition duration-300 shadow-sm"
+              >
+                See Our Feature
+              </button>
+            </div>
+          </div>
+          <div class="lg:w-3/5 p-2">
+            <div
+              class="card-bg-light rounded-xl custom-shadow-for-mockup h-[450px] flex items-center justify-center overflow-hidden"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop"
+                alt="Project Management Mockup"
+                class="responsive-img-rounded"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="max-w-7xl mx-auto py-4 px-4 md:px-0">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div
+          class="card-bg-light text-black p-5 rounded-2xl shadow-md border border-gray-200 flex flex-col"
+        >
+          <div class="flex justify-between items-start mb-3">
+            <h3 class="text-lg font-bold leading-tight">
+              Gain Insightful Analytics
+            </h3>
+          </div>
+          <p class="text-gray-600 mb-3 text-sm leading-relaxed">
+            Access detailed reports to measure performance and optimize
+            productivity.
+          </p>
+          <div
+            class="inner-feature-bg flex-grow rounded-xl border border-gray-300 flex justify-center items-center overflow-hidden min-h-[180px]"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop"
+              alt="Analytics Chart"
+              class="w-full h-full object-cover rounded-lg"
+            />
+          </div>
+        </div>
+        <div
+          class="card-bg-light text-black p-5 rounded-2xl shadow-md border border-gray-200 flex flex-col"
+        >
+          <div
+            class="inner-feature-bg flex-grow rounded-xl border border-gray-300 overflow-hidden mb-3 min-h-[180px]"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=200&fit=crop"
+              alt="Calendar View"
+              class="w-full h-full object-cover rounded-lg"
+            />
+          </div>
+          <div class="mt-auto">
+            <div class="flex justify-between items-center mb-1.5">
+              
+            </div>
+            <h4 class="text-base font-bold text-gray-900 mb-1.5">
+              Stay on Schedule
+            </h4>
+            <p class="text-gray-600 text-sm leading-relaxed">
+              Effortlessly synchronize with multiple calendar platforms to
+              ensure every deadline and meeting is p...
+            </p>
+          </div>
+        </div>
+        <div
+          class="card-bg-light text-black p-5 rounded-2xl shadow-md border border-gray-200 flex flex-col"
+        >
+          <p class="text-xs text-gray-500 font-semibold mb-2">Task Timeline</p>
+          <h3 class="text-lg font-bold leading-tight mb-3">
+            Efficiently Manage Every Task
+          </h3>
+          <p class="text-gray-600 text-sm mb-3 leading-relaxed">
+            Organize, prioritize, and track task progress with precision tools,
+            ensuring clarity and focus for all team members.
+          </p>
+          <div
+            class="inner-feature-bg flex-grow rounded-xl border border-gray-300 overflow-hidden min-h-[140px]"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=400&fit=crop"
+              alt="Task Timeline"
+              class="w-full h-full object-cover rounded-xl"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="max-w-7xl mx-auto py-6 px-4 md:px-0">
+      <div
+        class="large-block-bg text-black rounded-3xl p-8 md:p-12 custom-shadow-lg text-center"
+      >
+        <p
+          class="text-gray-500 mb-8 font-semibold text-sm uppercase tracking-wider"
+        >
+          Trusted By Industry Leaders
+        </p>
+        <div
+          class="flex flex-wrap justify-center items-center gap-x-12 gap-y-6 text-4xl text-gray-700"
+        >
+          <p class="font-bold">Apple</p>
+          <p class="font-bold">Google</p>
+        </div>
+      </div>
+    </section>
+    <section class="max-w-7xl mx-auto py-6 px-4 md:px-0">
+      <div
+        class="large-block-bg text-black rounded-3xl p-8 md:p-12 custom-shadow-lg"
+      >
+        <div
+          class="flex flex-col md:flex-row justify-between items-start mb-10 text-left gap-6"
+        >
+          <h2
+            class="text-4xl md:text-5xl font-bold w-full md:w-1/2 leading-tight"
+          >
+            Unleash Efficiency in Project Management
+          </h2>
+          <p class="text-gray-600 text-base w-full md:w-1/2 md:pl-8">
+            Plan and organize your entire project work from start to finish.
+            Communicate and collaborate with your manage team.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div
+            class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
+          >
+            <div
+              class="h-56 overflow-hidden rounded-xl mb-4"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  #667eea 0%,
+                  #764ba2 50%,
+                  #f093fb 100%
+                );
+              "
+            ></div>
+            <div class="text-left">
+              <h4 class="text-xl font-bold mb-3">
+                Efficiently Manage Every Task
+              </h4>
+              <p class="text-gray-600 text-sm leading-relaxed">
+                Organize, prioritize, and track task progress with precision
+                tools, ensuring clarity and focus for all team members.
+              </p>
+            </div>
+          </div>
+          <div
+            class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
+          >
+            <div
+              class="h-56 overflow-hidden rounded-xl mb-4"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  #1e3c72 0%,
+                  #2a5298 50%,
+                  #7e8ba3 100%
+                );
+              "
+            ></div>
+            <div class="text-left">
+              <h4 class="text-xl font-bold mb-3">Streamline Your Workflow</h4>
+              <p class="text-gray-600 text-sm leading-relaxed">
+                Simplify your project management with intuitive tools designed
+                to enhance productivity and keep your team aligned.
+              </p>
+            </div>
+          </div>
+          <div
+            class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
+          >
+            <div
+              class="h-56 overflow-hidden rounded-xl mb-4"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  #a8edea 0%,
+                  #fed6e3 50%,
+                  #d299c2 100%
+                );
+              "
+            ></div>
+            <div class="text-left">
+              <h4 class="text-xl font-bold mb-3">Collaborate Seamlessly</h4>
+              <p class="text-gray-600 text-sm leading-relaxed">
+                Foster collaboration with real-time updates and integrated
+                communication tools that keep everyone on the same page.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div
+            class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
+          >
+            <div
+              class="h-56 overflow-hidden rounded-xl mb-4"
+              style="
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+              "
+            ></div>
+            <div class="text-left">
+              <h4 class="text-xl font-bold mb-3">Streamline Your Workflow</h4>
+              <p class="text-gray-600 text-sm leading-relaxed">
+                Simplify your project management with intuitive tools designed
+                to enhance productivity and clarity for team leaders.
+              </p>
+            </div>
+          </div>
+          <div
+            class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
+          >
+            <div
+              class="h-56 overflow-hidden rounded-xl mb-4"
+              style="
+                background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+              "
+            ></div>
+            <div class="text-left">
+              <h4 class="text-xl font-bold mb-3">Enhance Team Performance</h4>
+              <p class="text-gray-600 text-sm leading-relaxed">
+                Boost your team's performance with clear goals, streamlined
+                processes, and insightful analytics.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <footer class="header-bg py-12 px-4 md:px-0 mt-12 border-t border-gray-800">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="text-xl font-bold text-white mb-4">DevCollab</div>
+          <p class="text-gray-400 text-sm mb-4">
+            Meet the project efficiency with advanced management tools designed
+            to boost team productivity and ensure seamless workflow.
+          </p>
+          <p class="text-gray-500 text-xs">
+            © 2025 DevCollab. All rights reserved.
+          </p>
+        </div>
+        <div>
+          <h5 class="text-white font-semibold mb-4">
+            Subscribe to our Newsletter
+          </h5>
+          <p class="text-gray-400 text-sm mb-4">
+            Subscribe to receive the latest updates, news, and exclusive tips
+            right to your inbox.
+          </p>
+          <form class="flex">
+            <input
+              type="email"
+              placeholder="Email address"
+              class="bg-gray-700 text-white p-2 rounded-l-lg w-full focus:outline-none"
+            />
+            <button
+              class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-r-lg"
+            >
+              →
+            </button>
+          </form>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
