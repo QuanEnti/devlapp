@@ -1,7 +1,6 @@
 package com.devcollab.service.core;
 
 import com.devcollab.domain.User;
-import jakarta.transaction.Transactional;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.util.List;
 import java.util.Optional;
@@ -23,9 +22,6 @@ public interface UserService {
     void updateLastSeen(Long userId);
 
     void delete(Long id);
-
-    @Transactional
-    void inactivate(Long id);
 
     boolean existsByEmail(String email);
 

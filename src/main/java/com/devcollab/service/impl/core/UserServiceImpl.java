@@ -143,17 +143,6 @@
             }
             userRepository.deleteById(id);
         }
-        @Transactional
-        @Override
-        public void inactivate(Long id) {
-            User user = userRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("User not found id=" + id));
-
-            user.setStatus("Suspended");   // mark user inactive
-            user.setUpdatedAt(LocalDateTime.now());
-
-            userRepository.save(user);
-        }
 
         @Override
         public boolean existsByEmail(String email) {
