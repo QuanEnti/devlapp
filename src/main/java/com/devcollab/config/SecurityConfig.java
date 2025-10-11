@@ -28,7 +28,7 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth                            
-                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/api/auth/**", "/api/users/**", "/api/admin/**").permitAll()
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                                 .formLogin(form -> form.disable())
@@ -36,6 +36,7 @@ public class SecurityConfig {
 
                 return http.build();
         }
+        
         @Bean
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
@@ -61,7 +62,6 @@ public class SecurityConfig {
                                                 .loginPage("/view/signin")
                                                 .defaultSuccessUrl("/view/dashboard", true)
                                                 .permitAll())
-                                // ✅ Cấu hình logout
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/view/signin?logout")

@@ -1,7 +1,6 @@
 package com.devcollab.controller.rest;
 
 import com.devcollab.repository.ProjectRepository;
-import com.devcollab.repository.RoleRepository;
 import com.devcollab.repository.UserRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

@@ -42,7 +42,7 @@ public class UserRestController {
         System.out.println("DEBUG: createUser called with dto=" + dto);
         try {
             User user = toEntity(dto);
-            return toDto(userService.create(user)); // service will encode password + set timestamps
+            return toDto(userService.create(user));
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
