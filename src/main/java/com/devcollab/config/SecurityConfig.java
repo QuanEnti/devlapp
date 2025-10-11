@@ -20,7 +20,6 @@ public class SecurityConfig {
         private final JwtAuthenticationFilter jwtFilter;
         private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
-        // 🔹 1️⃣ API Security (JWT)
         @Bean
         @Order(1)
         public SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
@@ -29,19 +28,16 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
-                                                // ✅ Cho phép các API public (login, register, verify, etc.)
+                                                
                                                 .requestMatchers("/api/auth/**").permitAll()
-                                                // 🔒 Các API khác yêu cầu JWT
+                                                
                                                 .anyRequest().authenticated())
-                                // ✅ Đặt JWT filter sau khi cho phép /api/auth/**
                                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                                 .formLogin(form -> form.disable())
                                 .logout(logout -> logout.disable());
 
                 return http.build();
         }
-
-        // 🔹 2️⃣ View Security (Thymeleaf + OAuth2)
         @Bean
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
@@ -49,16 +45,13 @@ public class SecurityConfig {
                                 .securityMatcher("/view/**", "/", "/login/**", "/oauth2/**")
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(auth -> auth
-                                                // ✅ Cho phép các tài nguyên public
                                                 .requestMatchers(
                                                                 "/", "/view/**",
                                                                 "/css/**", "/js/**", "/images/**", "/favicon.ico",
                                                                 "/webjars/**",
                                                                 "/oauth2/**", "/login/**")
                                                 .permitAll()
-                                                // 🔒 Các trang còn lại yêu cầu login
                                                 .anyRequest().authenticated())
-                                // ✅ Cấu hình OAuth2 login
                                 .oauth2Login(oauth -> oauth
                                                 .loginPage("/view/signin")
                                                 .authorizationEndpoint(
@@ -66,7 +59,6 @@ public class SecurityConfig {
                                                 .redirectionEndpoint(config -> config.baseUri("/login/oauth2/code/*"))
                                                 .successHandler(oAuth2SuccessHandler)
                                                 .failureUrl("/view/signin?error=oauth"))
-                                // ✅ Cho phép form login truyền thống
                                 .formLogin(form -> form
                                                 .loginPage("/view/signin")
                                                 .defaultSuccessUrl("/view/dashboard", true)
