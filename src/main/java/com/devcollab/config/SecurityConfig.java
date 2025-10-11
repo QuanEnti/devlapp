@@ -30,7 +30,7 @@ public class SecurityConfig {
                                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
                                                 // ✅ Cho phép các API public (login, register, verify, etc.)
-                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/api/auth/**", "/api/users/**","/api/admin/**").permitAll()
                                                 // 🔒 Các API khác yêu cầu JWT
                                                 .anyRequest().authenticated())
                                 // ✅ Đặt JWT filter sau khi cho phép /api/auth/**

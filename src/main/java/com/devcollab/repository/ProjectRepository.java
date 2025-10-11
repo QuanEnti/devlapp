@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByCreatedBy_UserId(Long userId);
+    long countByStatus(String status);
 }

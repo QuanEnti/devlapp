@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <aside class="col-2 bg-dark text-white vh-100 p-3">
+            <h3>DevCollab</h3>
+            <ul class="nav flex-column mt-4">
+                <li class="nav-item"><a class="nav-link text-white" href="/admin/dashboard">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link text-white active" href="/admin/users">User Management</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="#">Reported Project</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="#">Performance</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="#">Settings</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="col-10 p-4">
+            <h2>User Management</h2>
+
+            <!-- Add User Button -->
+            <div class="mb-3">
+                <button class="btn btn-primary" onclick="showAddForm()">+ Add User</button>
+            </div>
+
+            <!-- User Table -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Skills</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="userTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Add/Edit Form -->
+            <div id="userFormCard" class="card mt-4" style="display:none;">
+                <div class="card-body">
+                    <h5 id="formTitle">Add User</h5>
+                    <form id="userForm" onsubmit="saveUser(event)">
+                        <input type="hidden" id="userId">
+
+                        <div class="mb-3">
+                            <label>Email</label>
+                            <input type="email" id="email" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Name</label>
+                            <input type="text" id="name" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Skills</label>
+                            <input type="text" id="skills" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Status</label>
+                            <select id="status" class="form-select">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Password</label>
+                            <input type="password" id="password" class="form-control" placeholder="Leave blank to keep current password">
+                        </div>
+
+                        <button type="submit" class="btn btn-success">Save</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideForm()">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    async function loadUsers() {
+        const res = await fetch('/api/users');
+        const users = await res.json();
+
+        const tbody = document.getElementById('userTableBody');
+        tbody.innerHTML = "";
+
+        users.forEach(u => {
+            tbody.innerHTML += `
+              <tr>
+                <td>${u.name}</td>
+                <td>${u.email}</td>
+                <td><span class="badge ${u.status === 'active' ? 'bg-success' : 'bg-secondary'}">${u.status}</span></td>
+                <td>${u.skills || ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="editUser(${u.userId})">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.userId})">Delete</button>
+                </td>
+              </tr>`;
+        });
+    }
+
+    function showAddForm() {
+        document.getElementById("formTitle").innerText = "Add User";
+        document.getElementById("userId").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("name").value = "";
+        document.getElementById("skills").value = "";
+        document.getElementById("status").value = "active";
+        document.getElementById("password").value = "";
+        document.getElementById("userFormCard").style.display = "block";
+    }
+
+    async function editUser(id) {
+        const res = await fetch(`/api/users/${id}`);
+        const user = await res.json();
+
+        document.getElementById("formTitle").innerText = "Edit User";
+        document.getElementById("userId").value = user.userId;
+        document.getElementById("email").value = user.email;
+        document.getElementById("name").value = user.name;
+        document.getElementById("skills").value = user.skills || "";
+        document.getElementById("status").value = user.status;
+        document.getElementById("password").value = "";
+        document.getElementById("userFormCard").style.display = "block";
+    }
+
+    async function saveUser(event) {
+        event.preventDefault();
+
+        const user = {
+            userId: document.getElementById("userId").value || null,
+            email: document.getElementById("email").value,
+            name: document.getElementById("name").value,
+            skills: document.getElementById("skills").value,
+            status: document.getElementById("status").value,
+            password: document.getElementById("password").value
+        };
+
+        const method = user.userId ? "PUT" : "POST";
+        const url = user.userId ? `/api/users/${user.userId}` : "/api/users";
+
+        await fetch(url, {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(user)
+        });
+
+        hideForm();
+        loadUsers();
+    }
+
+    async function deleteUser(id) {
+        if (confirm("Delete this user?")) {
+            await fetch(`/api/users/${id}`, { method: 'DELETE' });
+            loadUsers();
+        }
+    }
+
+    function hideForm() {
+        document.getElementById("userFormCard").style.display = "none";
+    }
+
+    loadUsers();
+</script>
+</body>
+</html>

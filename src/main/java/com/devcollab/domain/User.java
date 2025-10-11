@@ -1,5 +1,6 @@
 package com.devcollab.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -58,8 +59,9 @@ public class User {
     private String providerId; 
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "[UserRole]",
+    @JoinTable(name = "UserRole",
             joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @JsonIgnore
     private Set<Role> roles = new HashSet<>();
 
 
