@@ -1,137 +1,346 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>User Create Project</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Project - DevCollab</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Thêm style cơ bản cho form nếu cần */
-        .form-input {
-            @apply border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
-        }
+      /* Sidebar full height */
+      .sidebar {
+        /* Đã điều chỉnh cho header 4rem = h-16 */
+        height: calc(100vh - 4rem);
+        top: 4rem;
+        transition: all 0.3s ease;
+      }
+
+      /* Card project style (Giữ lại dù không dùng trong trang này, để đảm bảo tính đồng bộ) */
+      .project-card-item {
+        border: 1px solid #e5e7eb;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+      }
+      .project-card-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Avatar style (Giữ lại) */
+      .avatar {
+        width: 28px;
+        height: 28px;
+        object-fit: cover;
+        border: 2px solid white;
+        box-shadow: 0 0 0 1px #e5e7eb;
+      }
+
+      /* Sidebar active styles - RẤT QUAN TRỌNG ĐỂ SIDEBAR HOẠT ĐỘNG */
+      .sidebar-item-active {
+        background-color: #eff6ff; /* blue-50 */
+        color: #2563eb; /* blue-600 */
+        font-weight: 600;
+        border-right: 4px solid #2563eb;
+      }
+      .sidebar-item {
+        color: #4b5563; /* gray-600 */
+        transition: background-color 0.15s;
+        border-right: 4px solid transparent;
+      }
+      .sidebar-item:hover {
+        background-color: #f9fafb; /* gray-50 */
+        color: #1f2937; /* gray-900 */
+      }
+
+      /* Thêm style cho form */
+      .form-input {
+        border: 1px solid #d1d5db; /* gray-300 */
+        border-radius: 0.5rem; /* rounded-lg */
+        padding: 0.75rem; /* p-3 */
+        width: 100%;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .form-input:focus {
+        border-color: #3b82f6; /* blue-500 */
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* ring-2 ring-blue-500 */
+      }
     </style>
-</head>
-<body class="bg-gray-100 font-sans">
+  </head>
+  <body class="bg-gray-50 font-sans">
+    <header
+      class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
+    >
+      <div class="flex items-center space-x-3 w-64 flex-shrink-0">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png"
+          alt="DevCollab Logo"
+          class="w-9 h-9 rounded-lg shadow-sm"
+        />
+        <span class="text-2xl font-extrabold text-blue-700 tracking-wider"
+          >DevCollab</span
+        >
+      </div>
 
-    <!-- Header -->
-    <header class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-10 border-b border-gray-200">
-        <div class="w-64 flex-shrink-0 text-xl font-bold text-blue-700 px-2">AProjectO</div>
-        
-        <div class="flex-grow flex justify-center mx-4">
-            <div class="relative w-full max-w-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input type="text" placeholder="Search for anything..." class="border border-gray-200 rounded-lg pl-10 pr-4 py-2 w-full focus:outline-none focus:border-blue-500 bg-gray-50">
-            </div>
+      <div class="flex-grow flex justify-center mx-10">
+        <div class="relative w-full max-w-xl">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search for anything..."
+            class="border border-gray-200 rounded-full pl-12 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm shadow-sm"
+            style="height: 40px"
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-6 flex-shrink-0">
+        <div
+          class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
         </div>
 
-        <div class="flex items-center space-x-6 flex-shrink-0">
-            <div class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-            </div>
-
-            <div class="flex items-center space-x-3">
-                <div class="text-right leading-tight">
-                    <span class="block text-sm font-semibold text-gray-800">Anima Agrawal</span>
-                    <span class="block text-xs text-gray-500">U.P, India</span>
-                </div>
-                <img src="https://i.pravatar.cc/40?img=15" class="rounded-full w-10 h-10 border-2 border-white shadow" alt="User Avatar">
-            </div>
+        <div
+          class="flex items-center space-x-3 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition"
+        >
+          <div class="text-right leading-tight">
+            <span class="block text-sm font-semibold text-gray-800"
+              >Anima Agrawal</span
+            >
+            <span class="block text-xs text-gray-500">U.P, India</span>
+          </div>
+          <img
+            src="https://i.pravatar.cc/40?img=15"
+            class="rounded-full w-10 h-10 border-2 border-white shadow-lg"
+            alt="User Avatar"
+          />
         </div>
+      </div>
     </header>
 
-    <div class="flex min-h-[calc(100vh-68px)]">
-        
-        <!-- Sidebar -->
-        <aside class="w-64 bg-white shadow-lg flex-shrink-0">
-            <nav class="mt-2">
-                <ul>
-                    <!-- 🔵 ACTIVE ITEM: Create Project -->
-                    <li class="flex items-center px-6 py-3 bg-blue-50 text-blue-600 font-semibold border-r-4 border-blue-600 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
-                        Create Project
-                    </li>
+    <div class="flex min-h-[calc(100vh-4rem)]">
+      <aside
+        class="w-64 bg-white shadow-xl flex-shrink-0 sticky left-0 sidebar border-r border-gray-200 z-10"
+      >
+        <nav class="mt-2">
+          <ul>
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
+                />
+              </svg>
+              Home
+            </li>
+            <li
+              class="flex items-center px-6 py-3 cursor-pointer sidebar-item-active"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Create Project
+            </li>
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.707-8.707a1 1 0 00-1.414 1.414L9 12.414V5a1 1 0 10-2 0v5.414L3.707 9.707a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L8 12.586V7a1 1 0 10-2 0v5.586l.293-.293z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              View Invitations
+            </li>
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM3 8a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM5 12a1 1 0 100 2h10a1 1 0 100-2H5zM8 16a1 1 0 100 2h4a1 1 0 100-2H8z"
+                />
+              </svg>
+              View All Project
+            </li>
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5V7h2v2zm8 0h-2V7h2v2z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Chat
+            </li>
+          </ul>
+        </nav>
+      </aside>
 
-                    <li class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.707-8.707a1 1 0 00-1.414 1.414L9 12.414V5a1 1 0 10-2 0v5.414L3.707 9.707a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L8 12.586V7a1 1 0 10-2 0v5.586l.293-.293z" clip-rule="evenodd" />
-                        </svg>
-                        View Invitations
-                    </li>
+      <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">
+          Create New Project
+        </h1>
 
-                    <!-- 🟡 View All Project (no longer active) -->
-                    <li class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM3 8a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM5 12a1 1 0 100 2h10a1 1 0 100-2H5zM8 16a1 1 0 100 2h4a1 1 0 100-2H8z" />
-                        </svg>
-                        View All Project
-                    </li>
-
-                    <li class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5V7h2v2zm8 0h-2V7h2v2z" clip-rule="evenodd" />
-                        </svg>
-                        Chat
-                    </li>
-                </ul>
-            </nav>
-        </aside>
-
-        <!-- Main -->
-        <main class="flex-1 p-8">
-            <h1 class="text-2xl font-bold text-gray-800 mb-6">Create New Project</h1>
-            
-            <div class="bg-white p-8 rounded-xl shadow-md border border-gray-200 max-w-3xl mx-auto">
-                <form action="#" method="POST">
-                    
-                    <div class="mb-5">
-                        <label for="project-name" class="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                        <input type="text" id="project-name" name="project-name" placeholder="Enter project name (e.g., Marketing Campaign Q4)" class="form-input">
-                    </div>
-
-                    <div class="mb-5">
-                        <label for="project-description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <textarea id="project-description" name="project-description" rows="4" placeholder="Briefly describe the goals and scope of the project." class="form-input resize-none"></textarea>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-6 mb-5">
-                        <div>
-                            <label for="deadline" class="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
-                            <input type="date" id="deadline" name="deadline" class="form-input">
-                        </div>
-
-                        <div>
-                            <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                            <select id="priority" name="priority" class="form-input bg-white">
-                                <option>High</option>
-                                <option>Medium</option>
-                                <option>Low</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-6">
-                        <label for="members" class="block text-sm font-medium text-gray-700 mb-2">Invite Team Members</label>
-                        <input type="text" id="members" name="members" placeholder="Type names or emails to invite..." class="form-input">
-                        <p class="text-xs text-gray-500 mt-1">Suggested: Anima Agrawal, Jane Doe, John Smith</p>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button type="submit" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold text-base shadow-md hover:bg-blue-700 transition flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg>
-                            <span>Create Project</span>
-                        </button>
-                    </div>
-                </form>
+        <div
+          class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200 max-w-4xl mx-auto"
+        >
+          <form action="#" method="POST">
+            <div class="mb-5">
+              <label
+                for="project-name"
+                class="block text-sm font-medium text-gray-700 mb-2"
+                >Project Name</label
+              >
+              <input
+                type="text"
+                id="project-name"
+                name="project-name"
+                placeholder="Enter project name (e.g., Marketing Campaign Q4)"
+                class="form-input"
+              />
             </div>
-        </main>
+
+            <div class="mb-5">
+              <label
+                for="project-description"
+                class="block text-sm font-medium text-gray-700 mb-2"
+                >Description</label
+              >
+              <textarea
+                id="project-description"
+                name="project-description"
+                rows="4"
+                placeholder="Briefly describe the goals and scope of the project."
+                class="form-input resize-none"
+              ></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+              <div>
+                <label
+                  for="deadline"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                  >Deadline</label
+                >
+                <input
+                  type="date"
+                  id="deadline"
+                  name="deadline"
+                  class="form-input bg-white"
+                />
+              </div>
+
+              <div>
+                <label
+                  for="priority"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                  >Priority</label
+                >
+                <select
+                  id="priority"
+                  name="priority"
+                  class="form-input bg-white"
+                >
+                  <option>High</option>
+                  <option>Medium</option>
+                  <option>Low</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label
+                for="members"
+                class="block text-sm font-medium text-gray-700 mb-2"
+                >Invite Team Members</label
+              >
+              <input
+                type="text"
+                id="members"
+                name="members"
+                placeholder="Type names or emails to invite..."
+                class="form-input"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                Suggested: Anima Agrawal, Jane Doe, John Smith
+              </p>
+            </div>
+
+            <div class="flex justify-end pt-4 border-t border-gray-200">
+              <button
+                type="submit"
+                class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold text-base shadow-md hover:bg-blue-700 transition flex items-center space-x-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <span>Create Project</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
-</body>
+  </body>
 </html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Overview Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Đảm bảo chiều cao tối thiểu cho nội dung chính sau khi trừ đi chiều cao header (khoảng 68px) */
+        .min-h-content {
+            min-height: calc(100vh - 68px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans">
+
+    <!-- TASKBAR / HEADER (Cố định ở trên cùng) -->
+    <header
+      class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
+    >
+      <div class="flex items-center space-x-3 w-64 flex-shrink-0">
+        <!-- Logo -->
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png"
+          alt="DevCollab Logo"
+          class="w-9 h-9 rounded-lg shadow-sm"
+        />
+        <!-- Tên -->
+        <span class="text-2xl font-extrabold text-blue-700 tracking-wider"
+          >DevCollab</span
+        >
+      </div>
+
+      <!-- Thanh Search -->
+      <div class="flex-grow flex justify-center mx-10">
+        <div class="relative w-full max-w-xl">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search for anything..."
+            class="border border-gray-200 rounded-full pl-12 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm shadow-sm"
+            style="height: 40px"
+          />
+        </div>
+      </div>
+
+      <!-- Khu vực thông báo và user -->
+      <div class="flex items-center space-x-6 flex-shrink-0">
+        <div
+          class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+        </div>
+
+        <div
+          class="flex items-center space-x-3 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition"
+        >
+          <div class="text-right leading-tight">
+            <span class="block text-sm font-semibold text-gray-800"
+              >Anima Agrawal</span
+            >
+            <span class="block text-xs text-gray-500">U.P, India</span>
+          </div>
+          <img
+            src="https://i.pravatar.cc/40?img=15"
+            class="rounded-full w-10 h-10 border-2 border-white shadow-lg"
+            alt="User Avatar"
+          />
+        </div>
+      </div>
+    </header>
+
+    <!-- Sidebar và Nội dung Chính -->
+    <div class="flex min-h-content">
+        <!-- Sidebar -->
+        <aside class="w-60 bg-white shadow-md p-4 space-y-4 flex-shrink-0">
+            <!-- Đã ẩn logo khỏi sidebar vì nó ở taskbar trên cùng -->
+            <nav class="space-y-3 text-gray-600">
+                <a href="#" class="flex items-center p-2 rounded-xl bg-blue-100 text-blue-600 font-medium">
+                    <span class="ml-2">📁 Project</span>
+                </a>
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150">
+                    <span class="ml-2">🗂️ Tasks</span>
+                </a>
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150">
+                    <span class="ml-2">🕒 Work Logs</span>
+                </a>
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150">
+                    <span class="ml-2">⚙️ Settings</span>
+                </a>
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150">
+                    <span class="ml-2">📊 Performance</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6">
+            
+            <!-- Tiêu đề trang, thay thế cho tiêu đề bị xóa khỏi header cũ -->
+            <div class="text-gray-800 text-3xl font-bold mb-8 border-b pb-2">Project Overview</div>
+
+            <!-- Top Cards -->
+            <div class="grid xl:grid-cols-3 md:grid-cols-2 gap-6 mb-8">
+                <!-- Project Stats -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 transition duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-semibold text-gray-700 text-lg">Project Stats</h2>
+                        <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">This Week</span>
+                    </div>
+                    <canvas id="pieChart" height="180"></canvas>
+                    <ul class="mt-6 space-y-2 text-sm font-medium text-gray-600">
+                        <li><span class="inline-block w-3 h-3 rounded-full bg-indigo-500 mr-2"></span> Completed - 25%</li>
+                        <li><span class="inline-block w-3 h-3 rounded-full bg-blue-500 mr-2"></span> On Hold - 25%</li>
+                        <li><span class="inline-block w-3 h-3 rounded-full bg-teal-500 mr-2"></span> On Progress - 32%</li>
+                        <li><span class="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span> Pending - 18%</li>
+                    </ul>
+                </div>
+
+                <!-- Performance Chart -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 transition duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-semibold text-gray-700 text-lg">Performance</h2>
+                        <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">This Week</span>
+                    </div>
+                    <canvas id="lineChart" height="180"></canvas>
+                </div>
+
+                <!-- Projects -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 transition duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-semibold text-gray-700 text-lg">Projects</h2>
+                        <a href="#" class="text-blue-600 text-sm font-medium hover:text-blue-700 transition">View all</a>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center p-2 bg-gray-50 rounded-lg transition duration-150 hover:bg-gray-100">
+                            <img src="https://picsum.photos/100?random=1" class="rounded-lg shadow-md mb-2 w-full h-auto">
+                            <p class="text-sm text-gray-700 font-medium">Emo stuff</p>
+                        </div>
+                        <div class="text-center p-2 bg-gray-50 rounded-lg transition duration-150 hover:bg-gray-100">
+                            <img src="https://picsum.photos/100?random=2" class="rounded-lg shadow-md mb-2 w-full h-auto">
+                            <p class="text-sm text-gray-700 font-medium">Tim Burton</p>
+                        </div>
+                        <div class="text-center p-2 bg-gray-50 rounded-lg transition duration-150 hover:bg-gray-100">
+                            <img src="https://picsum.photos/100?random=3" class="rounded-lg shadow-md mb-2 w-full h-auto">
+                            <p class="text-sm text-gray-700 font-medium">Halloween!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Members Section -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 transition duration-300 hover:shadow-2xl">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                    <h2 class="font-semibold text-gray-700 text-xl">Members (39)</h2>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-1 w-full sm:w-64">
+                            <input type="text" placeholder="Tìm thành viên..." class="bg-transparent outline-none w-full text-sm text-gray-600">
+                        </div>
+                        <a href="#" class="text-blue-600 text-sm font-medium hover:text-blue-700 transition">View all</a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-10 gap-4 justify-items-center">
+                    <img src="https://randomuser.me/api/portraits/men/31.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/women/34.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/men/37.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/women/45.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/men/47.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/women/48.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/men/49.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/women/50.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/men/51.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                    <img src="https://randomuser.me/api/portraits/women/52.jpg" class="rounded-full w-14 h-14 object-cover border-4 border-white shadow-lg transform hover:scale-105 transition">
+                </div>
+
+                <div class="flex justify-center mt-6 space-x-2">
+                    <button class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition">Previous</button>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm shadow-md">1</button>
+                    <button class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition">2</button>
+                    <button class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition">Next</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Data for Charts
+        const pieData = {
+            labels: ['Completed', 'On Hold', 'On Progress', 'Pending'],
+            datasets: [{
+                data: [25, 25, 32, 18],
+                backgroundColor: ['#6366F1', '#3B82F6', '#10B981', '#F87171'] // Updated Tailwind colors
+            }]
+        };
+
+        const lineData = {
+            labels: ['Oct 2021', 'Nov 2021', 'Dec 2021', 'Jan 2022', 'Feb 2022'],
+            datasets: [
+                { label: 'Achieved', data: [7, 4, 6, 5, 7], borderColor: '#F87171', tension: 0.4, borderWidth: 3 },
+                { label: 'Target', data: [5, 3, 5, 6, 5], borderColor: '#3B82F6', tension: 0.4, borderWidth: 3 }
+            ]
+        };
+
+        // Initialize Charts
+        window.onload = function() {
+            // Pie Chart
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            new Chart(pieCtx, {
+                type: 'doughnut', // Changed to doughnut for modern look
+                data: pieData,
+                options: { 
+                    responsive: true,
+                    cutout: '70%',
+                    plugins: { 
+                        legend: { display: false } // Hide chart legend since we show stats outside
+                    } 
+                }
+            });
+
+            // Line Chart
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            new Chart(lineCtx, {
+                type: 'line',
+                data: lineData,
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { drawBorder: false } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>

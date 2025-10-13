@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Thành Viên Dự Án</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Đảm bảo chiều cao tối thiểu cho nội dung chính sau khi trừ đi chiều cao header */
+        .min-h-content {
+            min-height: calc(100vh - 68px);
+        }
+        /* Class để ẩn Modal (sử dụng flex thay vì display: none cho việc chuyển đổi) */
+        .hidden-modal {
+            display: none;
+        }
+        /* Chiều cao tối đa cho Modal, mô phỏng Overlay của Github */
+        .max-h-90vh {
+            max-height: 90vh;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans">
+
+    <header
+      class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
+    >
+      <div class="flex items-center space-x-3 w-64 flex-shrink-0">
+        <!-- Logo -->
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png"
+          alt="DevCollab Logo"
+          class="w-9 h-9 rounded-lg shadow-sm"
+        />
+        <!-- Tên -->
+        <span class="text-2xl font-extrabold text-blue-700 tracking-wider"
+          >DevCollab</span
+        >
+      </div>
+
+      <!-- Thanh Search -->
+      <div class="flex-grow flex justify-center mx-10">
+        <div class="relative w-full max-w-xl">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search for anything..."
+            class="border border-gray-200 rounded-full pl-12 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm shadow-sm"
+            style="height: 40px"
+          />
+        </div>
+      </div>
+
+      <!-- Khu vực thông báo và user -->
+      <div class="flex items-center space-x-6 flex-shrink-0">
+        <div
+          class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+        </div>
+
+        <div
+          class="flex items-center space-x-3 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition"
+        >
+          <div class="text-right leading-tight">
+            <span class="block text-sm font-semibold text-gray-800"
+              >Anima Agrawal</span
+            >
+            <span class="block text-xs text-gray-500">U.P, India</span>
+          </div>
+          <img
+            src="https://i.pravatar.cc/40?img=15"
+            class="rounded-full w-10 h-10 border-2 border-white shadow-lg"
+            alt="User Avatar"
+          />
+        </div>
+      </div>
+    </header>
+
+    <div class="flex min-h-content">
+        <aside class="w-60 bg-white shadow-md p-4 space-y-4 flex-shrink-0">
+            <nav class="space-y-3 text-gray-600">
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"><span class="ml-2">📁 Project</span></a>
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"><span class="ml-2">🗂️ Tasks</span></a>
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"><span class="ml-2">🕒 Work Logs</span></a>
+                <a href="#" class="flex items-center p-2 bg-blue-100 text-blue-600 font-medium rounded-xl transition duration-150"><span class="ml-2">👥 Members</span></a>
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"><span class="ml-2">⚙️ Settings</span></a>
+                <a href="#" class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"><span class="ml-2">📊 Performance</span></a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-6">
+            <div class="text-gray-800 text-3xl font-bold mb-8 border-b pb-2">Quản Lý Thành Viên</div>
+
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                    <h2 class="font-semibold text-gray-700 text-xl">Danh sách Thành viên (15)</h2>
+                    
+                    <div class="flex items-center space-x-3">
+                        <button id="openInviteModal" onclick="toggleModal('inviteModal', true)" class="flex items-center bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition duration-150 shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                                <path d="M13.5 10a.5.5 0 01.5.5v2a.5.5 0 01-.5.5h-2a.5.5 0 010-1h1.5V10.5a.5.5 0 01.5-.5z" fill-rule="evenodd" clip-rule="evenodd" transform="rotate(90 12.5 11.5)" />
+                            </svg>
+                            Mời Thành viên
+                        </button>
+                        
+                        <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1 w-full sm:w-48">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input type="text" placeholder="Tìm kiếm..." class="bg-transparent outline-none w-full text-sm text-gray-600">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thành viên</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Email</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr class="hover:bg-gray-50 transition duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://randomuser.me/api/portraits/women/45.jpg" alt="Avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Anima Agrawal</div>
+                                            <div class="text-sm text-gray-500 sm:hidden">anima@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">anima@example.com</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Quản trị viên
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium space-x-2">
+                                    <button class="text-indigo-600 hover:text-indigo-900 transition duration-150 focus:outline-none" title="Phân vai trò">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path fill-rule="evenodd" d="M10 9a4 4 0 00-4 4v1a2 2 0 002 2h4a2 2 0 002-2v-1a4 4 0 00-4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <button class="text-gray-400 cursor-not-allowed" title="Không thể xóa Quản trị viên">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 000-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full" src="https://randomuser.me/api/portraits/men/31.jpg" alt="Avatar">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Trần Văn B</div>
+                                            <div class="text-sm text-gray-500 sm:hidden">tran.b@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">tran.b@example.com</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        Developer
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium space-x-2">
+                                    <button class="text-indigo-600 hover:text-indigo-900 transition duration-150 focus:outline-none" title="Phân vai trò">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path fill-rule="evenodd" d="M10 9a4 4 0 00-4 4v1a2 2 0 002 2h4a2 2 0 002-2v-1a4 4 0 00-4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-900 transition duration-150 focus:outline-none" title="Xóa Thành viên">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 000-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-center mt-6 space-x-2">
+                    <button class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition">Previous</button>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm shadow-md">1</button>
+                    <button class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition">2</button>
+                    <button class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-100 transition">Next</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="inviteModal" class="hidden-modal fixed inset-0 z-50 overflow-y-auto" aria-labelledby="add-access-dialog-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-80 transition-opacity" aria-hidden="true" onclick="toggleModal('inviteModal', false)"></div>
+
+            <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full max-h-90vh flex flex-col">
+                
+                <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <div>
+                        <h1 id="add-access-dialog-title" class="text-xl font-semibold text-gray-900">
+                            Thêm cộng tác viên
+                        </h1>
+                        <h2 class="text-sm text-gray-500">
+                            vào dự án **AProjectO/ProjectX**
+                        </h2>
+                    </div>
+                    
+                    <button type="button" onclick="toggleModal('inviteModal', false)" class="text-gray-400 hover:text-gray-500 p-1 rounded-full hover:bg-gray-100 transition">
+                        <span class="sr-only">Đóng</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                    
+                    <div class="relative">
+                        <input type="text" placeholder="Tìm kiếm người dùng hoặc nhập email..." class="w-full border border-gray-300 rounded-lg py-2 px-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    
+                    <div class="border border-gray-200 rounded-lg shadow-sm">
+                        <div class="p-3 hover:bg-gray-50 flex items-center justify-between cursor-pointer border-b">
+                            <div class="flex items-center">
+                                <img src="https://randomuser.me/api/portraits/men/1.jpg" class="w-8 h-8 rounded-full mr-3" alt="User">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-700">nguyenvana</p>
+                                    <p class="text-xs text-gray-500">Nguyễn Văn A</p>
+                                </div>
+                            </div>
+                            <button class="text-xs text-blue-600 font-medium hover:underline">Thêm</button>
+                        </div>
+                        <div class="p-3 hover:bg-gray-50 flex items-center justify-between cursor-pointer border-b">
+                            <div class="flex items-center">
+                                <img src="https://randomuser.me/api/portraits/women/2.jpg" class="w-8 h-8 rounded-full mr-3" alt="User">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-700">lethib</p>
+                                    <p class="text-xs text-gray-500">lethib@company.com</p>
+                                </div>
+                            </div>
+                            <button class="text-xs text-blue-600 font-medium hover:underline">Thêm</button>
+                        </div>
+                        <div class="p-3 text-sm text-gray-500 italic">
+                            Nhập tên người dùng hoặc email để tìm kiếm và mời.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
+                    <button type="button" class="w-full inline-flex justify-center rounded-md px-4 py-2 bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
+                        Gửi lời mời truy cập
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script>
+        /**
+         * Chức năng mở/đóng Modal
+         * @param {string} modalId - ID của phần tử Modal
+         * @param {boolean} isOpen - true để mở, false để đóng
+         */
+        function toggleModal(modalId, isOpen) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+
+            if (isOpen) {
+                modal.classList.remove('hidden-modal');
+                modal.classList.add('flex'); // Dùng flex để căn giữa
+                document.body.style.overflow = 'hidden'; // Ngăn cuộn trang nền
+            } else {
+                modal.classList.add('hidden-modal');
+                modal.classList.remove('flex');
+                document.body.style.overflow = ''; // Cho phép cuộn lại
+            }
+        }
+
+        // Tùy chọn: Đóng modal khi nhấn phím ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                toggleModal('inviteModal', false);
+            }
+        });
+    </script>
+</body>
+</html>
