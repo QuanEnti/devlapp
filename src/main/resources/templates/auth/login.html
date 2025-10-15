@@ -129,7 +129,7 @@
           msg.textContent = 'Đăng nhập thành công!';
           msg.style.color = 'green';
           localStorage.setItem('token', data.token);
-          setTimeout(() => window.location.href = '/view/dashboard', 1000);
+          setTimeout(() => window.location.href = '/user/view/dashboard', 1000);
         } else if (data.status === 'VERIFY_REQUIRED') {
           msg.textContent = 'Vui lòng xác minh email của bạn.';
           msg.style.color = 'orange';

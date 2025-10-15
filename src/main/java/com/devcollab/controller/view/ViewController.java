@@ -3,6 +3,8 @@ package com.devcollab.controller.view;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @Controller
 @RequestMapping("/view")
@@ -45,4 +47,10 @@ public class ViewController {
     public String dashboardPage() {
         return "dashboard";
     }
+    
+    @GetMapping("/home")
+    public String homePage() {
+        return "home";
+    }
+    
 }

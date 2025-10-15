@@ -60,7 +60,7 @@ public class SecurityConfig {
                                                 .failureUrl("/view/signin?error=oauth"))
                                 .formLogin(form -> form
                                                 .loginPage("/view/signin")
-                                                .defaultSuccessUrl("/view/dashboard", true)
+                                                .defaultSuccessUrl("/user/view/dashboard", true)
                                                 .permitAll())
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")

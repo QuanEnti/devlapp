@@ -13,8 +13,8 @@ public class DevCollabApp {
         SpringApplication.run(DevCollabApp.class, args);
         try {
             Thread.sleep(3000);
-            Desktop.getDesktop().browse(new URI("http://localhost:8082/view/signin"));
-            System.out.println("Browser opened: http://localhost:8082/view/signin");
+            Desktop.getDesktop().browse(new URI("http://localhost:8082/view/home"));
+            System.out.println("Browser opened: http://localhost:8082/view/home");
         } catch (Exception e) {
             System.err.println(" Không thể mở trình duyệt: " + e.getMessage());
         }

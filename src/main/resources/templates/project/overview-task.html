@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevCollab - Task Overview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .dragging {
+        opacity: 0.5;
+        transform: rotate(2deg);
+      }
+      .drag-over {
+        background-color: #eff6ff;
+        border-color: #3b82f6;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-800">
+    <header
+      class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
+    >
+      <div class="flex items-center space-x-3 w-64 flex-shrink-0">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png"
+          alt="DevCollab Logo"
+          class="w-9 h-9 rounded-lg shadow-sm"
+        />
+        <span class="text-2xl font-extrabold text-blue-700 tracking-wider"
+          >DevCollab</span
+        >
+      </div>
+
+      <div class="flex-grow flex justify-center mx-10">
+        <div class="relative w-full max-w-xl">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search for anything..."
+            class="border border-gray-200 rounded-full pl-12 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm shadow-sm"
+            style="height: 40px"
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-6 flex-shrink-0">
+        <div
+          class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+        </div>
+
+        <div
+          class="flex items-center space-x-3 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition"
+        >
+          <div class="text-right leading-tight">
+            <span class="block text-sm font-semibold text-gray-800"
+              >Anima Agrawal</span
+            >
+            <span class="block text-xs text-gray-500">U.P, India</span>
+          </div>
+          <img
+            src="https://i.pravatar.cc/40?img=15"
+            class="rounded-full w-10 h-10 border-2 border-white shadow-lg"
+            alt="User Avatar"
+          />
+        </div>
+      </div>
+    </header>
+
+    <div class="flex min-h-screen">
+      <aside class="w-60 bg-white shadow-md p-4 space-y-4 flex-shrink-0">
+        <nav class="space-y-3 text-gray-600">
+          <a
+            href="#"
+            class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"
+          >
+            <span class="ml-2">📁 Project</span>
+          </a>
+          <a
+            href="#"
+            class="flex items-center p-2 rounded-xl bg-blue-100 text-blue-600 font-medium"
+          >
+            <span class="ml-2">🗂️ Tasks</span>
+          </a>
+          <a
+            href="#"
+            class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"
+          >
+            <span class="ml-2">🕒 Work Logs</span>
+          </a>
+          <a
+            href="#"
+            class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"
+          >
+            <span class="ml-2">⚙️ Settings</span>
+          </a>
+          <a
+            href="#"
+            class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"
+          >
+            <span class="ml-2">📊 Performance</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="flex-1 p-8 overflow-auto">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-gray-800">Tasks</h2>
+          <p class="text-gray-500">Edit or modify all cards as you want</p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-6" id="board">
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col"
+            data-status="backlog"
+          >
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="font-semibold text-gray-700">Backlog</h3>
+              <button class="text-gray-400 hover:text-gray-600">⋮</button>
+            </div>
+            <div
+              class="border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-blue-500 text-2xl mb-4 cursor-pointer hover:bg-blue-50 h-12"
+            >
+              +
+            </div>
+            <div class="space-y-4 flex-1 min-h-[200px] drop-zone" id="backlog">
+              <div
+                class="p-4 border rounded-xl shadow-sm hover:shadow-md transition bg-white cursor-move task-card"
+                draggable="true"
+              >
+                <div class="flex justify-between items-start mb-2">
+                  <h4 class="font-semibold text-gray-800">Food Research</h4>
+                  <div class="flex items-center text-gray-400 text-xs">
+                    <svg
+                      class="w-3.5 h-3.5 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="12" cy="12" r="10" stroke-width="2" />
+                      <path
+                        d="M12 6v6l4 2"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                    <span>12 Days</span>
+                  </div>
+                </div>
+
+                <p class="text-sm text-gray-500 mb-4">
+                  Food design is required for our new project let's research the
+                  best practices
+                </p>
+
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-3 text-gray-500">
+                    <div class="flex items-center gap-1 text-sm">
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span>5</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-sm">
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span>8</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <button
+                      class="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg hover:bg-teal-600 transition"
+                    >
+                      +
+                    </button>
+                    <div class="flex items-center -space-x-2">
+                      <img
+                        src="https://i.pravatar.cc/32?img=1"
+                        class="w-6 h-6 rounded-full border-2 border-white"
+                        alt="User 1"
+                      />
+                      <img
+                        src="https://i.pravatar.cc/32?img=2"
+                        class="w-6 h-6 rounded-full border-2 border-white"
+                        alt="User 2"
+                      />
+                      <img
+                        src="https://i.pravatar.cc/32?img=3"
+                        class="w-6 h-6 rounded-full border-2 border-white"
+                        alt="User 3"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col"
+            data-status="progress"
+          >
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="font-semibold text-gray-700">In Progress</h3>
+              <button class="text-gray-400 hover:text-gray-600">⋮</button>
+            </div>
+            <div
+              class="border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-blue-500 text-2xl mb-4 cursor-pointer hover:bg-blue-50 h-12"
+            >
+              +
+            </div>
+            <div class="space-y-4 flex-1 min-h-[200px] drop-zone" id="progress">
+              <div
+                class="p-4 border rounded-xl shadow-sm hover:shadow-md transition bg-white cursor-move task-card"
+                draggable="true"
+              >
+                <div class="flex justify-between items-start mb-2">
+                  <h4 class="font-semibold text-gray-800">UI Design</h4>
+                  <div class="flex items-center text-gray-400 text-xs">
+                    <svg
+                      class="w-3.5 h-3.5 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="12" cy="12" r="10" stroke-width="2" />
+                      <path
+                        d="M12 6v6l4 2"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                    <span>12 Days</span>
+                  </div>
+                </div>
+
+                <p class="text-sm text-gray-500 mb-4">
+                  Design new user interface for food app.
+                </p>
+
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-3 text-gray-500">
+                    <div class="flex items-center gap-1 text-sm">
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span>5</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-sm">
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span>8</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <button
+                      class="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg hover:bg-teal-600 transition"
+                    >
+                      +
+                    </button>
+                    <div class="flex items-center -space-x-2">
+                      <img
+                        src="https://i.pravatar.cc/32?img=3"
+                        class="w-6 h-6 rounded-full border-2 border-white"
+                        alt="User 3"
+                      />
+                      <img
+                        src="https://i.pravatar.cc/32?img=4"
+                        class="w-6 h-6 rounded-full border-2 border-white"
+                        alt="User 4"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col"
+            data-status="completed"
+          >
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="font-semibold text-gray-700">Completed</h3>
+              <button class="text-gray-400 hover:text-gray-600">⋮</button>
+            </div>
+            <div
+              class="border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-blue-500 text-2xl mb-4 cursor-pointer hover:bg-blue-50 h-12"
+            >
+              +
+            </div>
+            <div
+              class="space-y-4 flex-1 min-h-[200px] drop-zone"
+              id="completed"
+            >
+              <div
+                class="p-4 border rounded-xl shadow-sm hover:shadow-md transition bg-white cursor-move task-card"
+                draggable="true"
+              >
+                <div class="flex justify-between items-start mb-2">
+                  <h4 class="font-semibold text-gray-800">Mind Mapping</h4>
+                  <div class="flex items-center text-gray-400 text-xs">
+                    <svg
+                      class="w-3.5 h-3.5 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="12" cy="12" r="10" stroke-width="2" />
+                      <path
+                        d="M12 6v6l4 2"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                    <span>12 Days</span>
+                  </div>
+                </div>
+
+                <p class="text-sm text-gray-500 mb-4">
+                  Mind map the app for young users.
+                </p>
+
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-3 text-gray-500">
+                    <div class="flex items-center gap-1 text-sm">
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span>5</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-sm">
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span>8</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <button
+                      class="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg hover:bg-teal-600 transition"
+                    >
+                      +
+                    </button>
+                    <div class="flex items-center -space-x-2">
+                      <img
+                        src="https://i.pravatar.cc/32?img=5"
+                        class="w-6 h-6 rounded-full border-2 border-white"
+                        alt="User 5"
+                      />
+                      <img
+                        src="https://i.pravatar.cc/32?img=6"
+                        class="w-6 h-6 rounded-full border-2 border-white"
+                        alt="User 6"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      let draggedElement = null;
+
+      // Initialize drag and drop for all task cards
+      function initDragAndDrop() {
+        const taskCards = document.querySelectorAll(".task-card");
+        const dropZones = document.querySelectorAll(".drop-zone");
+
+        // Add drag event listeners to all task cards
+        taskCards.forEach((card) => {
+          card.addEventListener("dragstart", handleDragStart);
+          card.addEventListener("dragend", handleDragEnd);
+        });
+
+        // Add drop zone event listeners
+        dropZones.forEach((zone) => {
+          zone.addEventListener("dragover", handleDragOver);
+          zone.addEventListener("drop", handleDrop);
+          zone.addEventListener("dragenter", handleDragEnter);
+          zone.addEventListener("dragleave", handleDragLeave);
+        });
+      }
+
+      function handleDragStart(e) {
+        draggedElement = this;
+        this.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/html", this.innerHTML);
+      }
+
+      function handleDragEnd(e) {
+        this.classList.remove("dragging");
+
+        // Remove drag-over class from all drop zones
+        document.querySelectorAll(".drop-zone").forEach((zone) => {
+          zone.classList.remove("drag-over");
+        });
+      }
+
+      function handleDragOver(e) {
+        if (e.preventDefault) {
+          e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = "move";
+
+        const afterElement = getDragAfterElement(this, e.clientY);
+        const dragging = document.querySelector(".dragging");
+
+        if (afterElement == null) {
+          this.appendChild(dragging);
+        } else {
+          this.insertBefore(dragging, afterElement);
+        }
+
+        return false;
+      }
+
+      function handleDrop(e) {
+        if (e.stopPropagation) {
+          e.stopPropagation();
+        }
+
+        this.classList.remove("drag-over");
+        return false;
+      }
+
+      function handleDragEnter(e) {
+        this.classList.add("drag-over");
+      }
+
+      function handleDragLeave(e) {
+        if (e.target === this) {
+          this.classList.remove("drag-over");
+        }
+      }
+
+      function getDragAfterElement(container, y) {
+        const draggableElements = [
+          ...container.querySelectorAll(".task-card:not(.dragging)"),
+        ];
+
+        return draggableElements.reduce(
+          (closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+              return { offset: offset, element: child };
+            } else {
+              return closest;
+            }
+          },
+          { offset: Number.NEGATIVE_INFINITY }
+        ).element;
+      }
+
+      // Initialize on page load
+      document.addEventListener("DOMContentLoaded", initDragAndDrop);
+    </script>
+  </body>
+</html>
