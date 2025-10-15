@@ -21,8 +21,6 @@ public class UserRestController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // --- REST endpoints ---
-
     @GetMapping
     public List<UserDto> getAllUsers() {
         System.out.println("DEBUG: getAllUsers called");
@@ -56,7 +54,6 @@ public class UserRestController {
             User existing = userService.getById(id)
                     .orElseThrow(() -> new RuntimeException("User not found id=" + id));
 
-            // Update fields
             existing.setEmail(dto.getEmail());
             existing.setName(dto.getName());
             existing.setStatus(dto.getStatus());
@@ -67,14 +64,13 @@ public class UserRestController {
             existing.setPreferredLanguage(dto.getPreferredLanguage());
             existing.setUpdatedAt(LocalDateTime.now());
 
-            // Update password if provided
             if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
                 existing.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
             }
 
             return toDto(userService.update(id, existing));
         } catch (Exception e) {
-            e.printStackTrace(); // print full error to console
+            e.printStackTrace();
             throw e;
         }
     }

@@ -171,11 +171,11 @@
         public void markVerified(String email) {
             userRepository.findByEmail(email).ifPresent(user -> {
                 user.setStatus("verified");
-                if (!"local".equalsIgnoreCase(user.getProvider()) &&
-                        !"local_google".equalsIgnoreCase(user.getProvider()) &&
-                        !"otp".equalsIgnoreCase(user.getProvider())) {
-                    user.setProvider("google");
+
+                if ("otp".equalsIgnoreCase(user.getProvider())) {
+                    user.setProvider("local");
                 }
+
                 user.setUpdatedAt(LocalDateTime.now());
                 user.setLastSeen(LocalDateTime.now());
                 userRepository.save(user);

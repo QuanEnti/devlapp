@@ -21,6 +21,11 @@
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
       width: 400px;
       text-align: center;
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     h2 { margin-bottom: 10px; }
     p { color: #666; margin-bottom: 25px; }
@@ -59,6 +64,17 @@
       display: inline-block;
     }
     a:hover { text-decoration: underline; }
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #000;
+      border-radius: 50%;
+      width: 14px; height: 14px;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 
@@ -78,24 +94,34 @@
 
   <script>
     const email = localStorage.getItem('email');
-    document.getElementById('userEmail').textContent = email || '';
+    const emailField = document.getElementById('userEmail');
+    const msg = document.getElementById('msg');
+    const btn = document.getElementById('registerBtn');
+
+    if (email) {
+      emailField.textContent = email;
+    } else {
+      emailField.textContent = "—";
+      msg.textContent = "Không tìm thấy email. Hãy quay lại bước trước.";
+      msg.style.color = "red";
+      btn.disabled = true;
+    }
 
     async function registerUser() {
       const password = document.getElementById('password').value.trim();
       const confirmPassword = document.getElementById('confirmPassword').value.trim();
-      const msg = document.getElementById('msg');
-      const btn = document.getElementById('registerBtn');
 
       msg.textContent = '';
       msg.style.color = '#444';
 
-      if (!email) {
-        msg.textContent = 'Thiếu email. Vui lòng quay lại bước trước.';
+      const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+      if (!password) {
+        msg.textContent = 'Vui lòng nhập mật khẩu.';
         msg.style.color = 'red';
         return;
       }
-      if (!password || password.length < 6) {
-        msg.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.';
+      if (!strongRegex.test(password)) {
+        msg.textContent = 'Mật khẩu phải có ít nhất 8 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt.';
         msg.style.color = 'red';
         return;
       }
@@ -106,8 +132,7 @@
       }
 
       btn.disabled = true;
-      btn.textContent = 'Đang tạo tài khoản...';
-      msg.textContent = 'Đang gửi mã OTP...';
+      btn.innerHTML = '<span class="spinner"></span> Đang tạo tài khoản...';
 
       try {
         const res = await fetch('/api/auth/register', {
@@ -117,19 +142,23 @@
         });
 
         const data = await res.json();
-        console.log('📨 Register OTP:', data);
+        console.log(' Register response:', data);
 
-        if (res.ok) {
+        if (res.ok && data.status === "OTP_SENT") {
           localStorage.setItem('verify_mode', 'register');
           msg.style.color = 'green';
-          msg.textContent = 'Đã gửi mã OTP đến email của bạn.';
-          setTimeout(() => window.location.href = '/view/verify-otp', 800);
-        } else {
+          msg.textContent = 'Mã OTP đã được gửi đến email của bạn.';
+          setTimeout(() => window.location.href = '/view/verify-otp', 1000);
+        } else if (data.error) {
           msg.style.color = 'red';
-          msg.textContent = data.error || 'Không thể gửi OTP.';
+          msg.textContent = data.message || 'Email đã tồn tại hoặc không thể gửi OTP.';
+        } else {
+          msg.style.color = 'orange';
+          msg.textContent = 'Phản hồi không xác định từ máy chủ.';
         }
+
       } catch (err) {
-        console.error('Lỗi gửi OTP:', err);
+        console.error(' Lỗi gửi OTP:', err);
         msg.style.color = 'red';
         msg.textContent = 'Không thể kết nối máy chủ.';
       } finally {

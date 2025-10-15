@@ -1,23 +1,52 @@
 package com.devcollab.controller.view;
 
+import java.security.Principal;
+
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.devcollab.service.core.ProjectService;
+
 
 @Controller
 @RequestMapping("/view")
 public class ViewController {
-    @GetMapping({ "/", "/signin" })
-    public String signinPage() {
+    @GetMapping({ "/", "/home" })
+    public String homePage(Authentication authentication, Model model) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            model.addAttribute("loggedIn", true);
+            model.addAttribute("username", authentication.getName());
+        } else {
+            model.addAttribute("loggedIn", false);
+        }
+        return "home";
+    }
+
+    @GetMapping("/signin")
+    public String signinPage(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return "redirect:/view/home";
+        }
         return "auth/signin";
     }
+
     @GetMapping("/login")
-    public String loginPage() {
+    public String loginPage(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return "redirect:/view/home";
+        }
         return "auth/login";
     }
 
     @GetMapping("/register")
-    public String registerPage() {
+    public String registerPage(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return "redirect:/view/home";
+        }
         return "auth/register";
     }
 
@@ -41,8 +70,6 @@ public class ViewController {
         return "auth/password-reset-success";
     }
 
-    @GetMapping("/dashboard")
-    public String dashboardPage() {
-        return "dashboard";
-    }
+    
+
 }

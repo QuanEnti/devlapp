@@ -13,4 +13,5 @@ public class AuthResponseDTO {
     private String provider;
     private String token;
     private String email;
+    private String redirectUrl;
 }

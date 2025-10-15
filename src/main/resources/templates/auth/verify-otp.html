@@ -6,12 +6,18 @@
   <title>Xác minh email - DevCollab</title>
   <style>
     body {
-      font-family: "Segoe UI", sans-serif;
-      background: #f3f6fa;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      background: #f5f7fa;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .card {
       background: white;
@@ -26,15 +32,15 @@
       padding: 12px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      font-size: 20px;
-      letter-spacing: 6px;
+      font-size: 22px;
+      letter-spacing: 8px;
       text-align: center;
       margin-bottom: 15px;
     }
     button {
       width: 100%;
       padding: 12px;
-      border-radius: 24px;
+      border-radius: 30px;
       border: none;
       background: #000;
       color: white;
@@ -43,7 +49,7 @@
       transition: 0.2s;
     }
     button:hover { background: #222; }
-    #msg { margin-top: 10px; font-size: 13px; color: red; min-height: 18px; }
+    #msg { margin-top: 10px; font-size: 14px; color: red; min-height: 20px; }
     #resend {
       background: transparent;
       color: #0078ff;
@@ -73,118 +79,127 @@
   </div>
 
   <script>
-  const email = localStorage.getItem('email');
-  const mode = localStorage.getItem('verify_mode');
-  const otpInfo = document.getElementById('otpInfo');
-  if (email) otpInfo.textContent = `Nhập mã 6 chữ số được gửi đến ${email}`;
+    if (document.cookie.includes("AUTH_TOKEN")) {
+      window.location.href = "/view/home";
+    }
 
-  const resendBtn = document.getElementById('resend');
-  const msg = document.getElementById('msg');
+    const email = localStorage.getItem('email');
+    const mode = localStorage.getItem('verify_mode');
+    const otpInfo = document.getElementById('otpInfo');
+    const resendBtn = document.getElementById('resend');
+    const msg = document.getElementById('msg');
 
-  let isCooldown = false;
-  let isResending = false;
-  let timerId = null;
+    if (!email) {
+      alert('Thiếu email xác minh. Vui lòng quay lại đăng nhập hoặc đăng ký.');
+      window.location.href = '/view/signin';
+    } else {
+      otpInfo.textContent = `Nhập mã 6 chữ số được gửi đến ${email}`;
+    }
 
-  // Đếm ngược gửi lại OTP
-  function startCooldown(seconds = 15) {
-    isCooldown = true;
-    resendBtn.disabled = true;
-    clearInterval(timerId);
+    let isCooldown = false;
+    let isResending = false;
+    let timerId = null;
 
-    const tick = () => {
-      resendBtn.textContent = `Gửi lại OTP (${seconds}s)`;
-      seconds--;
-      if (seconds < 0) {
-        clearInterval(timerId);
-        isCooldown = false;
-        resendBtn.disabled = false;
-        resendBtn.textContent = 'Gửi lại OTP';
-      }
-    };
-    tick();
-    timerId = setInterval(tick, 1000);
-  }
-  startCooldown(15);
+    function startCooldown(seconds = 15) {
+      isCooldown = true;
+      resendBtn.disabled = true;
+      clearInterval(timerId);
 
-  // Gửi lại OTP
-  async function resendOtp() {
-    if (isCooldown || isResending) return;
-    isResending = true;
+      const tick = () => {
+        resendBtn.textContent = `Gửi lại OTP (${seconds}s)`;
+        seconds--;
+        if (seconds < 0) {
+          clearInterval(timerId);
+          isCooldown = false;
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Gửi lại OTP';
+        }
+      };
+      tick();
+      timerId = setInterval(tick, 1000);
+    }
     startCooldown(15);
+    async function resendOtp() {
+      if (isCooldown || isResending) return;
+      isResending = true;
+      startCooldown(15);
 
-    msg.textContent = '';
-    try {
-      const res = await fetch('/api/auth/resend-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+      msg.textContent = '';
+      try {
+        const res = await fetch('/api/auth/resend-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
 
-      const data = await res.json();
-      if (res.ok) {
-        msg.style.color = 'green';
-        msg.textContent = 'Đã gửi lại mã OTP đến email của bạn.';
-      } else {
-        if (data.error && data.error.includes('15 giây')) {
-          msg.style.color = 'orange';
+        const data = await res.json();
+        if (res.ok) {
+          msg.style.color = 'green';
+          msg.textContent = 'Đã gửi lại mã OTP đến email của bạn.';
         } else {
           msg.style.color = 'red';
+          msg.textContent = data.error || 'Không thể gửi lại OTP.';
         }
-        msg.textContent = data.error || 'Không thể gửi lại OTP.';
-      }
-    } catch (err) {
-      msg.style.color = 'red';
-      msg.textContent = 'Không thể kết nối máy chủ.';
-      console.error(err);
-    } finally {
-      isResending = false;
-    }
-  }
-
-  // Xác minh OTP
-  async function verifyOtp() {
-    const otp = document.getElementById('otp').value.trim();
-    msg.textContent = '';
-    if (!otp) {
-      msg.style.color = 'red';
-      msg.textContent = 'Vui lòng nhập mã OTP.';
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ email, otp })
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        msg.style.color = 'green';
-        msg.textContent = 'Xác minh thành công!';
-        localStorage.removeItem('verify_mode');
-
-        setTimeout(() => {
-          if (mode === 'reset') {
-            window.location.href = '/view/reset-password';
-          } else {
-            window.location.href = '/view/dashboard';
-          }
-        }, 1000);
-
-      } else {
+      } catch (err) {
         msg.style.color = 'red';
-        msg.textContent = data.error || 'Mã OTP không hợp lệ hoặc đã hết hạn.';
+        msg.textContent = 'Không thể kết nối máy chủ.';
+        console.error('⚠️ Lỗi gửi lại OTP:', err);
+      } finally {
+        isResending = false;
       }
-    } catch (err) {
-      msg.style.color = 'red';
-      msg.textContent = 'Không thể kết nối máy chủ.';
-      console.error(err);
     }
-  }
+    async function verifyOtp() {
+      const otp = document.getElementById('otp').value.trim();
+      msg.textContent = '';
 
-  window.resendOtp = resendOtp;
-  window.verifyOtp = verifyOtp;
+      if (!otp || otp.length !== 6) {
+        msg.textContent = 'Vui lòng nhập mã OTP hợp lệ.';
+        msg.style.color = 'red';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp, mode })
+        });
+
+        const data = await res.json();
+        console.log('Verify OTP:', data);
+
+        if (res.ok) {
+          msg.style.color = 'green';
+          msg.textContent = 'Xác minh thành công!';
+
+          setTimeout(() => {
+            if (mode === 'reset') {
+              console.log('🔁 Chuyển sang /view/reset-password (mode reset)');
+              window.location.href = '/view/reset-password';
+            } else {
+              console.log('🏠 Chuyển sang /view/home (mode thường)');
+              window.location.href = '/view/home';
+            }
+
+            localStorage.removeItem('verify_mode');
+          }, 1000);
+        } else {
+          msg.style.color = 'red';
+          msg.textContent = data.error || 'Mã OTP không hợp lệ hoặc đã hết hạn.';
+        }
+
+      } catch (err) {
+        msg.style.color = 'red';
+        msg.textContent = 'Không thể kết nối máy chủ.';
+        console.error(' Lỗi verify OTP:', err);
+      }
+    }
+
+    document.getElementById('otp').addEventListener('input', (e) => {
+      const otp = e.target.value.replace(/\D/g, '').slice(0, 6);
+      e.target.value = otp;
+      if (otp.length === 6) verifyOtp();
+    });
   </script>
 </body>
 </html>

@@ -53,7 +53,7 @@ public class User {
 
 
     @Column(length = 50)
-    private String provider = "local"; 
+    private String provider = "otp"; 
 
     @Column(name = "provider_id", length = 255)
     private String providerId; 

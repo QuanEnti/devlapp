@@ -8,6 +8,6 @@ public class ViewUserController {
 
     @GetMapping("/admin/manage")
     public String showUserManagement() {
-        return "admin/user-management"; // loads templates/user-management.html
+        return "admin/user-management";
     }
 }

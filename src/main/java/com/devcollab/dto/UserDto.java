@@ -20,7 +20,6 @@ public class UserDto {
     private String preferredLanguage;
     private String timezone;
 
-    // For create/update — we accept plain password
     private String password;
 
     private LocalDateTime createdAt;

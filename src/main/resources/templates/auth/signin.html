@@ -21,7 +21,9 @@
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
       width: 400px;
       text-align: center;
+      animation: fadeIn 0.4s ease;
     }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     h2 { margin-bottom: 10px; font-size: 22px; }
     p.desc { color: #666; margin-bottom: 30px; font-size: 14px; }
     button, input {
@@ -31,6 +33,7 @@
       border: 1px solid #ddd;
       font-size: 15px;
       margin-bottom: 12px;
+      box-sizing: border-box;
     }
     button {
       background: #000;
@@ -71,8 +74,20 @@
       font-size: 12px;
       color: #888;
     }
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #000;
+      border-radius: 50%;
+      width: 14px; height: 14px;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h2>Đăng nhập hoặc đăng ký</h2>
@@ -99,83 +114,98 @@
     </footer>
   </div>
 
- <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("signinForm");
-  const msg = document.getElementById("msg");
-  const btn = document.getElementById("continueBtn");
-  const emailInput = document.getElementById("email");
+  <script>
+  window.onload = () => {
+    window.history.pushState(null, "", window.location.href);
+    window.onpopstate = () => window.history.pushState(null, "", window.location.href);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') location.reload(true);
+    });
+  };
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    msg.textContent = "";
-    msg.style.color = "#333";
+  if (document.cookie.includes("AUTH_TOKEN")) {
+    window.location.href = "/view/home";
+  }
 
-    const email = emailInput.value.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      msg.textContent = "Vui lòng nhập email hợp lệ.";
-      msg.style.color = "red";
-      return;
-    }
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("signinForm");
+    const msg = document.getElementById("msg");
+    const btn = document.getElementById("continueBtn");
+    const emailInput = document.getElementById("email");
 
-    btn.disabled = true;
-    btn.textContent = "Đang kiểm tra...";
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+      msg.style.color = "#333";
 
-    try {
-      const res = await fetch("/api/auth/check-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) throw new Error("Server trả lỗi " + res.status);
-
-      const data = await res.json();
-      console.log("Phản hồi API:", data);
-
-      // ✅ Chuyển toàn bộ key về lowercase để tránh lỗi chữ hoa
-      const provider = (data.provider || "").toLowerCase();
-      const status = (data.status || "").toUpperCase();
-
-      if (provider === "google" && data.redirect) {
-        msg.textContent = "Đang chuyển hướng đến Google...";
-        msg.style.color = "green";
-        setTimeout(() => (window.location.href = data.redirect), 600);
-      } 
-      else if (provider === "local" && status === "PASSWORD_REQUIRED") {
-        // ✅ Lưu email và chuyển qua trang login
-        localStorage.setItem("email", email);
-        msg.textContent = "Vui lòng nhập mật khẩu để đăng nhập...";
-        msg.style.color = "blue";
-        setTimeout(() => (window.location.href = "/view/login"), 800);
-      } 
-      else if (provider === "local" && status === "REGISTER_NEW") {
-        localStorage.setItem("email", email);
-        msg.textContent = "Email chưa được đăng ký. Chuyển sang trang tạo tài khoản.";
-        msg.style.color = "#444";
-        setTimeout(() => (window.location.href = "/view/register"), 800);
-      } 
-      else if (provider === "otp" && status === "OTP_SENT") {
-        localStorage.setItem("email", email);
-        msg.textContent = "Mã OTP đã được gửi đến email của bạn.";
-        msg.style.color = "green";
-        setTimeout(() => (window.location.href = "/view/verify-otp"), 800);
-      } 
-      else {
-        msg.textContent = "Phản hồi không xác định từ máy chủ.";
-        msg.style.color = "orange";
+      const email = emailInput.value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        msg.textContent = "Vui lòng nhập email hợp lệ.";
+        msg.style.color = "red";
+        return;
       }
-    } catch (err) {
-      console.error("Lỗi:", err);
-      msg.textContent = "Không thể kết nối đến máy chủ.";
-      msg.style.color = "red";
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Tiếp tục";
-    }
-  });
-});
-</script>
 
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Đang kiểm tra...';
+
+      try {
+        const res = await fetch("/api/auth/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await res.json();
+        console.log("Phản hồi từ server:", data);
+
+        const provider = (data.provider || "").toLowerCase();
+        const status = (data.status || "").toUpperCase();
+
+        localStorage.setItem("email", email);
+
+        if (provider === "google" && data.redirect) {
+          msg.textContent = "Đang chuyển hướng đến Google...";
+          msg.style.color = "green";
+          setTimeout(() => (window.location.href = data.redirect), 600);
+        } 
+        else if (provider === "local" && status === "PASSWORD_REQUIRED") {
+          msg.textContent = "Email đã có mật khẩu. Chuyển đến trang đăng nhập...";
+          msg.style.color = "blue";
+          setTimeout(() => (window.location.href = "/view/login"), 800);
+        }
+        else if (status === "REGISTER_NEW") {
+          msg.textContent = "Email chưa tồn tại. Chuyển đến trang đăng ký...";
+          msg.style.color = "#444";
+          setTimeout(() => (window.location.href = "/view/register"), 800);
+        }
+        else if (provider === "local_google") {
+          msg.textContent = "Tài khoản Google đã có mật khẩu. Đang xác minh...";
+          msg.style.color = "green";
+          localStorage.setItem("verify_mode", "register");
+          setTimeout(() => (window.location.href = "/view/verify-otp"), 800);
+        }
+        else if (provider === "otp" && status === "OTP_SENT") {
+          msg.textContent = "Mã OTP đã được gửi đến email của bạn.";
+          msg.style.color = "green";
+          localStorage.setItem("verify_mode", "login");
+          setTimeout(() => (window.location.href = "/view/verify-otp"), 800);
+        } 
+        else {
+          msg.textContent = "Phản hồi không xác định từ máy chủ.";
+          msg.style.color = "orange";
+        }
+
+      } catch (err) {
+        console.error(" Lỗi:", err);
+        msg.textContent = "Không thể kết nối đến máy chủ.";
+        msg.style.color = "red";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Tiếp tục";
+      }
+    });
+  });
+  </script>
 </body>
 </html>

@@ -36,7 +36,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String email = oauthUser.getAttribute("email");
         String name = oauthUser.getAttribute("name");
         String avatar = oauthUser.getAttribute("picture");
-        String providerId = oauthUser.getAttribute("sub"); 
+        String providerId = oauthUser.getAttribute("sub");
 
         if (email == null || email.isEmpty()) {
             response.sendRedirect("/signin.html?error=missing_email");
@@ -50,7 +50,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             newUser.setAvatarUrl(avatar);
             newUser.setProvider("google");
             newUser.setProviderId(providerId);
-            newUser.setPasswordHash(null); 
+            newUser.setPasswordHash(null);
             newUser.setStatus("verified");
             newUser.setCreatedAt(LocalDateTime.now());
             newUser.setUpdatedAt(LocalDateTime.now());

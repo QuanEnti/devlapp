@@ -194,4 +194,11 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy user"));
         return taskRepository.findByAssignee_UserId(userId);
     }
+
+    @Override
+    public List<Task> getTasksByProjectAndMember(Long projectId, String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User không tồn tại"));
+        return taskRepository.findByProject_ProjectIdAndAssignee_UserId(projectId, user.getUserId());
+    }
 }

@@ -195,4 +195,11 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.deleteById(projectId);
         activityService.log("PROJECT", projectId, "DELETE", "Hard delete");
     }
+    
+    @Override
+    public Project getById(Long projectId) {
+        return projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+    }
+
 }

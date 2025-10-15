@@ -6,4 +6,5 @@ import lombok.Data;
 public class VerifyOtpRequestDTO {
     private String email;
     private String otp;
+    private String mode;
 }

@@ -30,7 +30,6 @@ public class AdminDashboardRestController {
         stats.put("totalProjects", projectRepo.count());
         stats.put("violatedProjects", projectRepo.countByStatus("violated"));
 
-        // Example chart data: user registrations per month
         List<Object[]> raw = userRepo.countUsersByMonth();
         List<List<Object>> registrations = new ArrayList<>();
         for (Object[] row : raw) {
@@ -41,4 +40,3 @@ public class AdminDashboardRestController {
         return stats;
     }
 }
-

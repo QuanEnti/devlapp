@@ -22,4 +22,5 @@ public interface TaskService {
     List<Task> getTasksByProject(Long projectId);
 
     List<Task> getTasksByAssignee(Long userId);
+    List<Task> getTasksByProjectAndMember(Long projectId, String email);
 }
