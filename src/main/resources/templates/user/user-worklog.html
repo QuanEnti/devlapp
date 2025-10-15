@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>User WorkLog - AProjectO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            display: flex;
+            background-color: #f6f7fb;
+            color: #222;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 230px;
+            background: #fff;
+            box-shadow: 2px 0 6px rgba(0,0,0,0.05);
+            padding: 2rem 1rem;
+        }
+
+        .sidebar h2 { font-size: 18px; font-weight: 600; margin-bottom: 2rem; text-align: center; }
+
+        .menu { list-style: none; }
+        .menu li {
+            padding: 12px 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .menu li:hover, .menu li.active {
+            background-color: #eef2ff; color: #3b5bdb; font-weight: 500;
+        }
+
+        /* Topbar */
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .topbar {
+            height: 60px;
+            background: #fff;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 1.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .search {
+            display: flex; align-items: center; gap: 8px;
+            border: 1px solid #ddd; border-radius: 6px; padding: 6px 10px; width: 300px;
+        }
+        .search input { border:none; outline:none; width:100%; background:none; }
+
+        .profile { display: flex; align-items: center; gap: 10px; font-weight:500; }
+        .profile img { width: 35px; height: 35px; border-radius: 50%; }
+
+        /* Content */
+        .content { display: flex; flex: 1; padding: 1.5rem; gap: 1.5rem; overflow-y: auto; }
+        .worklog {
+            flex: 3; background: #fff; border-radius: 12px; padding: 1.5rem;
+        }
+
+        .page-header { margin-bottom: 1rem; }
+        .page-header h2 { font-size: 20px; margin-bottom: 4px; }
+        .page-header p { color: #777; font-size: 14px; }
+
+        .work-item {
+            margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;
+        }
+        .work-meta { display:flex; justify-content:space-between; font-size:14px; color:#666; margin-bottom:4px; }
+        .work-status {
+            background:#e0f2fe; color:#0369a1; font-weight:500;
+            border-radius:6px; padding:2px 8px; font-size:12px;
+        }
+        .work-item .title { font-weight:500; font-size:15px; }
+
+        /* Right panel */
+        .right-panel { flex:1; display:flex; flex-direction:column; gap:1.5rem; }
+        .card {
+            background:#fff; border-radius:12px; padding:1.2rem;
+            box-shadow:0 2px 6px rgba(0,0,0,0.05);
+        }
+        .card h3 { font-size:16px; margin-bottom:1rem; }
+
+        .circle {
+            width:120px; height:120px; border-radius:50%;
+            background:conic-gradient(#3b82f6 70%, #eee 0);
+            display:flex; align-items:center; justify-content:center;
+            margin:1rem auto; font-weight:600; font-size:18px; color:#333;
+            position:relative;
+        }
+        .stat-detail {
+            text-align:center; font-size:13px; color:#666;
+        }
+
+        .notif-item { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+        .notif-item img { width:35px; height:35px; border-radius:50%; }
+        .notif-text { font-size:14px; }
+        .notif-time { font-size:12px; color:#999; }
+
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <h2>AProjectO</h2>
+    <ul class="menu">
+        <li class="active">📁 Project</li>
+        <li>🧑‍💻 Tasks</li>
+        <li>🕒 Work Logs</li>
+        <li>📈 Performance</li>
+        <li>⚙️ Settings</li>
+    </ul>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <div class="search">🔍 <input type="text" placeholder="Search for anything..." /></div>
+        <div class="profile">
+            <span>Anima Agrawal</span>
+            <img src="https://i.pravatar.cc/35" alt="profile" />
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- Work Logs -->
+        <div class="worklog">
+            <div class="page-header">
+                <h2>My Work Logs</h2>
+                <p>Track your daily work and see your total logged time below.</p>
+            </div>
+
+            <div class="work-item">
+                <div class="work-meta">
+                    <span>05 Nov 2022</span>
+                    <span>⏱ 6h 20m <span class="work-status">In Progress</span></span>
+                </div>
+                <div class="title">Make an Automatic Payment System that enable the design</div>
+            </div>
+
+            <div class="work-item">
+                <div class="work-meta">
+                    <span>04 Nov 2022</span>
+                    <span>⏱ 8h 00m <span class="work-status" style="background:#dcfce7;color:#166534;">Done</span></span>
+                </div>
+                <div class="title">Make an Automatic Payment System that enable the design</div>
+            </div>
+
+            <div class="work-item">
+                <div class="work-meta">
+                    <span>03 Nov 2022</span>
+                    <span>⏱ 7h 45m <span class="work-status">In Progress</span></span>
+                </div>
+                <div class="title">Make an Automatic Payment System that enable the design</div>
+            </div>
+        </div>
+
+        <!-- Right panel -->
+        <div class="right-panel">
+            <div class="card">
+                <h3>Total WorkLog</h3>
+                <div class="circle">5w:2d</div>
+                <p class="stat-detail">≈ 66% of project time completed</p>
+                <p class="stat-detail">Total logged time: 216 hours</p>
+            </div>
+
+            <div class="card">
+                <h3>Notifications</h3>
+                <div class="notif-item">
+                    <img src="https://i.pravatar.cc/36?u=ellie" />
+                    <div>
+                        <div class="notif-text">🟢 Ellie joined team developers</div>
+                        <div class="notif-time">04 Apr, 2021 04:00 PM</div>
+                    </div>
+                </div>
+                <div class="notif-item">
+                    <img src="https://i.pravatar.cc/36?u=jenny" />
+                    <div>
+                        <div class="notif-text">👩‍💼 Jenny joined team HR</div>
+                        <div class="notif-time">04 Apr, 2021 04:00 PM</div>
+                    </div>
+                </div>
+                <div style="text-align:center;margin-top:8px;">
+                    <button style="border:none;background:#3b82f6;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:13px;">
+                        Mark all as read
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
