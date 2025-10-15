@@ -1,0 +1,99 @@
+/* Main container for the two-column layout */
+.edit-container {
+    display: flex;
+    gap: 40px;
+}
+
+/* Left Pane: Displaying current info */
+.display-pane {
+    flex: 1;
+    background-color: #f9f9f9;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.display-pane h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.display-pane .info-group {
+    margin-bottom: 15px;
+}
+
+.display-pane .info-group strong {
+    display: block;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.display-pane .info-group span {
+    color: #111;
+}
+
+/* Right Pane: The form */
+.form-pane {
+    flex: 1.5; /* Make the form pane a bit wider */
+}
+
+.form-pane .form-group {
+    margin-bottom: 20px;
+}
+
+.form-pane label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.form-pane input[type="text"],
+.form-pane input[type="email"],
+.form-pane textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.form-pane textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.form-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+}
+
+.form-actions button {
+    padding: 12px 25px;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.save-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.cancel-btn {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+#success-message {
+    padding: 15px;
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}

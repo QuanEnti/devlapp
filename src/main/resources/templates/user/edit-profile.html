@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Profile</title>
+    <link rel="stylesheet" th:href="@{/static.css/layout.css}">
+    <link rel="stylesheet" th:href="@{/static.css/edit-profile.css}">
+</head>
+<body>
+
+<!-- Main Header -->
+<header class="main-header">
+    <div class="header-logo">
+        <a th:href="@{/}"><img th:src="@{/static.css/image/logo.png}" alt="Project Logo"></a>
+    </div>
+    <div class="header-search">
+        <input type="search" placeholder="Search...">
+    </div>
+    <div class="header-user-actions">
+        <div class="notification-bell">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        </div>
+        <div class="user-avatar-small">
+            <img id="header-user-avatar" src="" alt="User Avatar">
+        </div>
+    </div>
+</header>
+
+<!-- Page Body -->
+<div class="page-body">
+    <!-- Sidebar -->
+    <aside class="main-sidebar">
+        <ul class="sidebar-nav">
+            <li><a href="#">Dashboard</a></li>
+            <li><a href="#">Projects</a></li>
+            <li><a href="#">My Tasks</a></li>
+            <li><a href="#">Teams</a></li>
+            <li><a href="#">Settings</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <h2>Edit User Profile</h2>
+        <div id="error-message" style="display: none; margin-bottom: 20px;"></div>
+        <div id="success-message" style="display: none;"></div>
+
+        <div class="edit-container">
+            <!-- Left Pane: Display & Upload -->
+            <div class="display-pane">
+                <h3>Current Information</h3>
+                <div class="info-group">
+                    <strong>Name:</strong>
+                    <span id="display-name" class="loading">...</span>
+                </div>
+                <div class="info-group">
+                    <strong>Email:</strong>
+                    <span id="display-email" class="loading">...</span>
+                </div>
+                <div class="info-group">
+                    <strong>Bio:</strong>
+                    <span id="display-bio" class="loading">...</span>
+                </div>
+                <div class="info-group">
+                    <strong>Skills:</strong>
+                    <span id="display-skills" class="loading">...</span>
+                </div>
+
+                <!-- Avatar Upload Section -->
+                <div class="info-group" style="margin-top: 30px;">
+                    <strong>Avatar:</strong>
+                    <img id="display-avatar-img" src="" alt="Current Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-top: 10px;">
+                    <input type="file" id="avatar-file-input" accept="image/*" style="display: block; margin-top: 15px;">
+                    <button id="upload-avatar-btn" type="button" class="save-btn" style="margin-top: 10px;">Upload New Avatar</button>
+                </div>
+            </div>
+
+            <!-- Right Pane: Form -->
+            <div class="form-pane">
+                <h3>Edit Details</h3>
+                <form id="edit-profile-form">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="bio">Bio</label>
+                        <textarea id="bio" name="bio"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="skills">Skills</label>
+                        <input type="text" id="skills" name="skills">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="save-btn">Save Text Changes</button>
+                        <a th:href="@{'/users/' + ${userId} + '/profile'}" class="cancel-btn" style="text-decoration: none;">Back to Profile</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+
+    const userId = /*[[${userId}]]*/ 'default';
+    const form = document.getElementById('edit-profile-form');
+    const errorMessageContainer = document.getElementById('error-message');
+    const successMessageContainer = document.getElementById('success-message');
+    const uploadAvatarBtn = document.getElementById('upload-avatar-btn');
+    const avatarFileInput = document.getElementById('avatar-file-input');
+
+    function showSuccess(message) {
+        successMessageContainer.textContent = message;
+        successMessageContainer.style.display = 'block';
+        setTimeout(() => { successMessageContainer.style.display = 'none'; }, 3000);
+    }
+
+    function populateData(userProfile) {
+        const avatarUrl = userProfile.avatarUrl || '/images/default-avatar.png';
+        document.getElementById('header-user-avatar').src = avatarUrl;
+        document.getElementById('display-avatar-img').src = avatarUrl;
+
+        document.getElementById('display-name').textContent = userProfile.name || 'N/A';
+        document.getElementById('display-email').textContent = userProfile.email || 'N/A';
+        document.getElementById('display-bio').textContent = userProfile.bio || 'N/A';
+        document.getElementById('display-skills').textContent = userProfile.skills || 'N/A';
+
+        form.elements['name'].value = userProfile.name || '';
+        form.elements['email'].value = userProfile.email || '';
+        form.elements['bio'].value = userProfile.bio || '';
+        form.elements['skills'].value = userProfile.skills || '';
+        form.elements['avatarUrl'].value = avatarUrl;
+    }
+
+    async function fetchAndPopulate(id) {
+        try {
+            const response = await fetch(`/api/users/${id}/profile`);
+            if (!response.ok) throw new Error('Could not fetch user data.');
+            const userProfile = await response.json();
+            populateData(userProfile);
+        } catch (error) {
+            errorMessageContainer.textContent = error.message;
+            errorMessageContainer.style.display = 'block';
+        }
+    }
+
+    // Handle Text Info Update
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const patchData = { name: form.elements.name.value, email: form.elements.email.value, bio: form.elements.bio.value, skills: form.elements.skills.value };
+
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patchData),
+            });
+            if (!response.ok) throw new Error('Failed to update profile text.');
+            const updatedProfile = await response.json();
+            populateData(updatedProfile);
+            showSuccess('Profile details updated successfully!');
+        } catch (error) {
+            errorMessageContainer.textContent = error.message;
+            errorMessageContainer.style.display = 'block';
+        }
+    });
+
+    // Handle Avatar Upload
+    uploadAvatarBtn.addEventListener('click', async () => {
+        const file = avatarFileInput.files[0];
+        if (!file) {
+            errorMessageContainer.textContent = 'Please select an image file first.';
+            errorMessageContainer.style.display = 'block';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(`/api/users/${userId}/avatar`, {
+                method: 'POST',
+                body: formData, // No Content-Type header needed, browser sets it for FormData
+            });
+
+            if (!response.ok) throw new Error('Failed to upload avatar.');
+
+            const updatedProfile = await response.json();
+            populateData(updatedProfile); // Update all fields with the new avatar URL
+            avatarFileInput.value = ''; // Clear the file input
+            showSuccess('Avatar uploaded successfully!');
+
+        } catch (error) {
+            errorMessageContainer.textContent = error.message;
+            errorMessageContainer.style.display = 'block';
+        }
+    });
+
+    // Initial call
+    window.addEventListener('DOMContentLoaded', () => {
+        if (userId && userId !== 'default') {
+            fetchAndPopulate(userId);
+        } else {
+            errorMessageContainer.textContent = 'Error: User ID not provided.';
+            errorMessageContainer.style.display = 'block';
+        }
+    });
+
+    /*]]>*/
+</script>
+
+</body>
+</html>

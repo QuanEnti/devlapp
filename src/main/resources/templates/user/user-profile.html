@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <link rel="stylesheet" th:href="@{/static.css/layout.css?v=1.1}">
+    <link rel="stylesheet" th:href="@{/static.css/profile.css?v=1.1}">
+</head>
+<body>
+
+<header class="main-header">
+    <div class="header-logo">
+        <a th:href="@{/}"><img th:src="@{/static.css/image/logo.png}" alt="Project Logo"></a>
+    </div>
+    <div class="header-search">
+        <input type="search" placeholder="Search...">
+    </div>
+    <div class="header-user-actions">
+        <div class="notification-bell">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        </div>
+        <div class="user-avatar-small">
+            <img id="header-user-avatar" src="" alt="User Avatar">
+        </div>
+    </div>
+</header>
+
+<div class="page-body">
+    <aside class="main-sidebar">
+        <ul class="sidebar-nav">
+            <li><a href="#">Dashboard</a></li>
+            <li><a href="#">Projects</a></li>
+            <li><a href="#">My Tasks</a></li>
+            <li><a href="#">Teams</a></li>
+            <li><a href="#">Settings</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <div id="error-message" style="display: none;"></div>
+
+        <div id="user-data" class="profile-content">
+            <div class="profile-info-left">
+
+                <div class="profile-avatar-large">
+                    <img id="profile-avatar-large-img" src="" alt="User Avatar">
+                </div>
+                <h1 id="user-name" class="loading">Loading...</h1>
+
+                <a id="manage-account-link" href="#" class="manage-account-btn-outline">Manage your account</a>
+
+                <div class="profile-details-card">
+
+                    <div class="detail-section">
+                        <h3 class="detail-header">Bio</h3>
+                        <ul class="detail-list">
+                            <li class="detail-item">
+                                <span class="detail-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+                                </span>
+                                <span id="user-bio">No bio provided.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3 class="detail-header">Contact</h3>
+                        <ul class="detail-list">
+                            <li class="detail-item">
+                                <span class="detail-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>
+                                </span>
+                                <span id="user-email" class="loading">...</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3 class="detail-header">Skills</h3>
+                        <ul class="detail-list">
+                            <li class="detail-item">
+                                 <span class="detail-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l1.4-1.4 3.2 3.2 7.2-7.2 1.4 1.4-8.6 8.6z"/></svg>
+                                 </span>
+                                <span id="user-skills" class="loading">...</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-activities-right">
+                <div class="section">
+                    <h2>Projects Work In</h2>
+                    <ul id="project-list" class="project-list"><li class="loading">Loading projects...</li></ul>
+                </div>
+                <div class="section">
+                    <h2>Assigned Tasks</h2>
+                    <ul id="task-list" class="task-list"><li class="loading">Loading tasks...</li></ul>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    /* Phiên bản JavaScript đã được tối ưu và bảo mật */
+    /*<![CDATA[*/
+
+    const userId = /*[[${userId}]]*/ 'default';
+    const errorMessageContainer = document.getElementById('error-message');
+    const userDataContainer = document.getElementById('user-data');
+
+    function displayError(message) {
+        userDataContainer.style.display = 'none';
+        errorMessageContainer.textContent = message;
+        errorMessageContainer.style.display = 'block';
+    }
+
+    function updateTextContent(elementId, text, fallback = 'N/A') {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.classList.remove('loading');
+            element.textContent = text || fallback;
+        }
+    }
+
+    function populateList(elementId, items, renderItem, noItemsMessage) {
+        const listElement = document.getElementById(elementId);
+        listElement.innerHTML = '';
+        if (items && items.length > 0) {
+            items.forEach(item => {
+                const li = renderItem(item);
+                listElement.appendChild(li);
+            });
+        } else {
+            listElement.innerHTML = `<li>${noItemsMessage}</li>`;
+        }
+    }
+
+    async function fetchUserProfile(id) {
+        try {
+            const response = await fetch(`/api/users/${id}/profile`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                const errorMessage = errorData?.message || `User not found (status: ${response.status})`;
+                throw new Error(errorMessage);
+            }
+
+            const userProfile = await response.json();
+
+            const avatarUrl = userProfile.avatarUrl || '/css/image/logo.png';
+            document.getElementById('header-user-avatar').src = avatarUrl;
+            document.getElementById('profile-avatar-large-img').src = avatarUrl;
+
+            updateTextContent('user-name', userProfile.name);
+            updateTextContent('user-bio', userProfile.bio, 'No bio provided.');
+            updateTextContent('user-email', userProfile.email);
+            updateTextContent('user-skills', userProfile.skills, 'No skills listed.');
+
+            populateList('project-list', userProfile.assignedProjects, (project) => {
+                const li = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = `/projects/${project.projectId}`;
+                link.textContent = project.projectName;
+                const strong = document.createElement('strong');
+                strong.appendChild(link);
+                li.appendChild(strong);
+                li.append(` (Role: ${project.userRoleInProject})`);
+                return li;
+            }, 'No projects assigned.');
+
+            populateList('task-list', userProfile.assignedTasks, (task) => {
+                const li = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = `/projects/${task.projectId}/tasks/${task.taskId}`;
+                link.textContent = task.taskTitle;
+                const strong = document.createElement('strong');
+                strong.appendChild(link);
+                const em = document.createElement('em');
+                em.textContent = task.projectName;
+                li.appendChild(strong);
+                li.append(' in project ');
+                li.appendChild(em);
+                li.append(` (Status: ${task.status})`);
+                return li;
+            }, 'No tasks assigned.');
+
+        } catch (error) {
+            displayError(`Error: Could not load user profile. ${error.message}`);
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        if (userId && userId !== 'default') {
+            document.getElementById('manage-account-link').href = `/users/${userId}/edit`;
+            fetchUserProfile(userId);
+        } else {
+            displayError('Error: User ID not provided.');
+            document.getElementById('manage-account-link').style.display = 'none';
+        }
+    });
+
+    /*]]>*/
+</script>
+
+</body>
+</html>
