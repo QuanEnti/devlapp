@@ -1,43 +1,33 @@
-# ====== Java / Spring Boot build ======
+HELP.md
 target/
-build/
-out/
-*.class
-*.jar
-*.war
-*.ear
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-# ====== IDEs ======
-.idea/
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
 *.iml
 *.ipr
-*.iws
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
 .vscode/
-nbproject/
-dist/
-nbbuild/
-
-# ====== Logs & temp ======
-*.log
-*.tmp
-*.bak
-*.pid
-
-# ====== Sensitive configs ======
-application.properties
-application.yml
-.env
-*.key
-*.pem
-*.crt
-*.p12
-*.jks
-
-# ====== OS & misc ======
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# ====== Node / Frontend ======
-node_modules/
-dist/
