@@ -28,7 +28,9 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/api/auth/**", "/api/users/**", "/api/admin/**")
+                                                .requestMatchers("/api/auth/**", "/api/users/**", "/api/admin/**",
+                                                                "api/pm/**",
+                                                                "user/**")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -73,7 +75,6 @@ public class SecurityConfig {
                                         res.setStatus(HttpServletResponse.SC_FOUND);
                                         res.setHeader("Location", "/view/signin");
                                 }))
-
 
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")

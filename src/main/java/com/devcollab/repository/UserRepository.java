@@ -16,7 +16,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = """
     SELECT FORMAT(created_at, 'yyyy-MM') as month, COUNT(*) as count
-    FROM User
+    FROM dbo.[User]
     GROUP BY FORMAT(created_at, 'yyyy-MM')
     ORDER BY month
     """, nativeQuery = true)
