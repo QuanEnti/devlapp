@@ -154,6 +154,7 @@
         } 
         else if (data.status === 'VERIFY_REQUIRED') {
           msg.style.color = 'orange';
+
           msg.textContent = 'Vui lòng xác minh email của bạn.';
           localStorage.setItem('verify_mode', 'login');
           setTimeout(() => window.location.href = '/view/verify-otp', 800);

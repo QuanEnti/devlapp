@@ -74,6 +74,7 @@ public class SecurityConfig {
                                         res.setHeader("Location", "/view/signin");
                                 }))
 
+
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/view/signin?logout")

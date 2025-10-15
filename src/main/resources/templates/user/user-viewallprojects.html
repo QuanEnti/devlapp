@@ -1,119 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>User View All Projects - Sidebar Updated</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Style cho nút '+' trong danh sách thành viên */
-        .member-plus {
-            background-color: #f3f4f6; /* bg-gray-100 */
-            border-radius: 9999px;
-            width: 28px; /* Kích thước icon thành viên */
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem; /* text-xs */
-            font-weight: 600; /* font-semibold */
-            margin-left: -0.5rem; /* Điều chỉnh vị trí chồng lên */
-            border: 1px solid white;
-        }
+      /* Sidebar full height - KẾ THỪA TỪ FILE GỐC */
+      .sidebar {
+        /* Đã điều chỉnh cho header 4rem = h-16 */
+        height: calc(100vh - 4rem);
+        top: 4rem;
+        transition: all 0.3s ease;
+      }
+
+      /* Avatar style (Giữ lại) - KẾ THỪA TỪ FILE GỐC */
+      .avatar {
+        width: 28px;
+        height: 28px;
+        object-fit: cover;
+        border: 2px solid white;
+        box-shadow: 0 0 0 1px #e5e7eb;
+      }
+
+      /* Sidebar active styles - KẾ THỪA TỪ FILE GỐC */
+      .sidebar-item-active {
+        background-color: #eff6ff; /* blue-50 */
+        color: #2563eb; /* blue-600 */
+        font-weight: 600;
+        border-right: 4px solid #2563eb;
+      }
+      .sidebar-item {
+        color: #4b5563; /* gray-600 */
+        transition: background-color 0.15s;
+        border-right: 4px solid transparent;
+      }
+      .sidebar-item:hover {
+        background-color: #f9fafb; /* gray-50 */
+        color: #1f2937; /* gray-900 */
+      }
+
+      /* Style cho nút '+' trong danh sách thành viên */
+      .member-plus {
+        background-color: #f3f4f6; /* bg-gray-100 */
+        border-radius: 9999px;
+        width: 28px; /* Kích thước icon thành viên */
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 600; /* font-semibold */
+        margin-left: -0.5rem; /* Điều chỉnh vị trí chồng lên */
+        border: 1px solid white;
+      }
     </style>
-</head>
-<body class="bg-gray-100 font-sans">
+  </head>
+  <body class="bg-gray-50 font-sans">
+    <header
+      class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
+    >
+      <div class="flex items-center space-x-3 w-64 flex-shrink-0">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png"
+          alt="DevCollab Logo"
+          class="w-9 h-9 rounded-lg shadow-sm"
+        />
+        <span class="text-2xl font-extrabold text-blue-700 tracking-wider"
+          >DevCollab</span
+        >
+      </div>
 
-    <header class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-10 border-b border-gray-200">
-        <div class="w-64 flex-shrink-0 text-xl font-bold text-blue-700 px-2">AProjectO</div>
-        
-        <div class="flex-grow flex justify-center mx-4">
-            <div class="relative w-full max-w-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input type="text" placeholder="Search for anything..." class="border border-gray-200 rounded-lg pl-10 pr-4 py-2 w-full focus:outline-none focus:border-blue-500 bg-gray-50">
-            </div>
+      <div class="flex-grow flex justify-center mx-10">
+        <div class="relative w-full max-w-xl">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search for anything..."
+            class="border border-gray-200 rounded-full pl-12 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm shadow-sm"
+            style="height: 40px"
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-6 flex-shrink-0">
+        <div
+          class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
         </div>
 
-        <div class="flex items-center space-x-6 flex-shrink-0">
-            <div class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-            </div>
-
-            <div class="flex items-center space-x-3">
-                <div class="text-right leading-tight">
-                    <span class="block text-sm font-semibold text-gray-800">Anima Agrawal</span>
-                    <span class="block text-xs text-gray-500">U.P, India</span>
-                </div>
-                <img src="https://i.pravatar.cc/40?img=15" class="rounded-full w-10 h-10 border-2 border-white shadow" alt="User Avatar">
-            </div>
+        <div
+          class="flex items-center space-x-3 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition"
+        >
+          <div class="text-right leading-tight">
+            <span class="block text-sm font-semibold text-gray-800"
+              >Anima Agrawal</span
+            >
+            <span class="block text-xs text-gray-500">U.P, India</span>
+          </div>
+          <img
+            src="https://i.pravatar.cc/40?img=15"
+            class="rounded-full w-10 h-10 border-2 border-white shadow-lg"
+            alt="User Avatar"
+          />
         </div>
+      </div>
     </header>
+    <div class="flex min-h-[calc(100vh-4rem)]">
+      <aside
+        class="w-64 bg-white shadow-xl flex-shrink-0 sticky left-0 sidebar border-r border-gray-200 z-10"
+      >
+        <nav class="mt-2">
+          <ul>
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+              <a href="/user/view/dashboard" class="flex items-center w-full">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 mr-3"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
+                  />
+                </svg>
+                Home
+              </a>
+            </li>
 
-    <div class="flex min-h-[calc(100vh-68px)]">
-        
-        <aside class="w-64 bg-white shadow-lg flex-shrink-0">
-            <nav class="mt-2">
-                <ul>
-                    <li class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                        Create Project
-                    </li>
-                    
-                    <li class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.707-8.707a1 1 0 00-1.414 1.414L9 12.414V5a1 1 0 10-2 0v5.414L3.707 9.707a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L8 12.586V7a1 1 0 10-2 0v5.586l.293-.293z" clip-rule="evenodd" /></svg>
-                        View Invitations
-                    </li>
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+              <a
+                href="/user/view/create-project"
+                class="flex items-center w-full"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 mr-3"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                Create Project
+              </a>
+            </li>
 
-                    <li class="flex items-center px-6 py-3 bg-blue-50 text-blue-600 font-semibold border-r-4 border-blue-600 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM3 8a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM5 12a1 1 0 100 2h10a1 1 0 100-2H5zM8 16a1 1 0 100 2h4a1 1 0 100-2H8z" /></svg>
-                        View All Project
-                    </li>
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+              <a
+                href="/user/view/view-invitation"
+                class="flex items-center w-full"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 mr-3"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.707-8.707a1 1 0 00-1.414 1.414L9 12.414V5a1 1 0 10-2 0v5.414L3.707 9.707a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L8 12.586V7a1 1 0 10-2 0v5.586l.293-.293z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                View Invitations
+              </a>
+            </li>
 
-                    <li class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5V7h2v2zm8 0h-2V7h2v2z" clip-rule="evenodd" /></svg>
-                        Chat
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+            <li
+              class="flex items-center px-6 py-3 cursor-pointer sidebar-item-active"
+            >
+              <a
+                href="/user/view/view-all-projects"
+                class="flex items-center w-full"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 mr-3"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM3 8a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM5 12a1 1 0 100 2h10a1 1 0 100-2H5zM8 16a1 1 0 100 2h4a1 1 0 100-2H8z"
+                  />
+                </svg>
+                View All Project
+              </a>
+            </li>
 
-        <main class="flex-1 p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">Projects</h1>
-                <button class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-md hover:bg-blue-700 transition flex items-center space-x-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                    <span>Create</span>
-                </button>
-            </div>
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+              <a href="chat.html" class="flex items-center w-full">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 mr-3"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5V7h2v2zm8 0h-2V7h2v2z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                Chat
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </aside>
 
-            <div class="grid grid-cols-3 gap-6">
-                <script>
-                    function createProjectCard() {
-                        // Trạng thái Offtrack và màu đỏ nhạt
-                        const statusText = 'Offtrack';
-                        const statusClass = 'bg-red-100 text-red-700'; 
-                        
-                        // Icon thành viên
-                        const members = [1, 2, 3].map(i => `<img src="https://i.pravatar.cc/28?img=${Math.floor(Math.random() * 70) + i}" class="rounded-full border border-white w-7 h-7 -ml-2 first:ml-0" alt="Member Avatar">`).join('');
-                        
-                        return `
-                            <div class="bg-white p-5 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h2 class="text-lg font-bold">Adoddle</h2>
-                                    <span class="${statusClass} text-xs font-semibold px-3 py-1 rounded-full">${statusText}</span>
+      <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-3xl font-bold text-gray-800">Projects</h1>
+          <a href="/user/view/create-project" class="inline-block">
+            <button
+              class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold text-base shadow-md hover:bg-blue-700 transition flex items-center space-x-1"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span>Create</span>
+            </button>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <script>
+            function createProjectCard() {
+              // Trạng thái Offtrack và màu đỏ nhạt
+              const statusText = "Offtrack";
+              const statusClass = "bg-red-100 text-red-700";
+
+              // Icon thành viên
+              const members = [1, 2, 3]
+                .map(
+                  (i) =>
+                    `<img src="https://i.pravatar.cc/28?img=${
+                      Math.floor(Math.random() * 70) + i
+                    }" class="rounded-full border-2 border-white w-7 h-7 -ml-2 first:ml-0 shadow-sm" alt="Member Avatar">`
+                )
+                .join("");
+
+              return `
+                            <div class="bg-white p-5 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition transform hover:-translate-y-1">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h2 class="text-lg font-bold text-gray-800">Adoddle</h2>
+                                    <span class="${statusClass} text-xs font-semibold px-3 py-1 rounded-full flex-shrink-0">${statusText}</span>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                                <p class="text-gray-600 text-sm mb-4 leading-snug line-clamp-3" style="min-height: 4.5rem;">
                                     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
                                 </p>
-                                <p class="text-red-500 text-sm font-semibold mb-3">05 APRIL 2023</p>
+                                <p class="text-red-600 text-sm font-semibold mb-3 border-t pt-3 border-gray-100">Deadline: 05 APRIL 2023</p>
 
                                 <div class="flex justify-between items-center pt-3 border-t border-gray-100">
                                     <div class="flex items-center">
                                         ${members}
-                                        <span class="member-plus text-xs font-semibold text-gray-500 border-white -ml-2">+2</span>
+                                        <span class="member-plus text-xs font-semibold text-gray-500 -ml-2 border-2 border-white shadow-sm">+2</span>
                                     </div>
                                     <p class="text-gray-500 text-sm">14 issues</p>
                                 </div>
@@ -125,26 +306,45 @@
                                 </div>
                             </div>
                         `;
-                    }
-                    // Tạo 6 thẻ
-                    document.write(createProjectCard());
-                    document.write(createProjectCard());
-                    document.write(createProjectCard());
-                    document.write(createProjectCard());
-                    document.write(createProjectCard());
-                    document.write(createProjectCard());
-                </script>
-            </div>
+            }
+            // Tạo 6 thẻ
+            document.write(createProjectCard());
+            document.write(createProjectCard());
+            document.write(createProjectCard());
+            document.write(createProjectCard());
+            document.write(createProjectCard());
+            document.write(createProjectCard());
+          </script>
+        </div>
 
-            <div class="flex justify-center mt-8 space-x-2">
-                <button class="px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg text-gray-500 bg-white hover:bg-gray-50">Previous</button>
-                <button class="px-4 py-2 text-sm font-semibold border border-blue-600 rounded-lg bg-blue-600 text-white shadow-md">1</button>
-                <button class="px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50">2</button>
-                <button class="px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50">3</button>
-                <button class="px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg text-gray-500 bg-white hover:bg-gray-50">Next</button>
-            </div>
-
-        </main>
+        <div class="flex justify-center mt-8 space-x-2">
+          <button
+            class="px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg text-gray-500 bg-white hover:bg-gray-100 transition"
+          >
+            Previous
+          </button>
+          <button
+            class="px-4 py-2 text-sm font-semibold border border-blue-600 rounded-lg bg-blue-600 text-white shadow-md"
+          >
+            1
+          </button>
+          <button
+            class="px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-100 transition"
+          >
+            2
+          </button>
+          <button
+            class="px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-100 transition"
+          >
+            3
+          </button>
+          <button
+            class="px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg text-gray-500 bg-white hover:bg-gray-100 transition"
+          >
+            Next
+          </button>
+        </div>
+      </main>
     </div>
-</body>
+  </body>
 </html>
