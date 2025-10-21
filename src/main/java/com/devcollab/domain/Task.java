@@ -1,12 +1,19 @@
 package com.devcollab.domain;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name = "Task")
+@Getter
+@Setter
 public class Task {
 
     @Id
@@ -195,4 +202,16 @@ public class Task {
     public void setLabels(Set<Label> labels) {
         this.labels = labels;
     }
+
+    @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("uploadedAt DESC")
+    private List<Attachment> attachments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC") // Comment cũ nhất ở trên
+    private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex ASC")
+    private List<CheckList> checklists = new ArrayList<>();
 }

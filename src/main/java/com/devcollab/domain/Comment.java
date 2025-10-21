@@ -32,6 +32,12 @@ public class Comment {
     public Comment() {
     }
 
+    public Comment(String content, Task task, User user){
+        this.content = content;
+        this.task = task;
+        this.user = user;
+    }
+
     public Long getCommentId() {
         return commentId;
     }

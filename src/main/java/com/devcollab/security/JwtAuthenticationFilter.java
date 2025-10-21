@@ -7,7 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.context.annotation.Lazy;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,16 +17,23 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
 
     private final UserServiceImpl userService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, @Lazy UserServiceImpl userService) {
-        this.jwtService = jwtService;
-        this.userService = userService;
-    }
+    private final JwtTokenProvider jwtTokenProvider;
+
+//    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, JwtService jwtService, UserServiceImpl userService, JwtTokenProvider jwtTokenProvider1) {
+//        this.jwtService = jwtService;
+//        this.userService = userService;
+//        this.jwtTokenProvider = jwtTokenProvider1;
+//    }
+//
+//    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
+//    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -56,6 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String jwt = authHeader.substring(7);
         String email = jwtService.extractEmail(jwt);
+        Long userId = jwtService.extractUserId(jwt);
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtService.isValid(jwt)) {
@@ -67,6 +75,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
+
+                // ✅ Gắn userId vào request (phục vụ cho /me/profile)
+
+                if (userId != null) {
+                    request.setAttribute("userId", userId);
+                }
+
                 HttpSession session = request.getSession(true);
                 if (session.getAttribute("userEmail") == null) {
                     session.setAttribute("userEmail", email);
@@ -74,6 +89,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         }
+
+
+
 
         filterChain.doFilter(request, response);
     }

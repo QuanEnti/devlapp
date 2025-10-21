@@ -1,6 +1,7 @@
 package com.devcollab.config;
 
 import com.devcollab.security.JwtAuthenticationFilter;
+import com.devcollab.security.JwtTokenProvider;
 import com.devcollab.security.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -69,6 +70,8 @@ public class SecurityConfig {
 
                 return http.build();
         }
+
+
 
       
 }

@@ -1,9 +1,12 @@
 package com.devcollab.domain;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "CheckList")
+
 public class CheckList {
 
     @Id

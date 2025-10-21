@@ -1,12 +1,15 @@
 package com.devcollab.service.system;
 
+import com.devcollab.security.JwtTokenProvider;
 import io.jsonwebtoken.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
     @Value("${app.jwt.secret}")
@@ -43,5 +46,11 @@ public class JwtService {
         } catch (JwtException e) {
             return false;
         }
+    }
+
+    private final JwtTokenProvider jwtTokenProvider;
+
+    public Long extractUserId(String token) {
+        return jwtTokenProvider.getUserIdFromToken(token);
     }
 }
