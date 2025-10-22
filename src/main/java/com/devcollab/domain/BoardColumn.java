@@ -1,10 +1,15 @@
 package com.devcollab.domain;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.*;
 
 @Entity
 @Table(name = "BoardColumn")
+@Getter
+@Setter
 public class BoardColumn {
 
     @Id
