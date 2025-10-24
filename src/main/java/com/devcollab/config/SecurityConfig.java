@@ -15,7 +15,7 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 
 @Configuration
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class    SecurityConfig {
 
         private final JwtAuthenticationFilter jwtFilter;
         private final OAuth2SuccessHandler oAuth2SuccessHandler;
@@ -29,7 +29,7 @@ public class SecurityConfig {
                                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/auth/**", "/api/users/**", "/api/admin/**",
-                                                                "api/pm/**",
+                                                                "/api/pm/**","/api/ai/**",
                                                                 "user/**")
                                                 .permitAll()
                                                 .anyRequest().authenticated())

@@ -22,6 +22,9 @@ public class Notification {
     @Column(name = "reference_id")
     private Long referenceId;
 
+    @Column(name = "content", length = 1000)
+    private String content;
+
     @Column(nullable = false, length = 16)
     private String status = "unread";
     
@@ -29,6 +32,14 @@ public class Notification {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Notification() {
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
     }
 
     public Long getNotificationId() {

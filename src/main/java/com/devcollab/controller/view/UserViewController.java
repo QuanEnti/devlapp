@@ -31,4 +31,13 @@ public class UserViewController {
     public String userViewInvitationPage() {
         return "user/user-viewinvitation"; // => templates/user/user-viewinvitation.html
     }
+    @GetMapping("/ai-chat")
+    public String aiChatPage() {
+        return "user/ai-chat";
+    }
+    @GetMapping("/ai-image")
+    public String aiImagePage() {
+        return "user/ai-image";
+    }
+
 }

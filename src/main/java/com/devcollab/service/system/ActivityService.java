@@ -1,5 +1,9 @@
 package com.devcollab.service.system;
 
+import com.devcollab.domain.Activity;
+
+import java.util.List;
+
 public interface ActivityService {
 
     /**
@@ -14,5 +18,7 @@ public interface ActivityService {
     void log(String entityType, Long entityId, String action, String data);
     
     void logWithActor(Long actorId, String entityType, Long entityId, String action, String data);
+
+    List<Activity> getAllActivities();
 
 }

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Reported Users - DevCollab Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        .sidebar {
+            background-color: #1e293b;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .sidebar h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            margin-bottom: 1rem;
+        }
+        .sidebar ul li a {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .sidebar ul li a.active,
+        .sidebar ul li a:hover {
+            color: #fff;
+            font-weight: 600;
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+        }
+        .card h2 {
+            margin-top: 10px;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <aside class="col-2 bg-dark text-white vh-100 p-3">
+            <h3>DevCollab</h3>
+            <ul class="nav flex-column mt-4">
+                <li class="nav-item"><a class="nav-link text-white" href="/admin/dashboard">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link text-white active" href="/admin/manage">User Management</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="/admin/user-reports">Reported User</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="/admin/project-reports">Reported Project</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="/admin/user-logs">System Log</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="#">Settings</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="col-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2>Reported Users</h2>
+                    <span class="text-muted">Manage reports and take actions on violations</span>
+                </div>
+
+                <!-- Sort options -->
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label m-0">Sort by:</label>
+                    <select id="sortOption" class="form-select" style="width: 180px;" onchange="applySort()">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="status_pending">Status: Pending</option>
+                        <option value="status_reviewed">Status: Reviewed</option>
+                        <option value="reporter">Reporter Name (A–Z)</option>
+                        <option value="reported">Reported Name (A–Z)</option>
+                    </select>
+                </div>
+            </div>
+
+
+            <div class="table-responsive mt-3">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Reporter</th>
+                        <th>Reported</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Action Taken</th>
+                        <th>Created At</th>
+                        <th>Reviewed At</th>
+                        <th>Update</th>
+                    </tr>
+                    </thead>
+                    <tbody id="reportTable"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- 📦 MODAL -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="reportModalLabel">Report Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <tbody>
+                    <tr><th>ID</th><td id="modalId"></td></tr>
+                    <tr><th>Reporter</th><td id="modalReporter"></td></tr>
+                    <tr><th>Reported</th><td id="modalReported"></td></tr>
+                    <tr><th>Reason</th><td id="modalReason"></td></tr>
+                    <tr><th>Details</th><td id="modalDetails"></td></tr>
+                    <tr><th>Proof</th><td id="modalProof"></td></tr>
+                    <tr><th>Created At</th><td id="modalCreatedAt"></td></tr>
+                    <tr><th>Reviewed At</th><td id="modalReviewedAt"></td></tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-3">
+                    <label class="form-label fw-semibold">Status</label>
+                    <p id="modalStatusView" class="badge fs-6 px-3 py-2 bg-secondary">Loading...</p>
+                </div>
+
+                <div class="mt-3">
+                    <label>Action Taken</label>
+                    <select id="actionTaken" class="form-select" onchange="handleActionChange()">
+                        <option value="">-- Select Action --</option>
+                        <option value="Warning">Warning</option>
+                        <option value="Ban">Ban User</option>
+                    </select>
+                </div>
+
+                <!-- Text area appears only for Warning -->
+                <div class="mt-3" id="warningCommentBox" style="display:none;">
+                    <label>Warning Message</label>
+                    <textarea id="warningMessage" class="form-control" placeholder="Write a warning message to the user..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveChangesBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script -->
+<script>
+    let reportsCache = [];
+    let selectedReportId = null;
+    let bootstrapModal;
+
+    async function loadReports() {
+        const res = await fetch('/api/admin/reports');
+        const data = await res.json();
+        reportsCache = data;
+        renderReports(data);
+
+        const tbody = document.getElementById('reportTable');
+        tbody.innerHTML = data.map(r => `
+        <tr>
+            <td>${r.id}</td>
+            <td>${r.reporterName || '—'}</td>
+            <td>${r.reportedName || '—'}</td>
+            <td>${r.reason}</td>
+            <td>
+                <span class="badge ${r.status === 'pending' ? 'bg-warning' :
+            r.status === 'reviewed' ? 'bg-info' : 'bg-success'}">
+                    ${r.status}
+                </span>
+            </td>
+            <td>${r.actionTaken || ''}</td>
+            <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
+            <td>${r.reviewedAt ? new Date(r.reviewedAt).toLocaleString() : '<span class="text-muted">—</span>'}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.id})">Update</button>
+            </td>
+        </tr>
+    `).join('');
+    }
+    function applySort() {
+        const sortBy = document.getElementById("sortOption").value;
+        let sorted = [...reportsCache]; // copy current reports
+
+        switch (sortBy) {
+            case "newest":
+                sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                break;
+            case "oldest":
+                sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                break;
+            case "status_pending":
+                sorted.sort((a, b) => (a.status === 'pending' ? -1 : 1));
+                break;
+            case "status_reviewed":
+                sorted.sort((a, b) => (a.status === 'reviewed' ? -1 : 1));
+                break;
+            case "reporter":
+                sorted.sort((a, b) => (a.reporterName || '').localeCompare(b.reporterName || ''));
+                break;
+            case "reported":
+                sorted.sort((a, b) => (a.reportedName || '').localeCompare(b.reportedName || ''));
+                break;
+        }
+
+        renderReports(sorted);
+    }
+
+    function renderReports(data) {
+        const tbody = document.getElementById('reportTable');
+        tbody.innerHTML = data.map(r => `
+        <tr>
+            <td>${r.id}</td>
+            <td>${r.reporterName || '—'}</td>
+            <td>${r.reportedName || '—'}</td>
+            <td>${r.reason}</td>
+            <td>
+                <span class="badge ${r.status === 'pending' ? 'bg-warning' :
+            r.status === 'reviewed' ? 'bg-info' : 'bg-success'}">
+                    ${r.status}
+                </span>
+            </td>
+            <td>${r.actionTaken || ''}</td>
+            <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.id})">Update</button>
+            </td>
+        </tr>
+    `).join('');
+    }
+
+
+    function openModal(id) {
+        const report = reportsCache.find(r => r.id === id);
+        if (!report) return;
+
+        selectedReportId = id;
+        document.getElementById("modalId").innerText = report.id;
+        document.getElementById("modalReporter").innerText = report.reporterName || '—';
+        document.getElementById("modalReported").innerText = report.reportedName || '—';
+        document.getElementById("modalReason").innerText = report.reason;
+        document.getElementById("modalDetails").innerText = report.details || '—';
+        document.getElementById("modalProof").innerHTML = report.proofUrl
+            ? `<a href="${report.proofUrl}" target="_blank">View Proof</a>`
+            : '<span class="text-muted">No proof submitted</span>';
+        document.getElementById("modalCreatedAt").innerText = report.createdAt
+            ? new Date(report.createdAt).toLocaleString()
+            : '';
+        document.getElementById("modalReviewedAt").innerText = report.reviewedAt
+            ? new Date(report.reviewedAt).toLocaleString()
+            : '—';
+
+        const statusView = document.getElementById("modalStatusView");
+        statusView.textContent = report.status || "Unknown";
+
+        statusView.className = `badge fs-6 px-3 py-2 ${
+            report.status === 'pending' ? 'bg-warning text-dark' :
+                report.status === 'reviewed' ? 'bg-info text-dark' :
+                    report.status === 'resolved' ? 'bg-success' :
+                        'bg-secondary'
+        }`;
+        document.getElementById("actionTaken").value = '';
+
+        bootstrapModal = new bootstrap.Modal(document.getElementById('reportModal'));
+        bootstrapModal.show();
+    }
+
+    document.getElementById("saveChangesBtn").addEventListener("click", async () => {
+        const actionTaken = document.getElementById("actionTaken").value;
+        const warningMessage = document.getElementById("warningMessage").value.trim();
+
+        // 🟡 Case 1: Admin chooses to Ban
+        if (actionTaken === "Ban") {
+            if (!confirm("⚠️ Are you sure you want to ban this user? This will change their status to 'banned'.")) {
+                return;
+            }
+            const res = await fetch(`/api/admin/reports/${selectedReportId}/ban`, { method: "PUT" });
+            if (res.ok) {
+                alert("✅ User has been banned.");
+                bootstrapModal.hide();
+                await loadReports();
+            } else {
+                alert("❌ Failed to ban user.");
+            }
+            return;
+        }
+
+        // 🟢 Case 2: Admin chooses Warning
+        if (actionTaken === "Warning") {
+            if (!warningMessage) {
+                alert("Please enter a warning message.");
+                return;
+            }
+
+            const res = await fetch(`/api/admin/reports/${selectedReportId}/warn`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: warningMessage, status })
+            });
+            if (res.ok) {
+                alert("✅ Warning sent to the user.");
+                bootstrapModal.hide();
+                await loadReports();
+            } else {
+                alert("❌ Failed to send warning.");
+            }
+            return;
+        }
+
+        // 🟣 Otherwise normal update (status only)
+        const res = await fetch(`/api/admin/reports/${selectedReportId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status, actionTaken })
+        });
+
+        if (res.ok) {
+            bootstrapModal.hide();
+            await loadReports();
+            alert("✅ Report updated successfully!");
+        } else {
+            alert("❌ Failed to update report");
+        }
+    });
+
+
+    function handleActionChange() {
+        const action = document.getElementById("actionTaken").value;
+        const warningBox = document.getElementById("warningCommentBox");
+
+        if (action === "Warning") {
+            warningBox.style.display = "block";
+        } else {
+            warningBox.style.display = "none";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadReports);
+</script>
+</body>
+</html>

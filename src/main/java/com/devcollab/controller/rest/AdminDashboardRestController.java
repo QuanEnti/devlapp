@@ -1,5 +1,6 @@
 package com.devcollab.controller.rest;
 
+import com.devcollab.repository.ProjectReportRepository;
 import com.devcollab.repository.ProjectRepository;
 import com.devcollab.repository.UserRepository;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,9 +17,12 @@ public class AdminDashboardRestController {
     private final UserRepository userRepo;
     private final ProjectRepository projectRepo;
 
-    public AdminDashboardRestController(UserRepository userRepo, ProjectRepository projectRepo) {
+    private final ProjectReportRepository projectReportRepo;
+
+    public AdminDashboardRestController(UserRepository userRepo, ProjectRepository projectRepo, ProjectReportRepository projectReportRepo) {
         this.userRepo = userRepo;
         this.projectRepo = projectRepo;
+        this.projectReportRepo = projectReportRepo;
     }
 
     @GetMapping("/api/admin/dashboard")
@@ -28,7 +32,11 @@ public class AdminDashboardRestController {
         stats.put("totalUsers", userRepo.findAll().toArray().length);
         stats.put("activeUsers", userRepo.countByStatus("active"));
         stats.put("totalProjects", projectRepo.count());
-        stats.put("violatedProjects", projectRepo.countByStatus("violated"));
+        long pendingCount = projectReportRepo.countByStatus("pending");
+        long reviewedCount = projectReportRepo.countByStatus("reviewed");
+        long violatedProjects = pendingCount + reviewedCount;
+
+        stats.put("violatedProjects", violatedProjects);
 
         List<Object[]> raw = userRepo.countUsersByMonth();
         List<List<Object>> registrations = new ArrayList<>();

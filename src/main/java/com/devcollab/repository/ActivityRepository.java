@@ -8,4 +8,6 @@
         List<Activity> findByActor_UserIdOrderByCreatedAtDesc(Long userId);
 
         List<Activity> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(String entityType, Long entityId);
+        List<Activity> findAllByOrderByCreatedAtDesc();
+
     }
