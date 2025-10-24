@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
-@Table(name = "Project")
+@Table(name = "Project", schema = "dbo")
 public class Project {
 
     @Id
@@ -48,8 +48,17 @@ public class Project {
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
 
+    @Column(name = "cover_image", columnDefinition = "NVARCHAR(500)")
+    private String coverImage;
+
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectMember> members = new ArrayList<>();
+
+    @Column(name = "invite_link", length = 200, unique = true)
+    private String inviteLink; 
+
+    @Column(name = "allow_link_join", nullable = false)
+    private boolean allowLinkJoin = false; 
 
     public Project() {
     }
@@ -157,4 +166,23 @@ public class Project {
     public void setMembers(List<ProjectMember> members) {
         this.members = members;
     }
+    public String getCoverImage() {
+        return coverImage;
+    }
+    public void setCoverImage(String coverImage) {
+        this.coverImage = coverImage;
+    }
+    public String getInviteLink() {
+        return inviteLink;
+    }
+
+    public void setInviteLink(String inviteLink) {
+        this.inviteLink = inviteLink;
+    }
+    public boolean isAllowLinkJoin() {
+        return allowLinkJoin;
+    }
+    public void setAllowLinkJoin(boolean allowLinkJoin) {
+        this.allowLinkJoin = allowLinkJoin;
+    }   
 }

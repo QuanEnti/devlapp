@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="'Dashboard - ' + ${projectId}">Project Dashboard</title>
+
+  <!-- Tailwind + ChartJS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    #pieChart { max-width: 160px; margin: auto; }
+    #chart-legend li { display: flex; align-items: center; gap: 8px; }
+    #chart-legend span { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+  </style>
+</head>
+
+<body class="bg-slate-50">
+
+  <!-- Sidebar -->
+  <aside class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm">
+    <div class="flex items-center px-6 mb-8">
+      <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
+        <i class="fa-solid fa-user text-blue-600 text-lg"></i>
+      </div>
+      <h1 class="text-lg font-semibold text-slate-700">AProjectO</h1>
+    </div>
+
+    <nav class="flex-1 space-y-2 text-slate-600">
+      <a href="#" class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium">
+        <i class="fa-regular fa-clipboard"></i> Project
+      </a>
+      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+        <i class="fa-regular fa-folder-open"></i> Tasks
+      </a>
+      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+        <i class="fa-regular fa-clock"></i> Work Logs
+      </a>
+      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+        <i class="fa-solid fa-gear"></i> Settings
+      </a>
+      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+        <i class="fa-regular fa-chart-bar"></i> Performance
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Header -->
+  <header class="ml-60 bg-white h-16 flex items-center justify-between px-8 shadow-sm border-b border-slate-200 sticky top-0 z-30">
+    <div class="flex items-center space-x-2">
+      <div class="bg-blue-100 p-2 rounded-lg">
+        <img src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png" class="w-6 h-6" alt="DevCollab" />
+      </div>
+      <span class="text-lg font-semibold text-slate-700">AProjectO</span>
+    </div>
+
+    <div class="relative w-96">
+      <input type="text" placeholder="Search for anything..."
+             class="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+           stroke="currentColor" class="w-5 h-5 text-slate-400 absolute left-3 top-2.5">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+      </svg>
+    </div>
+
+    <div class="flex items-center space-x-4">
+      <button class="text-slate-500 hover:text-blue-600">
+        <i class="fa-regular fa-bell text-lg"></i>
+      </button>
+      <div class="text-right">
+        <p class="text-sm font-medium text-slate-700">Anima Agrawal</p>
+        <p class="text-xs text-slate-400">U.P, India</p>
+      </div>
+      <img src="https://i.pravatar.cc/60?img=68" alt="avatar" class="w-10 h-10 rounded-full border">
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="flex-1 p-8 ml-60 bg-slate-50 space-y-8">
+    <h1 class="text-2xl font-semibold text-slate-800 mb-2">Projects</h1>
+
+    <!-- Main grid -->
+    <div class="grid grid-cols-12 gap-6">
+      <!-- Project Stats -->
+      <div class="col-span-12 md:col-span-4 bg-white rounded-2xl shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-slate-700">Projects Stats</h3>
+          <button class="text-sm px-3 py-1 bg-blue-50 text-blue-700 rounded-lg">This Week ▼</button>
+        </div>
+
+        <div class="flex items-start">
+          <div class="w-1/2">
+            <canvas id="pieChart" height="180"></canvas>
+          </div>
+          <div class="w-1/2 pl-4">
+            <ul id="chart-legend" class="space-y-2 text-sm font-medium text-slate-600"></ul>
+            <ul id="task-stats" class="mt-4 space-y-1 text-sm"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance -->
+      <div class="col-span-12 md:col-span-5 bg-white rounded-2xl shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-slate-700">Performance</h3>
+          <button class="text-sm px-3 py-1 bg-blue-50 text-blue-700 rounded-lg">This Week ▼</button>
+        </div>
+        <canvas id="lineChart" height="180"></canvas>
+      </div>
+
+      <!-- Projects list -->
+      <div class="col-span-12 md:col-span-3 bg-white rounded-2xl shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-slate-700">Projects</h3>
+          <a href="#" class="text-sm text-indigo-600 font-medium hover:underline">View all</a>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="text-center">
+            <img src="https://picsum.photos/80?random=1" class="w-20 h-20 rounded-lg mx-auto mb-2 shadow-sm">
+            <p class="text-sm text-slate-700">Emo stuff</p>
+          </div>
+          <div class="text-center">
+            <img src="https://picsum.photos/80?random=2" class="w-20 h-20 rounded-lg mx-auto mb-2 shadow-sm">
+            <p class="text-sm text-slate-700">Tim Burton</p>
+          </div>
+          <div class="text-center">
+            <img src="https://picsum.photos/80?random=3" class="w-20 h-20 rounded-lg mx-auto mb-2 shadow-sm">
+            <p class="text-sm text-slate-700">Halloween!</p>
+          </div>
+          <div class="text-center">
+            <img src="https://picsum.photos/80?random=4" class="w-20 h-20 rounded-lg mx-auto mb-2 shadow-sm">
+            <p class="text-sm text-slate-700">Spooky Art</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Members -->
+    <div class="bg-white rounded-2xl shadow p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold text-slate-700">Members (39)</h3>
+        <a href="#" class="text-sm text-indigo-600 font-medium hover:underline">View all</a>
+      </div>
+
+      <div class="flex items-center mb-5">
+        <input type="text" placeholder="Search for anything..."
+               class="flex-1 border px-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none text-sm">
+      </div>
+
+      <div class="grid grid-cols-6 md:grid-cols-10 lg:grid-cols-12 gap-4">
+        <img src="https://i.pravatar.cc/60?img=1" class="rounded-full border-2 border-white shadow-md">
+        <img src="https://i.pravatar.cc/60?img=2" class="rounded-full border-2 border-white shadow-md">
+        <img src="https://i.pravatar.cc/60?img=3" class="rounded-full border-2 border-white shadow-md">
+        <img src="https://i.pravatar.cc/60?img=4" class="rounded-full border-2 border-white shadow-md">
+        <img src="https://i.pravatar.cc/60?img=5" class="rounded-full border-2 border-white shadow-md">
+        <img src="https://i.pravatar.cc/60?img=6" class="rounded-full border-2 border-white shadow-md">
+      </div>
+    </div>
+  </main>
+
+ <script th:inline="javascript">
+  const projectId = [[${projectId}]];
+
+  async function loadDashboard() {
+    try {
+      const res = await fetch(`/api/pm/project/${projectId}/dashboard`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Server trả lỗi ${res.status}`);
+      const json = await res.json();
+      const d = json.data ?? json;
+
+      // 🟢 Hiển thị thống kê số lượng task
+      document.getElementById('task-stats').innerHTML = `
+        <li class="flex justify-between text-sm text-slate-600"><span>Completed</span><span>${d.doneTasks}</span></li>
+        <li class="flex justify-between text-sm text-slate-600"><span>On Hold</span><span>${d.reviewTasks}</span></li>
+        <li class="flex justify-between text-sm text-slate-600"><span>On Progress</span><span>${d.inProgressTasks}</span></li>
+        <li class="flex justify-between text-sm text-slate-600"><span>Pending</span><span>${d.openTasks}</span></li>
+      `;
+
+      // 🟡 Tính phần trăm
+      const total = d.totalTasks || 1;
+      const completed = ((d.doneTasks / total) * 100).toFixed(0);
+      const onHold = ((d.reviewTasks / total) * 100).toFixed(0);
+      const onProgress = ((d.inProgressTasks / total) * 100).toFixed(0);
+      const pending = ((d.openTasks / total) * 100).toFixed(0);
+
+      // 🟣 Biểu đồ tròn (Pie Chart)
+      const pieCtx = document.getElementById('pieChart').getContext('2d');
+      const pieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completed', 'On Hold', 'On Progress', 'Pending'],
+          datasets: [{
+            data: [completed, onHold, onProgress, pending],
+            backgroundColor: ['#0ea5e9', '#6366f1', '#3b82f6', '#ef4444'],
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '65%',
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              color: '#fff',
+              font: { weight: 'bold', size: 12 },
+              formatter: (value) => value + '%'
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+
+      const legendContainer = document.getElementById('chart-legend');
+      legendContainer.innerHTML = pieChart.data.labels.map((label, i) => `
+        <li><span style="background:${pieChart.data.datasets[0].backgroundColor[i]}"></span>${label}</li>
+      `).join('');
+
+      const resPerf = await fetch(`/api/pm/project/${projectId}/performance`, { credentials: 'include' });
+      if (!resPerf.ok) throw new Error(`Không tải được performance: ${resPerf.status}`);
+      const jsonPerf = await resPerf.json();
+      const perf = jsonPerf.data ?? jsonPerf;
+
+      const labels = perf.labels ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+      const achieved = perf.achieved ?? [0, 0, 0, 0, 0];
+      const target = perf.target ?? [0, 0, 0, 0, 0];
+
+      new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Achieved',
+              data: achieved,
+              borderColor: '#f97316',
+              backgroundColor: 'rgba(249,115,22,0.2)',
+              fill: true,
+              tension: 0.3
+            },
+            {
+              label: 'Target',
+              data: target,
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99,102,241,0.2)',
+              fill: true,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { stepSize: 1 },
+              grid: { color: 'rgba(226,232,240,0.6)' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+
+    } catch (err) {
+      console.error("Lỗi tải dashboard:", err);
+    }
+  } 
+  document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+
+
+</body>
+</html>

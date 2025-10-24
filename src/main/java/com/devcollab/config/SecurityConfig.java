@@ -26,12 +26,13 @@ public class SecurityConfig {
                 http
                                 .securityMatcher("/api/**")
                                 .csrf(csrf -> csrf.disable())
-                                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .sessionManagement( sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/auth/**", "/api/users/**", "/api/admin/**",
-                                                                "api/pm/**",
+                                                                "/api/pm/**",
                                                                 "user/**")
                                                 .permitAll()
+                                                .requestMatchers("/api/pm/project/*/dashboard").permitAll()
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                                 .formLogin(form -> form.disable())

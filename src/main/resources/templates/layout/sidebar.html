@@ -1,0 +1,29 @@
+<div th:fragment="sidebar">
+  <aside class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col">
+    <div class="flex items-center gap-2 px-6 py-5 border-b">
+      <div class="w-8 h-8 bg-indigo-100 text-indigo-600 flex items-center justify-center rounded-full">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <h1 class="text-lg font-semibold text-indigo-700">DevCollab</h1>
+    </div>
+
+    <nav class="mt-4 space-y-1">
+      <a th:href="@{/view/pm/dashboard}"
+         class="flex items-center gap-3 px-6 py-3 bg-indigo-50 text-indigo-700 font-medium rounded-r-full">
+        <i class="fa-regular fa-clipboard text-indigo-600 w-5"></i> Project
+      </a>
+      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 text-slate-600">
+        <i class="fa-regular fa-folder-open w-5"></i> Tasks
+      </a>
+      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 text-slate-600">
+        <i class="fa-regular fa-clock w-5"></i> Work Logs
+      </a>
+      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 text-slate-600">
+        <i class="fa-solid fa-gear w-5"></i> Settings
+      </a>
+      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 text-slate-600">
+        <i class="fa-regular fa-chart-bar w-5"></i> Performance
+      </a>
+    </nav>
+  </aside>
+</div>

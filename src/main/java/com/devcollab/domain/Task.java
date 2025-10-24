@@ -61,6 +61,15 @@ public class Task {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+
+    @Column(length = 20)
+    private String recurring = "Never"; 
+
+    @Column(length = 50)
+    private String reminder = "Never"; 
+
     @ManyToMany
     @JoinTable(name = "TaskLabel", joinColumns = @JoinColumn(name = "task_id", nullable = false), inverseJoinColumns = @JoinColumn(name = "label_id", nullable = false))
     private Set<Label> labels = new HashSet<>();
@@ -195,4 +204,23 @@ public class Task {
     public void setLabels(Set<Label> labels) {
         this.labels = labels;
     }
+    public LocalDateTime getStartDate() {
+        return startDate;
+    }
+    public void setStartDate(LocalDateTime startDate) {
+        this.startDate = startDate;
+    }
+    public String getRecurring() {
+        return recurring;
+    }
+    public void setRecurring(String recurring) {
+        this.recurring = recurring;
+    }
+    public String getReminder() {
+        return reminder;
+    }
+    public void setReminder(String reminder) {
+        this.reminder = reminder;
+    }
+    
 }

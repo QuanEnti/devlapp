@@ -1,0 +1,24 @@
+<!-- templates/layout/base.html -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${pageTitle} ?: 'DevCollab'">DevCollab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+
+<body class="bg-slate-50 font-[Inter] text-slate-800">
+
+
+  <div th:replace="layout/sidebar :: sidebar"></div>
+
+  <div th:replace="layout/header :: header"></div>
+
+
+  <main class="ml-60 mt-[64px] p-8">
+    <div th:insert="${content}"></div>
+  </main>
+
+</body>
+</html>

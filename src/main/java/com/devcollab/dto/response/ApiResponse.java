@@ -55,7 +55,10 @@ public class ApiResponse<T> {
         return res;
     }
 
-
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>("success", null, data);
+    }
+    
     public String getStatus() {
         return status;
     }
@@ -95,6 +98,7 @@ public class ApiResponse<T> {
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
     }
+
     @Override
     public String toString() {
         return "ApiResponse{" +

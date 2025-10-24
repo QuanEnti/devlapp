@@ -25,7 +25,7 @@
 
         private final UserRepository userRepository;
         private final AppEventService appEventService;
-        private final PasswordEncoder passwordEncoder;
+        private final PasswordEncoder passwordEncoder;  
 
         @Override
         public List<User> getAll() {

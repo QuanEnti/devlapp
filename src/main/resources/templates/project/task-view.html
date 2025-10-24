@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kanban Board - Members Popup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    /* Nhẹ nhàng hơn khi popup mở */
+    .popup-enter { opacity: 0; transform: scale(0.98); }
+    .popup-enter-active { opacity: 1; transform: scale(1); transition: .12s ease-out; }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-indigo-400 to-purple-500 p-6">
+  <!-- 🔘 Top Bar -->
+<div class="flex justify-between items-center mb-5">
+  <h1 class="text-2xl font-semibold text-white drop-shadow-sm">Kanban Board</h1>
+
+  <div class="flex items-center gap-2">
+    <button id="share-board-btn"
+            class="flex items-center gap-1 bg-cyan-800 hover:bg-cyan-700 text-white font-medium px-4 py-2 rounded-md shadow-sm transition">
+      <span>👤+</span> Share
+    </button>
+    <button class="bg-white/90 text-gray-700 hover:bg-white px-3 py-2 rounded-md shadow-sm">
+      ⋯
+    </button>
+  </div>
+</div>
+
+  <!-- 🧩 Kanban Board -->
+  <div id="kanban-board" class="flex gap-5 overflow-x-auto pb-6"></div>
+
+  <!-- 🧩 Task Detail Modal -->
+  <div id="task-detail-modal"
+       class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/60 backdrop-blur-sm hidden">
+
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
+        <div class="flex items-center gap-2">
+          <!-- ✅ Button Members (KHÔNG dùng inline onclick) -->
+          <button id="open-members-btn"
+                  class="flex items-center gap-1 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded">
+            👥 Members
+          </button>
+          <span class="text-sm bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded cursor-pointer">
+            Marketing Website ▼
+          </span>
+        </div>
+        <button id="close-modal-btn" class="text-gray-600 hover:text-gray-900 text-2xl font-light">×</button>
+      </div>
+
+      <!-- Content -->
+      <div class="flex flex-col md:flex-row p-4 md:p-6 gap-6 overflow-y-auto">
+
+        <!-- Left column -->
+        <div class="w-full md:w-2/3 space-y-6">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl text-gray-500">○</span>
+            <h2 class="text-2xl font-semibold text-gray-900">Task Title</h2>
+          </div>
+          <!-- 🕒 Due Date -->
+          <div id="due-date-section" class="mb-4">
+            <h3 class="text-sm text-gray-600 font-semibold mb-1">Due date</h3>
+            <div id="due-date-display"
+                class="flex items-center justify-between border border-gray-200 bg-gray-50 rounded-md px-3 py-2 w-fit min-w-[220px] text-sm cursor-pointer hover:bg-gray-100"
+                onclick="openDatePopup(event)">
+              <span id="due-date-text" class="text-gray-800">No due date</span>
+              <span id="due-date-status"
+                    class="ml-2 text-xs font-medium rounded px-2 py-0.5 bg-gray-200 text-gray-600">
+                None
+              </span>
+            </div>
+
+          </div>
+
+          <!-- Description -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+              <span class="text-gray-600">☰</span> Description
+            </h3>
+            
+            <div id="description-display"
+                 class="group relative bg-white border border-transparent rounded-md p-3 min-h-[60px] text-sm text-gray-800 hover:border-gray-300 transition">
+              <p id="description-content" class="whitespace-pre-line"></p>
+              <p id="description-placeholder" class="text-gray-500">Add a more detailed description...</p>
+
+              <button id="edit-desc-btn"
+                      class="absolute top-2 right-2 hidden group-hover:inline-flex text-sm text-gray-600 hover:text-blue-600">
+                Edit
+              </button>
+            </div>
+
+            <div id="description-editor" class="hidden mt-2">
+              <textarea id="description-textarea"
+                        class="w-full border border-gray-300 p-3 h-40 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 border-blue-400"
+                        placeholder="Type @ to mention your teammates..."></textarea>
+
+              <div class="flex items-center gap-2 mt-2">
+                <button id="save-desc-btn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium">
+                  Save
+                </button>
+                <button id="cancel-desc-btn"
+                        class="hover:bg-gray-200 px-3 py-1.5 rounded-md text-sm text-gray-700">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="w-full md:w-1/3 space-y-4">
+          <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+            <span class="text-gray-600">💬</span> Comments & Activity
+          </h3>
+          <textarea class="w-full border border-gray-300 rounded-md p-3 h-20 text-sm
+                            focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                    placeholder="Write a comment..."></textarea>
+          <p class="text-gray-500 italic text-sm">No activity yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+<div id="members-popup"
+     class="hidden fixed z-[70] bg-white border border-gray-300 rounded-lg shadow-lg w-80 p-3">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="font-semibold text-gray-800 text-sm">Members</h3>
+    <button id="close-members-btn" class="text-gray-500 hover:text-gray-700 text-lg">×</button>
+  </div>
+
+  <input id="search-member-input" type="text"
+         placeholder="Search members..."
+         class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400">
+
+  <div id="members-section" class="space-y-2 max-h-[300px] overflow-y-auto"></div>
+</div>
+<!-- 🔗 SHARE BOARD POPUP -->
+<div id="share-board-popup"
+     class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div class="bg-white rounded-lg shadow-2xl w-[460px] p-5">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-gray-800">Share board</h2>
+      <button id="close-share-popup" class="text-gray-500 hover:text-gray-700 text-xl">×</button>
+    </div>
+
+    <!-- Invite section -->
+    <div class="flex items-center gap-2 mb-3">
+      <input id="invite-email" type="email" placeholder="Email address or name"
+             class="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+      <select id="invite-role" class="border border-gray-300 rounded-md text-sm px-2 py-2">
+        <option value="MEMBER">Member</option>
+        <option value="ADMIN">Admin</option>
+      </select>
+      <button id="invite-btn"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+        Share
+      </button>
+    </div>
+
+    <!-- Anyone with link -->
+    <div class="flex items-center justify-between text-sm border-t border-b py-2 mb-3">
+      <div class="flex flex-col">
+        <div class="flex items-center gap-1">
+          <span class="text-gray-600">🔗</span>
+          <span class="text-gray-700">Anyone with the link can join as a member</span>
+        </div>
+        <div class="ml-5 mt-1 flex gap-3 text-blue-600 text-xs">
+          <a href="#" id="copy-link" class="hover:underline">Copy link</a>
+          <a href="#" id="delete-link" class="hover:underline text-red-600">Delete link</a>
+        </div>
+      </div>
+      <select id="link-permission"
+              class="text-xs border border-gray-300 rounded-md px-2 py-1 text-gray-700">
+        <option>Can view</option>
+        <option>Can edit</option>
+        <option>Admin</option>
+      </select>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex items-center gap-5 border-b mb-2">
+      <button id="tab-members" class="text-blue-600 border-b-2 border-blue-600 text-sm font-semibold pb-1">
+        Board members
+      </button>
+      <button id="tab-requests" class="text-gray-500 text-sm font-medium hover:text-blue-600">
+        Join requests
+      </button>
+    </div>
+
+    <!-- Members list -->
+    <div id="members-list" class="space-y-2 max-h-[280px] overflow-y-auto mt-2">
+      <!-- Render member rows here -->
+    </div>
+  </div>
+</div>
+
+<!-- 📅 DATE POPUP -->
+<div id="date-popup"
+     class="hidden fixed z-[80] bg-white border border-gray-300 rounded-lg shadow-xl w-96 p-4">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="font-semibold text-gray-800 text-sm">Dates</h3>
+    <button id="close-date-btn" class="text-gray-500 hover:text-gray-700 text-lg">×</button>
+  </div>
+
+  <div class="space-y-3">
+    <div class="flex items-center gap-2">
+      <input type="checkbox" id="start-check" class="w-4 h-4">
+      <label for="start-check" class="text-sm text-gray-700">Start date</label>
+    </div>
+    <input type="datetime-local" id="start-date-input"
+           class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+           disabled>
+
+    <div class="flex items-center gap-2 mt-3">
+      <input type="checkbox" id="due-check" class="w-4 h-4">
+      <label for="due-check" class="text-sm text-gray-700">Due date</label>
+    </div>
+    <input type="datetime-local" id="due-date-input"
+           class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+           disabled>
+
+    <div>
+      <label class="text-sm text-gray-700">Recurring</label>
+      <select id="recurring-select"
+              class="w-full mt-1 border border-gray-300 rounded-md px-2 py-1 text-sm">
+        <option>Never</option>
+        <option>Daily</option>
+        <option>Weekly</option>
+        <option>Monthly</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="text-sm text-gray-700">Set due date reminder</label>
+      <select id="reminder-select"
+              class="w-full mt-1 border border-gray-300 rounded-md px-2 py-1 text-sm">
+        <option>Never</option>
+        <option>5 Minutes before</option>
+        <option>10 Minutes before</option>
+        <option>1 Hour before</option>
+        <option>1 Day before</option>
+      </select>
+    </div>
+
+    <div class="flex items-center justify-between mt-4">
+      <button id="remove-date-btn"
+              class="text-gray-600 hover:text-red-600 text-sm font-medium">Remove</button>
+      <button id="save-date-btn"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium">
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // 🟦 SHARE BUTTON EVENT
+document.getElementById("share-board-btn").addEventListener("click", () => {
+  openSharePopup(); // mở popup có sẵn
+});
+
+  // ================== GLOBAL ==================
+  const params = new URLSearchParams(window.location.search);
+  const PROJECT_ID = params.get("projectId") || 1;
+  const modal = document.getElementById('task-detail-modal');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+
+  // ================== BOARD ==================
+  async function loadColumns(projectId) {
+    const res = await fetch(`/api/columns/project/${projectId}`);
+    if (!res.ok) throw new Error("Không thể tải danh sách cột");
+    return await res.json();
+  }
+
+  async function loadTasks(projectId) {
+    const res = await fetch(`/api/tasks/project/${projectId}`);
+    if (!res.ok) throw new Error("Không thể tải danh sách task");
+    return await res.json();
+  }
+
+  function groupByColumn(tasks) {
+    const groups = {};
+    tasks.forEach(t => {
+      const col = t.columnName || "Backlog";
+      if (!groups[col]) groups[col] = [];
+      groups[col].push(t);
+    });
+    return groups;
+  }
+
+  async function renderDashboard(projectId) {
+    try {
+      const [columns, tasks] = await Promise.all([loadColumns(projectId), loadTasks(projectId)]);
+      const grouped = groupByColumn(tasks);
+      const board = document.getElementById("kanban-board");
+      board.innerHTML = "";
+
+      columns.forEach(col => {
+        const items = grouped[col.name] || [];
+        const htmlTasks = items.length
+          ? items.map(renderCard).join("")
+          : `<div class="text-sm text-slate-400 italic">Chưa có thẻ</div>`;
+
+        board.innerHTML += `
+          <div class="bg-white/95 backdrop-blur-md rounded-xl shadow-md p-4 min-w-[320px] flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <h3 class="font-semibold text-slate-800">${col.name}</h3>
+                <span class="text-slate-400 text-sm">${items.length}</span>
+              </div>
+              <div class="space-y-3 min-h-[60px] pb-10" id="col-${col.columnId}">
+                ${htmlTasks}
+                <div class="drop-zone h-8"></div>
+              </div>
+
+            </div>
+            <div class="mt-4">
+              <div class="add-card-area" data-col="${col.columnId}">
+                <button class="w-full text-left text-slate-500 hover:text-blue-600 text-sm font-medium"
+                        data-add-card="${col.columnId}">
+                  ＋ Add a card
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      document.querySelectorAll("[data-add-card]").forEach(btn => {
+        btn.addEventListener("click", () => showAddCardInput(btn.getAttribute("data-add-card")));
+      }); 
+      enableDragDrop();
+    } catch (e) {
+      console.error("⚠️ Lỗi khi render board:", e);
+    }
+  }
+
+  function renderCard(t) {
+    const taskId = t.id || t.taskId;
+    return `
+      <div data-open-task="${taskId}"
+           class="bg-white border border-slate-200 rounded-md p-3 shadow-sm hover:shadow-md transition cursor-pointer">
+        <p class="font-medium text-slate-800 text-sm">${escapeHtml(t.title)}</p>
+      </div>
+    `;
+  }
+
+  // ================== QUICK ADD ==================
+  function showAddCardInput(columnId) {
+    const area = document.querySelector(`.add-card-area[data-col='${columnId}']`);
+    area.innerHTML = `
+      <div class="space-y-2">
+        <textarea id="new-card-title-${columnId}" rows="2"
+                  class="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:ring focus:ring-blue-300"
+                  placeholder="Enter a title or paste a link"></textarea>
+        <div class="flex items-center gap-2">
+          <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-md"
+                  data-add-card-confirm="${columnId}">Add card</button>
+          <button class="text-slate-500 text-sm" data-add-card-cancel="${columnId}">✕</button>
+        </div>
+      </div>
+    `;
+
+    document.querySelector(`[data-add-card-confirm="${columnId}"]`)
+      .addEventListener("click", () => addCard(columnId));
+    document.querySelector(`[data-add-card-cancel="${columnId}"]`)
+      .addEventListener("click", () => cancelAddCard(columnId));
+    document.getElementById(`new-card-title-${columnId}`).focus();
+  }
+
+  function cancelAddCard(columnId) {
+    const area = document.querySelector(`.add-card-area[data-col='${columnId}']`);
+    area.innerHTML = `
+      <button class="w-full text-left text-slate-500 hover:text-blue-600 text-sm font-medium"
+              data-add-card="${columnId}">
+        ＋ Add a card
+      </button>
+    `;
+    area.querySelector("[data-add-card]").addEventListener("click", () => showAddCardInput(columnId));
+  }
+
+  async function addCard(columnId) {
+    const textarea = document.getElementById(`new-card-title-${columnId}`);
+    const title = textarea.value.trim();
+    if (!title) return;
+
+    // ⚡ Hiển thị card tạm
+    const colContainer = document.getElementById(`col-${columnId}`);
+    const tempId = "temp-" + Date.now();
+    colContainer.insertAdjacentHTML("beforeend", `
+      <div id="${tempId}" class="bg-white border border-slate-200 rounded-md p-3 shadow-sm opacity-60">
+        <p class="font-medium text-slate-800 text-sm">${escapeHtml(title)}</p>
+      </div>
+    `);
+    textarea.disabled = true;
+
+    try {
+      const res = await fetch("/api/tasks/quick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, projectId: PROJECT_ID, columnId })
+      });
+      if (!res.ok) throw new Error("Không thể tạo task");
+      await renderDashboard(PROJECT_ID);
+    } catch (err) {
+      console.error("❌ Lỗi tạo task:", err);
+      alert("Không thể tạo task!");
+    } finally {
+      document.getElementById(tempId)?.remove();
+      textarea.disabled = false;
+    }
+  }
+
+  // ================== MODAL ==================
+  function escapeHtml(str) {
+    return (str || "").replace(/[&<>"']/g, s => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]
+    ));
+  }
+
+  document.addEventListener("click", (e) => {
+    const openBtn = e.target.closest("[data-open-task]");
+    if (openBtn) openModal(openBtn.getAttribute("data-open-task"));
+  });
+
+  async function openModal(taskId) {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`);
+      if (!res.ok) throw new Error("Không thể tải chi tiết task");
+      const task = await res.json();
+      document.querySelector("#task-detail-modal h2").textContent = task.title || "Untitled";
+      renderDescription(task);
+      updateDateStatus(task.deadline);
+      window.CURRENT_TASK_ID = taskId;
+      modal.classList.remove("hidden");
+    } catch (err) {
+      console.error("❌ Lỗi khi mở modal:", err);
+    }
+  }
+
+  function closeModal() { modal.classList.add("hidden"); }
+  closeModalBtn.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeModal(); closeMemberPopup(); }});
+
+  // ================== DESCRIPTION ==================
+  const descDisplay = document.getElementById('description-display');
+  const descContent = document.getElementById('description-content');
+  const descPlaceholder = document.getElementById('description-placeholder');
+  const descEditor = document.getElementById('description-editor');
+  const descTextarea = document.getElementById('description-textarea');
+  const editDescBtn = document.getElementById('edit-desc-btn');
+  const saveDescBtn = document.getElementById('save-desc-btn');
+  const cancelDescBtn = document.getElementById('cancel-desc-btn');
+
+  function showDescriptionEditor() {
+    descDisplay.classList.add('hidden');
+    descEditor.classList.remove('hidden');
+    descTextarea.value = descContent.textContent.trim() || "";
+    descTextarea.focus();
+  }
+  function hideDescriptionEditor() {
+    descEditor.classList.add('hidden');
+    descDisplay.classList.remove('hidden');
+  }
+  editDescBtn.addEventListener("click", showDescriptionEditor);
+  descDisplay.addEventListener("dblclick", showDescriptionEditor);
+  cancelDescBtn.addEventListener("click", hideDescriptionEditor);
+  saveDescBtn.addEventListener("click", saveDescription);
+
+  async function saveDescription() {
+    const newDescription = descTextarea.value.trim();
+    const taskId = window.CURRENT_TASK_ID;
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/description`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description_md: newDescription })
+      });
+      if (!res.ok) throw new Error("Update description failed");
+      const updated = await res.json();
+      const newDesc = updated.descriptionMd || "";
+      descContent.textContent = newDesc;
+      descPlaceholder.style.display = newDesc ? "none" : "block";
+      hideDescriptionEditor();
+    } catch {
+      alert("Không thể lưu mô tả");
+    }
+  }
+
+  function renderDescription(task) {
+    const desc = (task.descriptionMd || "").trim();
+    descContent.textContent = desc;
+    descPlaceholder.style.display = desc ? "none" : "block";
+    editDescBtn.classList.toggle("hidden", !desc);
+  }
+
+  // ================== MEMBERS ==================
+  const membersPopup = document.getElementById('members-popup');
+  const openMembersBtn = document.getElementById('open-members-btn');
+  const closeMembersBtn = document.getElementById('close-members-btn');
+  const searchInput = document.getElementById('search-member-input');
+
+  openMembersBtn.addEventListener("click", (e) => openMemberPopup(e));
+  closeMembersBtn.addEventListener("click", closeMemberPopup);
+  document.addEventListener('click', e => {
+    if (!membersPopup.contains(e.target) && !e.target.closest('#open-members-btn')) closeMemberPopup();
+  });
+
+  function openMemberPopup(e) {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    membersPopup.style.top = `${rect.bottom + window.scrollY + 6}px`;
+    membersPopup.style.left = `${rect.left + window.scrollX}px`;
+    membersPopup.classList.remove("hidden");
+    loadMembers();
+  }
+  function closeMemberPopup() { membersPopup.classList.add("hidden"); }
+
+  // ================== MEMBER HANDLING ==================
+  async function loadMembers(keyword = "") {
+    const taskId = window.CURRENT_TASK_ID;
+    if (!taskId) return;
+    const listContainer = document.getElementById("members-section");
+    listContainer.innerHTML = `<p class="text-gray-400 text-sm italic">Loading...</p>`;
+
+    try {
+      const resAll = await fetch(`/api/pm/members/all?keyword=${encodeURIComponent(keyword)}&page=0&size=100`);
+      const resTask = await fetch(`/api/tasks/${taskId}/members`);
+      const allPayload = await resAll.json();
+      const allMembers = Array.isArray(allPayload.content) ? allPayload.content : allPayload;
+      const taskMembers = await resTask.json();
+      const assignedIds = (taskMembers || []).map(m => m.userId);
+
+      listContainer.innerHTML = allMembers.map(m => `
+        <div class="flex items-center justify-between p-1 hover:bg-gray-100 rounded-md">
+          <div class="flex items-center gap-2">
+            ${renderAvatar(m)}
+            <p class="text-sm text-gray-700">${m.name}</p>
+          </div>
+          <button
+            onclick="${assignedIds.includes(m.userId)
+              ? `unassignMember(${m.userId})`
+              : `assignMember(${m.userId})`}"
+            class="${assignedIds.includes(m.userId)
+              ? 'text-red-500 hover:text-red-700'
+              : 'text-gray-400 hover:text-blue-500'} text-lg"
+            title="${assignedIds.includes(m.userId) ? 'Remove' : 'Add'}">
+            ${assignedIds.includes(m.userId) ? '×' : '＋'}
+          </button>
+        </div>
+      `).join('');
+    } catch (err) {
+      console.error("❌ Error loading members:", err);
+      listContainer.innerHTML = `<p class="text-red-500 text-sm">Error loading members</p>`;
+    }
+  }
+
+  async function assignMember(userId) {
+    const taskId = window.CURRENT_TASK_ID;
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/assign/${userId}`, { method: "PUT" });
+      if (!res.ok) throw new Error();
+      await loadMembers(searchInput.value.trim());
+    } catch {
+      alert("❌ Không thể gán member vào task");
+    }
+  }
+
+  async function unassignMember(userId) {
+    const taskId = window.CURRENT_TASK_ID;
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/unassign/${userId}`, { method: "PUT" });
+      if (!res.ok) throw new Error();
+      await loadMembers(searchInput.value.trim());
+    } catch {
+      alert("❌ Không thể bỏ gán member");
+    }
+  }
+
+  function renderAvatar(m) {
+    if (m.avatarUrl?.trim())
+      return `<img src="${m.avatarUrl}" alt="${m.name}" class="w-8 h-8 rounded-full border border-gray-300 object-cover">`;
+    const initials = getInitials(m.name);
+    const color = getColorForId(m.userId);
+    return `<div class="w-8 h-8 flex items-center justify-center rounded-full text-xs font-semibold text-white"
+                 style="background-color:${color}">${initials}</div>`;
+  }
+
+  function getInitials(name) {
+    if (!name) return "?";
+    const w = name.trim().split(" ");
+    return w.length > 1 ? (w[0][0] + w[w.length - 1][0]).toUpperCase() : w[0][0].toUpperCase();
+  }
+
+  function getColorForId(id) {
+    const colors = ["#f59e0b","#10b981","#3b82f6","#8b5cf6","#ec4899","#ef4444","#14b8a6","#f97316","#6366f1","#84cc16"];
+    const i = typeof id === "number"
+      ? id % colors.length
+      : id.toString().split("").reduce((a,c)=>a+c.charCodeAt(0),0)%colors.length;
+    return colors[i];
+  }
+
+  async function saveTaskDates() {
+  const taskId = window.CURRENT_TASK_ID;
+  const startDate = startDateInput.value;
+  const dueDateInput = document.getElementById('due-date-input');
+
+
+  try {
+    const res = await fetch(`/api/tasks/${taskId}/dates`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ start_date: startDate, due_date: dueDateInput })
+    });
+
+    if (!res.ok) throw new Error("Update failed");
+
+    // ✅ Phân tích JSON trả về từ backend
+    const updated = await res.json();
+
+    // ✅ Cập nhật phần hiển thị "Due date" ngay lập tức trong giao diện
+    updateDateStatus(updated.deadline);
+
+    alert("✅ Dates updated successfully");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to update dates");
+  }
+}
+
+  let debounceTimer;
+  searchInput.addEventListener('input', e => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => loadMembers(e.target.value.trim()), 300);
+  });
+  function updateDateStatus(dueDateStr) {
+  const textEl = document.getElementById("due-date-text");
+  const statusEl = document.getElementById("due-date-status");
+
+  if (!dueDateStr) {
+    textEl.textContent = "No due date";
+    statusEl.textContent = "None";
+    statusEl.className = "ml-2 text-xs font-medium rounded px-2 py-0.5 bg-gray-200 text-gray-600";
+    return;
+  }
+
+  const due = new Date(dueDateStr);
+  const now = new Date();
+  const diffMs = due - now;
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  // Format hiển thị: Oct 23, 5:51 PM
+  const options = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+  const formatted = due.toLocaleString('en-US', options);
+  textEl.textContent = formatted;
+
+  // Badge màu
+  if (diffHours < 0) {
+    statusEl.textContent = "Overdue";
+    statusEl.className = "ml-2 text-xs font-medium rounded px-2 py-0.5 bg-red-100 text-red-700";
+  } else if (diffHours <= 24) {
+    statusEl.textContent = "Due soon";
+    statusEl.className = "ml-2 text-xs font-medium rounded px-2 py-0.5 bg-yellow-100 text-yellow-700";
+  } else {
+    statusEl.textContent = "On track";
+    statusEl.className = "ml-2 text-xs font-medium rounded px-2 py-0.5 bg-green-100 text-green-700";
+  }
+}
+// ================= DATE POPUP =================
+const datePopup = document.getElementById('date-popup');
+const closeDateBtn = document.getElementById('close-date-btn');
+const saveDateBtn = document.getElementById('save-date-btn');
+const removeDateBtn = document.getElementById('remove-date-btn');
+const startCheck = document.getElementById('start-check');
+const dueCheck = document.getElementById('due-check');
+const startInput = document.getElementById('start-date-input');
+const dueInput = document.getElementById('due-date-input');
+
+function openDatePopup(e) {
+  e.stopPropagation();
+  const rect = e.currentTarget.getBoundingClientRect();
+  datePopup.style.top = `${rect.bottom + window.scrollY + 6}px`;
+  datePopup.style.left = `${rect.left + window.scrollX}px`;
+  datePopup.classList.remove("hidden");
+}
+
+closeDateBtn.addEventListener("click", () => datePopup.classList.add("hidden"));
+document.addEventListener('click', e => {
+  if (!datePopup.contains(e.target) && !e.target.closest('#due-date-display'))
+    datePopup.classList.add("hidden");
+});
+
+// enable/disable inputs when checkbox toggled
+startCheck.addEventListener("change", () => startInput.disabled = !startCheck.checked);
+dueCheck.addEventListener("change", () => dueInput.disabled = !dueCheck.checked);
+
+// remove date
+removeDateBtn.addEventListener("click", async () => {
+  const taskId = window.CURRENT_TASK_ID;
+  if (!taskId) return;
+  try {
+    await fetch(`/api/tasks/${taskId}/dates`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ start_date: null, due_date: null })
+    });
+    updateDateStatus(null);
+    alert("Removed due date");
+  } catch (err) {
+    alert("Failed to remove");
+  } finally {
+    datePopup.classList.add("hidden");
+  }
+});
+
+// save date
+// save date
+saveDateBtn.addEventListener("click", async () => {
+  const taskId = window.CURRENT_TASK_ID;
+  const start = startCheck.checked ? startInput.value : null;
+  const due = dueCheck.checked ? dueInput.value : null;
+  const recurring = document.getElementById("recurring-select").value;
+  const reminder = document.getElementById("reminder-select").value;
+
+  try {
+    const res = await fetch(`/api/tasks/${taskId}/dates`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        startDate: start,       // ✅ đúng key
+        deadline: due,          // ✅ đúng key
+        recurring: recurring,
+        reminder: reminder
+      })
+    });
+
+    if (!res.ok) throw new Error();
+    const updated = await res.json();
+    updateDateStatus(updated.deadline);
+    datePopup.classList.add("hidden");
+  } catch (err) {
+    console.error("❌ Lỗi lưu date:", err);
+    alert("Failed to save date");
+  }
+});
+
+  async function saveDates(taskId) {
+  const payload = {
+    startDate: document.querySelector("#startDate").value,
+    deadline: document.querySelector("#dueDate").value,
+    recurring: document.querySelector("#recurring").value,
+    reminder: document.querySelector("#reminder").value
+  };
+
+  const res = await fetch(`/api/tasks/${taskId}/dates`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (res.ok) {
+    const updated = await res.json();
+    updateDateStatus(updated.deadline);
+  }
+}
+  // ================== DRAG & DROP ==================
+function enableDragDrop() {
+  const taskCards = document.querySelectorAll("[data-open-task]");
+  const columns = document.querySelectorAll("[id^='col-']");
+
+  taskCards.forEach(card => {
+    card.setAttribute("draggable", "true");
+
+    card.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("taskId", card.getAttribute("data-open-task"));
+      card.classList.add("opacity-50");
+    });
+
+    card.addEventListener("dragend", e => {
+      card.classList.remove("opacity-50");
+    });
+  });
+
+columns.forEach(col => {
+  col.addEventListener("dragover", e => e.preventDefault());
+  col.addEventListener("drop", e => handleDrop(e, col));
+
+  // 🟦 Gắn drop zone cuối cùng
+  const dropZone = col.querySelector(".drop-zone");
+  if (dropZone) {
+    dropZone.addEventListener("dragover", e => e.preventDefault());
+    dropZone.addEventListener("drop", e => handleDrop(e, col));
+  }
+});
+
+async function handleDrop(e, col) {
+  e.preventDefault();
+
+  const taskId = e.dataTransfer.getData("taskId");
+  const targetColId = parseInt(col.id.replace("col-", ""));
+  const draggedCard = document.querySelector(`[data-open-task='${taskId}']`);
+
+  col.appendChild(draggedCard);
+
+  const cards = Array.from(col.querySelectorAll("[data-open-task]"));
+  const newIndex = cards.indexOf(draggedCard);
+
+  console.log("🧩 Sending:", { taskId, targetColumnId: targetColId, newOrderIndex: newIndex });
+
+  try {
+    const res = await fetch(`/api/tasks/${taskId}/move`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        targetColumnId: Number(targetColId),
+        newOrderIndex: Number(newIndex)
+      })
+    });
+
+    if (!res.ok) throw new Error(`Move failed: ${res.status}`);
+    const updated = await res.json();
+    await renderDashboard(PROJECT_ID);
+  } catch (err) {
+    console.error("⚠️ Move failed:", err);
+  }
+}
+}
+// ================= SHARE BOARD POPUP =================
+const sharePopup = document.getElementById("share-board-popup");
+const closeSharePopup = document.getElementById("close-share-popup");
+const inviteEmail = document.getElementById("invite-email");
+const inviteRole = document.getElementById("invite-role");
+const inviteBtn = document.getElementById("invite-btn");
+const membersList = document.getElementById("members-list");
+
+function openSharePopup() {
+  sharePopup.classList.remove("hidden");
+  loadBoardMembers(PROJECT_ID);
+}
+
+function closeShareBoard() {
+  sharePopup.classList.add("hidden");
+}
+
+closeSharePopup.addEventListener("click", closeShareBoard);
+
+// ✅ Copy link (tạo & sao chép)
+document.getElementById("copy-link").addEventListener("click", async (e) => {
+  e.preventDefault();
+  try {
+    const res = await fetch(`/api/pm/invite/project/${PROJECT_ID}/share/enable`, { method: "POST" });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const fullLink = `${window.location.origin}/join/${data.inviteLink}`;
+    await navigator.clipboard.writeText(fullLink);
+    alert(`✅ Link copied:\n${fullLink}`);
+  } catch {
+    alert("❌ Không thể bật chia sẻ qua link");
+  }
+});
+
+// ✅ Xóa link chia sẻ
+document.getElementById("delete-link").addEventListener("click", async (e) => {
+  e.preventDefault();
+  try {
+    const res = await fetch(`/api/pm/invite/project/${PROJECT_ID}/share/disable`, { method: "DELETE" });
+    if (!res.ok) throw new Error();
+    alert("🔒 Shared link disabled!");
+  } catch {
+    alert("❌ Failed to disable link");
+  }
+});
+
+// ✅ Load danh sách thành viên
+async function loadBoardMembers(projectId) {
+  membersList.innerHTML = `<p class="text-gray-400 text-sm italic">Loading...</p>`;
+  try {
+    const res = await fetch(`/api/pm/invite/project/${projectId}`);
+    if (!res.ok) throw new Error("Cannot load members");
+    const data = await res.json();
+    const members = data.members || [];
+
+   membersList.innerHTML = members.map(m => `
+  <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+    <div class="flex items-center gap-2">
+      ${m.avatarUrl
+        ? `<img src="${m.avatarUrl}" class="w-8 h-8 rounded-full border">`
+        : `<div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-semibold">${getInitials(m.name)}</div>`}
+      <div>
+        <p class="text-sm font-medium text-gray-800">${m.name}</p>
+        <p class="text-xs text-gray-500">${m.email || ''}</p>
+      </div>
+    </div>
+    <select onchange="updateMemberRole(${projectId}, ${m.userId}, this.value)"
+            class="text-xs border border-gray-300 rounded-md px-2 py-1 bg-white focus:ring-2 focus:ring-blue-400">
+      <option value="MEMBER" ${m.roleInProject === 'MEMBER' ? 'selected' : ''}>Member</option>
+      <option value="ADMIN" ${m.roleInProject === 'ADMIN' ? 'selected' : ''}>Admin</option>
+    </select>
+  </div>
+`).join('');}
+  catch (err) {
+    membersList.innerHTML = `<p class="text-red-500 text-sm">Failed to load members</p>`;
+  }
+}
+async function updateMemberRole(projectId, userId, newRole) {
+  try {
+    const selectEl = event?.target;
+    if (selectEl) selectEl.disabled = true; // ⏳ disable khi đang cập nhật
+
+    const res = await fetch(`/api/pm/invite/project/${projectId}/member/${userId}/role?role=${newRole}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + localStorage.getItem("token")
+      }
+    });
+
+    if (!res.ok) throw new Error("Failed to update role");
+    const data = await res.json();
+
+    await loadBoardMembers(projectId);
+    alert(data.message || "✅ Cập nhật vai trò thành công!");
+  } catch (err) {
+    console.error("❌ Update role failed:", err);
+    alert("❌ Không thể cập nhật vai trò!");
+  } finally {
+    if (event?.target) event.target.disabled = false; // ✅ enable lại
+  }
+}
+
+
+inviteBtn.addEventListener("click", async () => {
+  const email = inviteEmail.value.trim();
+  const role = inviteRole.value || "Member";
+  if (!email) return alert("❌ Vui lòng nhập email!");
+
+  try {
+    const resInvite = await fetch(`/api/pm/invite?projectId=${PROJECT_ID}&email=${encodeURIComponent(email)}&role=${role}`, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + localStorage.getItem("token")
+      }
+    });
+    if (!resInvite.ok) throw new Error("Invite failed");
+    const data = await resInvite.json();
+    alert(data.message || "✅ Đã mời thành viên thành công!");
+    inviteEmail.value = "";
+    await loadBoardMembers(PROJECT_ID);
+  } catch (err) {
+    console.error("❌ Error inviting:", err);
+    alert("❌ Không thể mời thành viên!");
+  }
+});
+
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    await renderDashboard(PROJECT_ID);
+  });
+</script>
+
+</body>
+</html>

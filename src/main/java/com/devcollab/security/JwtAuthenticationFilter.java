@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -43,8 +44,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (SecurityContextHolder.getContext().getAuthentication() != null &&
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof DefaultOAuth2User) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         String jwt = extractJwtFromRequest(request);
-
         if (jwt == null) {
             filterChain.doFilter(request, response);
             return;
@@ -56,9 +61,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtService.isValid(jwt)) {
                     UserDetails userDetails = userService.loadUserByUsername(email);
-
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
+                            null, userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
@@ -68,8 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
 
-            if (SecurityContextHolder.getContext().getAuthentication() != null
-                    && isPublicAuthPage(path)) {
+
+            if (SecurityContextHolder.getContext().getAuthentication() != null && isPublicAuthPage(path)) {
                 response.sendRedirect("/view/home");
                 return;
             }
@@ -79,30 +83,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             response.setHeader("Expires", "0");
 
         } catch (ExpiredJwtException ex) {
-            handleJwtError(response, path, "Token expired", "JWT đã hết hạn, vui lòng đăng nhập lại.",
-                    HttpServletResponse.SC_UNAUTHORIZED);
+            handleJwtError(request, response, "Token expired",
+                    "JWT đã hết hạn, vui lòng đăng nhập lại.", HttpServletResponse.SC_UNAUTHORIZED);
             return;
         } catch (Exception ex) {
-            handleJwtError(response, path, "Invalid token", "Token không hợp lệ hoặc bị lỗi.",
-                    HttpServletResponse.SC_UNAUTHORIZED);
+            handleJwtError(request, response, "Invalid token",
+                    "Token không hợp lệ hoặc bị lỗi.", HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private void handleJwtError(HttpServletResponse response, String path, String error, String message, int statusCode)
+    private void handleJwtError(HttpServletRequest request, HttpServletResponse response,
+            String error, String message, int statusCode)
             throws IOException {
-        if (path.startsWith("/api/")) {
+        if (request.getRequestURI().startsWith("/api/")) {
             response.setStatus(statusCode);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"" + error + "\",\"message\":\"" + message + "\"}");
         } else {
-            if (error.equals("Token expired")) {
-                response.sendRedirect("/view/signin?expired");
-            } else {
-                response.sendRedirect("/view/signin?invalid");
-            }
+            System.out.println("⚠️ " + error + " at " + request.getRequestURI());
+            response.setStatus(HttpServletResponse.SC_OK);
         }
     }
 
@@ -129,9 +131,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/favicon")
                 || path.startsWith("/webjars/")
                 || path.startsWith("/login/oauth2/")
-                || path.startsWith("/oauth2/");
+                || path.startsWith("/oauth2/")
+                || path.startsWith("/view/");
     }
-
 
     private boolean isPublicAuthPage(String path) {
         return path.startsWith("/view/login")

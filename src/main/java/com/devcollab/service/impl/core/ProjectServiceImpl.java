@@ -1,6 +1,10 @@
 package com.devcollab.service.impl.core;
 
 import com.devcollab.domain.*;
+import com.devcollab.dto.MemberDTO;
+import com.devcollab.dto.ProjectDTO;
+import com.devcollab.dto.response.ProjectDashboardDTO;
+import com.devcollab.dto.response.ProjectPerformanceDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
@@ -8,12 +12,23 @@ import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.event.AppEventService;
 import com.devcollab.service.system.ActivityService;
 import com.devcollab.service.system.NotificationService;
+import com.devcollab.service.system.ProjectAuthorizationService;
+
+import org.springframework.data.domain.Sort;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -24,12 +39,13 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final BoardColumnRepository boardColumnRepository;
     private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
+    private final ProjectAuthorizationService authz;
 
     private final AppEventService appEventService;
     private final ActivityService activityService;
     private final NotificationService notificationService;
 
-  
     @Override
     public Project createProject(Project project, Long creatorId) {
         if (project == null || project.getName() == null || project.getName().isBlank()) {
@@ -62,7 +78,7 @@ public class ProjectServiceImpl implements ProjectService {
         pm.setJoinedAt(LocalDateTime.now());
         projectMemberRepository.save(pm);
 
-        String[] defaultCols = { "To-do", "In Progress", "Review", "Done" };
+        String[] defaultCols = {"To-do", "In Progress", "Review", "Done"};
         for (int i = 0; i < defaultCols.length; i++) {
             BoardColumn col = new BoardColumn();
             col.setProject(saved);
@@ -114,10 +130,8 @@ public class ProjectServiceImpl implements ProjectService {
         List<ProjectMember> joined = projectMemberRepository.findByUser_UserId(userId);
 
         Map<Long, Project> all = new LinkedHashMap<>();
-        for (Project p : created)
-            all.put(p.getProjectId(), p);
-        for (ProjectMember m : joined)
-            all.put(m.getProject().getProjectId(), m.getProject());
+        for (Project p : created) all.put(p.getProjectId(), p);
+        for (ProjectMember m : joined) all.put(m.getProject().getProjectId(), m.getProject());
         return new ArrayList<>(all.values());
     }
 
@@ -195,11 +209,180 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.deleteById(projectId);
         activityService.log("PROJECT", projectId, "DELETE", "Hard delete");
     }
-    
+
     @Override
     public Project getById(Long projectId) {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
     }
 
+    @Override
+    public ProjectDashboardDTO getDashboardForPm(Long projectId, String pmEmail) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+
+        authz.ensurePmOfProject(pmEmail, projectId);
+
+        long total = taskRepository.countByProject_ProjectId(projectId);
+        long open = taskRepository.countByProject_ProjectIdAndStatus(projectId, "OPEN");
+        long inProgress = taskRepository.countByProject_ProjectIdAndStatus(projectId, "IN_PROGRESS");
+        long review = taskRepository.countByProject_ProjectIdAndStatus(projectId, "REVIEW");
+        long done = taskRepository.countByProject_ProjectIdAndStatus(projectId, "DONE");
+        long overdue = taskRepository.countOverdue(projectId, LocalDateTime.now());
+
+        BigDecimal percentDone = total == 0
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(done)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
+
+        return ProjectDashboardDTO.builder()
+                .projectId(projectId)
+                .totalTasks(total)
+                .openTasks(open)
+                .inProgressTasks(inProgress)
+                .reviewTasks(review)
+                .doneTasks(done)
+                .overdueTasks(overdue)
+                .percentDone(percentDone)
+                .build();
+    }
+
+    @Override
+    public Project getByIdWithMembers(Long projectId) {
+        return projectRepository.findByIdWithMembers(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+    }
+
+    @Override
+    public ProjectPerformanceDTO getPerformanceData(Long projectId, String pmEmail) {
+    authz.ensurePmOfProject(pmEmail, projectId);
+
+    LocalDate today = LocalDate.now();
+    LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
+    LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
+
+    List<Object[]> results = taskRepository.countCompletedTasksPerDay(
+        projectId,
+        startOfWeek.atStartOfDay(),
+        endOfWeek.atTime(23, 59, 59)
+    );
+
+    Map<String, Long> dayMap = new LinkedHashMap<>();
+    results.forEach(r -> dayMap.put((String) r[0], (Long) r[1]));
+
+    List<String> labels = List.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun");
+    List<Long> achieved = new ArrayList<>();
+    for (String d : labels) {
+        achieved.add(dayMap.getOrDefault(d, 0L));
+    }
+
+    long total = taskRepository.countByProject_ProjectId(projectId);
+    long targetPerDay = Math.max(1, total / 7);
+    List<Long> target = labels.stream().map(d -> targetPerDay).toList();
+
+    return new ProjectPerformanceDTO(labels, achieved, target);
 }
+    @Override
+    public List<ProjectDTO> getTopProjects(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return projectRepository.findTop9Projects(pageable);
+    }
+    
+  
+    
+    @Override
+    public Page<ProjectDTO> getAllProjects(int page, int size, String keyword) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        Page<ProjectDTO> projects = projectRepository.findAllProjects(keyword, pageable);
+
+        return projects.map(dto -> {
+            List<MemberDTO> allMembers = projectMemberRepository.findMembersByProject(dto.getProjectId());
+            int totalMembers = allMembers.size();
+
+            List<MemberDTO> topMembers = allMembers.stream()
+                    .filter(m -> m.getAvatarUrl() != null)
+                    .limit(4)
+                    .toList();
+
+            dto.setMemberCount(totalMembers); 
+            dto.setMemberAvatars(
+                    topMembers.stream()
+                            .map(MemberDTO::getAvatarUrl)
+                            .toList());
+            dto.setMemberNames(
+                    topMembers.stream()
+                            .map(MemberDTO::getName)
+                            .toList());
+
+            return dto;
+        });
+    }
+    @Override
+    public Project enableShareLink(Long projectId, String pmEmail) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+
+        authz.ensurePmOfProject(pmEmail, projectId);
+
+        if (!project.isAllowLinkJoin()) {
+            String inviteLink = UUID.randomUUID().toString();
+            project.setInviteLink(inviteLink);
+            project.setAllowLinkJoin(true);
+            project.setUpdatedAt(LocalDateTime.now());
+            projectRepository.save(project);
+
+            activityService.log("PROJECT", projectId, "ENABLE_SHARE", "Link: " + inviteLink);
+        }
+
+        return project;
+    }
+    @Override
+    public Project disableShareLink(Long projectId, String pmEmail) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+
+        authz.ensurePmOfProject(pmEmail, projectId);
+
+        if (project.isAllowLinkJoin()) {
+            project.setAllowLinkJoin(false);
+            project.setInviteLink(null);
+            project.setUpdatedAt(LocalDateTime.now());
+            projectRepository.save(project);
+
+            activityService.log("PROJECT", projectId, "DISABLE_SHARE", "Share link disabled");
+        }
+
+        return project;
+    }
+    @Override
+    public ProjectMember joinProjectByLink(String inviteLink, Long userId) {
+        Project project = projectRepository.findActiveSharedProject(inviteLink)
+                .orElseThrow(() -> new BadRequestException("Link mời không hợp lệ hoặc đã bị tắt"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User không tồn tại"));
+
+        boolean exists = projectMemberRepository.findByProject_ProjectId(project.getProjectId())
+                .stream()
+                .anyMatch(m -> m.getUser().getUserId().equals(userId));
+
+        if (exists) {
+            throw new BadRequestException("Bạn đã là thành viên của dự án này");
+        }
+
+        ProjectMember newMember = new ProjectMember();
+        newMember.setProject(project);
+        newMember.setUser(user);
+        newMember.setRoleInProject("Member");
+        newMember.setJoinedAt(LocalDateTime.now());
+        projectMemberRepository.save(newMember);
+
+        activityService.log("PROJECT", project.getProjectId(), "JOIN_BY_LINK", user.getEmail());
+        notificationService.notifyMemberAdded(project, user);
+
+        return newMember;
+    }
+
+}
+

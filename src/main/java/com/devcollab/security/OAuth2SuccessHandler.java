@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -35,7 +36,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         DefaultOAuth2User oauthUser = (DefaultOAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");
         String name = oauthUser.getAttribute("name");
-        String avatar = oauthUser.getAttribute("picture");
+        String initialAvatar = oauthUser.getAttribute("picture");
         String providerId = oauthUser.getAttribute("sub");
 
         if (email == null || email.isEmpty()) {
@@ -47,10 +48,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setName(name != null ? name : "Google User");
-            newUser.setAvatarUrl(avatar);
+            newUser.setAvatarUrl(initialAvatar);
             newUser.setProvider("google");
             newUser.setProviderId(providerId);
-            newUser.setPasswordHash(null);
             newUser.setStatus("verified");
             newUser.setCreatedAt(LocalDateTime.now());
             newUser.setUpdatedAt(LocalDateTime.now());
@@ -58,13 +58,41 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         });
 
         user.setLastSeen(LocalDateTime.now());
-        if (avatar != null && !avatar.equals(user.getAvatarUrl())) {
-            user.setAvatarUrl(avatar);
+
+        String avatar = initialAvatar;
+        if (avatar == null || avatar.isBlank() || !avatar.startsWith("https://lh3.googleusercontent.com/")) {
+            avatar = "https://ui-avatars.com/api/?name=" + (name != null ? name.replace(" ", "+") : "User");
         }
+
+        if (user.getAvatarUrl() == null || !user.getAvatarUrl().equals(avatar)) {
+            user.setAvatarUrl(avatar);
+            user.setUpdatedAt(LocalDateTime.now());
+        }
+
         userRepository.save(user);
 
-        String token = jwtService.generateToken(email);
+        String accessToken = jwtService.generateAccessToken(email);
+        String refreshToken = jwtService.generateRefreshToken(email);
 
-        response.sendRedirect(frontendRedirect + "?token=" + token);
+        ResponseCookie accessCookie = ResponseCookie.from("AUTH_TOKEN", accessToken)
+                .httpOnly(true)
+                .secure(false) 
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(15 * 60)
+                .build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", refreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/") 
+                .maxAge(7 * 24 * 60 * 60)
+                .build();
+
+        response.addHeader("Set-Cookie", accessCookie.toString());
+        response.addHeader("Set-Cookie", refreshCookie.toString());
+
+        response.sendRedirect(frontendRedirect);
     }
 }

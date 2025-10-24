@@ -1,7 +1,7 @@
 package com.devcollab.controller.rest;
 
 import com.devcollab.domain.User;
-import com.devcollab.dto.UserDto;
+import com.devcollab.dto.UserDTO;
 import com.devcollab.service.core.UserService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,13 +22,13 @@ public class UserRestController {
     }
 
     @GetMapping
-    public List<UserDto> getAllUsers() {
+    public List<UserDTO> getAllUsers() {
         System.out.println("DEBUG: getAllUsers called");
         return userService.getAll().stream().map(this::toDto).toList();
     }
 
     @GetMapping("/{id}")
-    public UserDto getUser(@PathVariable Long id) {
+    public UserDTO getUser(@PathVariable Long id) {
         System.out.println("DEBUG: getUser called with id=" + id);
         return userService.getById(id)
                 .map(this::toDto)
@@ -36,7 +36,7 @@ public class UserRestController {
     }
 
     @PostMapping
-    public UserDto createUser(@RequestBody UserDto dto) {
+    public UserDTO createUser(@RequestBody UserDTO dto) {
         System.out.println("DEBUG: createUser called with dto=" + dto);
         try {
             User user = toEntity(dto);
@@ -48,7 +48,7 @@ public class UserRestController {
     }
 
     @PutMapping("/{id}")
-    public UserDto updateUser(@PathVariable Long id, @RequestBody UserDto dto) {
+    public UserDTO updateUser(@PathVariable Long id, @RequestBody UserDTO dto) {
         System.out.println("DEBUG: updateUser called with id=" + id + " dto=" + dto);
         try {
             User existing = userService.getById(id)
@@ -88,8 +88,8 @@ public class UserRestController {
 
     // --- Mapping helpers ---
 
-    private UserDto toDto(User user) {
-        UserDto dto = new UserDto();
+    private UserDTO toDto(User user) {
+        UserDTO dto = new UserDTO();
         dto.setUserId(user.getUserId());
         dto.setEmail(user.getEmail());
         dto.setName(user.getName());
@@ -104,7 +104,7 @@ public class UserRestController {
         return dto;
     }
 
-    private User toEntity(UserDto dto) {
+    private User toEntity(UserDTO dto) {
         User user = new User();
         user.setUserId(dto.getUserId());
         user.setEmail(dto.getEmail());

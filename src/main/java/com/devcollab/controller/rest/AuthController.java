@@ -1,12 +1,14 @@
 package com.devcollab.controller.rest;
 
 import com.devcollab.domain.User;
+import com.devcollab.dto.UserDTO;
 import com.devcollab.dto.request.*;
 import com.devcollab.dto.response.AuthResponseDTO;
 import com.devcollab.dto.response.CheckEmailResponseDTO;
 import com.devcollab.dto.response.ErrorResponseDTO;
 import com.devcollab.repository.UserRepository;
 import com.devcollab.service.impl.core.UserServiceImpl;
+import com.devcollab.service.system.AuthService;
 import com.devcollab.service.system.JwtService;
 import com.devcollab.service.system.MailService;
 import com.devcollab.service.system.OtpService;
@@ -16,12 +18,16 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -37,6 +43,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final AuthService authService;
 
     @PostMapping("/check-email")
     public ResponseEntity<?> checkEmail(@Valid @RequestBody CheckEmailRequestDTO request) {
@@ -301,6 +308,33 @@ public class AuthController {
                 .header(org.springframework.http.HttpHeaders.SET_COOKIE, clearAccess.toString())
                 .header(org.springframework.http.HttpHeaders.SET_COOKIE, clearRefresh.toString())
                 .body(new AuthResponseDTO("Đăng xuất thành công.", "LOGOUT_SUCCESS", null, null, null, "/view/signin"));
+    }
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Authentication auth) {
+        try {
+            UserDTO currentUser = authService.getCurrentUser(auth);
+            if (currentUser == null) {
+                log.warn("⚠️ No authenticated user found.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "No authenticated user"));
+            }
+            return ResponseEntity.ok(currentUser);
+
+        } catch (SecurityException e) {
+            log.warn("⚠️ Unauthorized access attempt.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized"));
+
+        } catch (IllegalArgumentException e) {
+            log.error("❌ Invalid authentication state: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+
+        } catch (Exception e) {
+            log.error("💥 Unexpected error in /api/auth/me", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Internal Server Error", "message", e.getMessage()));
+        }
     }
 
 }

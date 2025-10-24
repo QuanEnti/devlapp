@@ -47,4 +47,10 @@ public class TaskFollower {
     public void setFollowedAt(LocalDateTime followedAt) {
         this.followedAt = followedAt;
     }
+    
+    public TaskFollower(Task task, User user) {
+        this.task = task;
+        this.user = user;
+        this.followedAt = LocalDateTime.now();
+    }
 }

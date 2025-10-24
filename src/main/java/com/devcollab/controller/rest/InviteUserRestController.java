@@ -1,97 +1,129 @@
 package com.devcollab.controller.rest;
 
-import com.devcollab.dto.UserDto;
 import com.devcollab.domain.Project;
+import com.devcollab.domain.ProjectMember;
+import com.devcollab.dto.MemberDTO;
+import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.ProjectMemberRepository;
 import com.devcollab.repository.ProjectRepository;
 import com.devcollab.repository.UserRepository;
+import com.devcollab.service.core.ProjectService;
+import com.devcollab.service.system.ProjectMemberService;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * Quản lý mời người dùng, chia sẻ link, join dự án
+ */
 @RestController
 @RequestMapping("/api/pm/invite")
+@RequiredArgsConstructor
 public class InviteUserRestController {
 
     private final ProjectRepository projectRepo;
     private final UserRepository userRepo;
     private final ProjectMemberRepository projectMemberRepo;
+    private final ProjectService projectService;
+    private final ProjectMemberService projectMemberService;
 
-    public InviteUserRestController(ProjectRepository projectRepo, UserRepository userRepo, ProjectMemberRepository projectMemberRepo) {
-        this.projectRepo = projectRepo;
-        this.userRepo = userRepo;
-        this.projectMemberRepo = projectMemberRepo;
+    @PostMapping
+    @PreAuthorize("hasAnyRole('PM','ADMIN')")
+    public ResponseEntity<?> inviteToProject(
+            @RequestParam Long projectId,
+            @RequestParam String email,
+            @RequestParam(defaultValue = "Member") String role,
+            Authentication auth) {
+        String pmEmail = auth.getName();
+        projectMemberService.addMemberToProject(projectId, pmEmail, email, role);
+        return ResponseEntity.ok(Map.of("message", "Đã mời thành viên vào dự án"));
     }
 
-    // --- 1️⃣ Get list of all projects (for dropdown)
     @GetMapping("/projects")
-    public List<Map<String, Object>> getAllProjects() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (Project p : projectRepo.findAll()) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("projectId", p.getProjectId());
-            map.put("name", p.getName());
-            list.add(map);
-        }
-        return list;
+    @PreAuthorize("hasAnyRole('PM','ADMIN')")
+    public ResponseEntity<?> getAllProjects(Authentication auth) {
+        String pmEmail = extractEmail(auth);
+        var pm = userRepo.findByEmail(pmEmail)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy PM: " + pmEmail));
+
+        var projects = projectRepo.findByCreatedBy_UserId(pm.getUserId());
+        return ResponseEntity.ok(projects.stream().map(p -> Map.of(
+                "projectId", p.getProjectId(),
+                "name", p.getName(),
+                "status", p.getStatus(),
+                "allowLinkJoin", p.isAllowLinkJoin(),
+                "inviteLink", p.getInviteLink())));
     }
 
-    @GetMapping("/project/{projectId}")
-    public Map<String, Object> getProjectDetails(@PathVariable Long projectId) {
+   @GetMapping("/project/{projectId}")
+    @PreAuthorize("hasAnyRole('PM','ADMIN')")
+    public ResponseEntity<?> getProjectDetails(@PathVariable Long projectId) {
         Project project = projectRepo.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
 
-        List<UserDto> members = projectMemberRepo.findMembersByProjectId(projectId);
-
-        return Map.of(
-                "projectId", project.getProjectId(),
-                "name", project.getName(),
-                "description", project.getDescription(),
-                "startDate", project.getStartDate(),
-                "endDate", project.getDueDate(),
-                "members", members
-        );
+        List<MemberDTO> members = projectMemberRepo.findMembersByProject(projectId);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("projectId", project.getProjectId());
+        result.put("name", project.getName());
+        result.put("members", members != null ? members : List.of());
+        result.put("inviteLink", project.getInviteLink());
+        result.put("allowLinkJoin", project.isAllowLinkJoin());
+        
+        return ResponseEntity.ok(result);
     }
 
-    // --- 2️⃣ Find user by email (for “Find” button)
-    @GetMapping("/find-user")
-    public UserDto findUserByEmail(@RequestParam String email) {
-        return userRepo.findByEmail(email)
-                .map(UserDto::fromEntity)
-                .orElse(null);
+
+    /** 🟢 Bật chia sẻ link mời */
+    @PostMapping("/project/{projectId}/share/enable")
+    @PreAuthorize("hasAnyRole('PM','ADMIN')")
+    public ResponseEntity<?> enableShareLink(@PathVariable Long projectId, Authentication auth) {
+        String pmEmail = extractEmail(auth);
+        Project updated = projectService.enableShareLink(projectId, pmEmail);
+        return ResponseEntity.ok(Map.of(
+                "message", "Đã bật chia sẻ dự án!",
+                "inviteLink", updated.getInviteLink(),
+                "allowLinkJoin", updated.isAllowLinkJoin()));
     }
 
-    // --- 3️⃣ Invite user to selected project
-    @PostMapping("/invite")
-    public Map<String, Object> inviteUser(@RequestParam Long projectId, @RequestParam Long userId) {
-        Map<String, Object> response = new HashMap<>();
+    /** 🔴 Tắt chia sẻ link mời */
+    @DeleteMapping("/project/{projectId}/share/disable")
+    @PreAuthorize("hasAnyRole('PM','ADMIN')")
+    public ResponseEntity<?> disableShareLink(@PathVariable Long projectId, Authentication auth) {
+        String pmEmail = extractEmail(auth);
+        Project updated = projectService.disableShareLink(projectId, pmEmail);
+        return ResponseEntity.ok(Map.of(
+                "message", "Đã tắt chia sẻ dự án!",
+                "allowLinkJoin", updated.isAllowLinkJoin()));
+    }
 
-        // Check if user already member
-        boolean exists = projectMemberRepo.existsByProject_ProjectIdAndUser_UserId(projectId, userId);
-        if (exists) {
-            response.put("status", "exists");
-            response.put("message", "User is already a member of this project.");
-            return response;
+    /** 🟣 User join project qua link mời */
+    @PostMapping("/join/{inviteLink}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> joinByInviteLink(@PathVariable String inviteLink, Authentication auth) {
+        String email = extractEmail(auth);
+        var user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy user!"));
+
+        ProjectMember newMember = projectService.joinProjectByLink(inviteLink, user.getUserId());
+        return ResponseEntity.ok(Map.of(
+                "message", "Tham gia dự án thành công!",
+                "projectId", newMember.getProject().getProjectId(),
+                "projectName", newMember.getProject().getName()));
+    }
+
+    private String extractEmail(Authentication auth) {
+        if (auth instanceof OAuth2AuthenticationToken oauth) {
+            return oauth.getPrincipal().getAttribute("email");
         }
-
-        // Add new member
-        projectMemberRepo.addMember(projectId, userId, "Member");
-        response.put("status", "success");
-        response.put("message", "User invited successfully.");
-        return response;
+        return auth.getName();
     }
-    @GetMapping("/related-projects/{userId}")
-    public List<Map<String, Object>> getRelatedProjects(@PathVariable Long userId) {
-        return projectMemberRepo.findProjectsByUserId(userId)
-                .stream()
-                .map(p -> {
-                    Map<String, Object> projectMap = new HashMap<>();
-                    projectMap.put("projectId", p.getProjectId());
-                    projectMap.put("name", p.getName());
-                    projectMap.put("thumbnailUrl", p.getStatus() != null ? p.getStatus() : "");
-                    return projectMap;
-                })
-                .toList();
-    }
-
 }
