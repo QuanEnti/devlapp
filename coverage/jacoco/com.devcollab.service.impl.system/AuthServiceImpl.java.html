@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.system</a> &gt; <span class="el_source">AuthServiceImpl.java</span></div><h1>AuthServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.system;
+
+import com.devcollab.domain.User;
+import com.devcollab.dto.UserDTO;
+import com.devcollab.repository.UserRepository;
+import com.devcollab.service.system.AuthService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+<span class="fc" id="L16">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImpl implements AuthService {
+
+    private final UserRepository userRepository;
+
+    @Override
+    public Optional&lt;User&gt; getUserByEmail(String email) {
+<span class="fc" id="L25">        return userRepository.findByEmail(email);</span>
+    }
+
+    @Override
+    public UserDTO getCurrentUser(Authentication auth) {
+<span class="pc bpc" id="L30" title="1 of 4 branches missed.">        if (auth == null || !auth.isAuthenticated()) {</span>
+<span class="fc" id="L31">            log.warn(&quot;⚠️ Attempted to access current user without authentication&quot;);</span>
+<span class="fc" id="L32">            throw new SecurityException(&quot;Unauthorized&quot;);</span>
+        }
+
+<span class="fc" id="L35">        Object principal = auth.getPrincipal();</span>
+
+
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (principal instanceof OAuth2User oauthUser) {</span>
+<span class="fc" id="L39">            String email = oauthUser.getAttribute(&quot;email&quot;);</span>
+<span class="fc" id="L40">            String name = oauthUser.getAttribute(&quot;name&quot;);</span>
+<span class="fc" id="L41">            String avatar = oauthUser.getAttribute(&quot;picture&quot;);</span>
+
+<span class="pc bpc" id="L43" title="1 of 4 branches missed.">            if (email == null || email.isBlank()) {</span>
+<span class="fc" id="L44">                log.error(&quot;❌ Missing email attribute from OAuth2 user: {}&quot;, oauthUser);</span>
+<span class="fc" id="L45">                throw new IllegalStateException(&quot;Missing email attribute from Google account&quot;);</span>
+            }
+
+<span class="fc" id="L48">            var existingUserOpt = userRepository.findByEmail(email);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            if (existingUserOpt.isPresent()) {</span>
+<span class="fc" id="L50">                var user = existingUserOpt.get();</span>
+<span class="fc" id="L51">                log.debug(&quot;✅ Authenticated via Google OAuth2 (existing user): {}&quot;, email);</span>
+<span class="fc" id="L52">                return UserDTO.fromEntity(user);</span>
+            }
+
+<span class="fc" id="L55">            log.debug(&quot;✅ Authenticated via Google OAuth2 (new user session): {}&quot;, email);</span>
+<span class="fc" id="L56">            return UserDTO.builder()</span>
+<span class="fc" id="L57">                    .userId(null)</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">                    .name(name != null ? name : &quot;Google User&quot;)</span>
+<span class="fc" id="L59">                    .email(email)</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">                    .avatarUrl(avatar != null ? avatar : &quot;https://i.pravatar.cc/100?u=&quot; + email)</span>
+<span class="fc" id="L61">                    .provider(&quot;google&quot;)</span>
+<span class="fc" id="L62">                    .build();</span>
+        }
+
+  
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (principal instanceof UserDetails userDetails) {</span>
+<span class="fc" id="L67">            String email = userDetails.getUsername();</span>
+<span class="fc" id="L68">            var userOpt = userRepository.findByEmail(email);</span>
+
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (userOpt.isEmpty()) {</span>
+<span class="fc" id="L71">                log.error(&quot;❌ User not found in DB: {}&quot;, email);</span>
+<span class="fc" id="L72">                throw new IllegalArgumentException(&quot;USER_NOT_FOUND&quot;);</span>
+            }
+
+<span class="fc" id="L75">            var user = userOpt.get();</span>
+<span class="fc" id="L76">            log.debug(&quot;✅ Authenticated via local account: {}&quot;, email);</span>
+
+<span class="fc" id="L78">            return UserDTO.builder()</span>
+<span class="fc" id="L79">                    .userId(user.getUserId())</span>
+<span class="fc" id="L80">                    .name(user.getName())</span>
+<span class="fc" id="L81">                    .email(user.getEmail())</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">                    .avatarUrl(user.getAvatarUrl() != null</span>
+<span class="nc" id="L83">                            ? user.getAvatarUrl()</span>
+<span class="fc" id="L84">                            : &quot;https://i.pravatar.cc/100?u=&quot; + user.getEmail())</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">                    .provider(user.getProvider() != null ? user.getProvider() : &quot;local&quot;)</span>
+<span class="fc" id="L86">                    .build();</span>
+        }
+
+
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        String type = principal != null ? principal.getClass().getSimpleName() : &quot;null&quot;;</span>
+<span class="fc" id="L91">        log.error(&quot;❌ Unsupported authentication principal type: {}&quot;, type);</span>
+<span class="fc" id="L92">        throw new IllegalArgumentException(&quot;Unsupported authentication type: &quot; + type);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

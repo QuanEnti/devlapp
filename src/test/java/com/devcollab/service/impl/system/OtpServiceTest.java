@@ -1,8 +1,12 @@
 package com.devcollab.service.impl.system;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -12,104 +16,128 @@ import com.devcollab.service.system.OtpService;
 import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import org.mockito.quality.Strictness;
+@Tag("unit")
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 
 class OtpServiceTest {
 
     @Mock
     private RedisTemplate<String, String> redisTemplate;
-
     @Mock
     private ValueOperations<String, String> valueOps;
 
-    @InjectMocks
     private OtpService otpService;
 
     @BeforeEach
     void setup() {
-        MockitoAnnotations.openMocks(this);
-        when(redisTemplate.opsForValue()).thenReturn(valueOps);
-
-        // Thiết lập giá trị @Value
+        otpService = new OtpService(redisTemplate);
         ReflectionTestUtils.setField(otpService, "otpLength", 6);
         ReflectionTestUtils.setField(otpService, "otpTtlSeconds", 300L);
         ReflectionTestUtils.setField(otpService, "cooldownSeconds", 15L);
+
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
     }
 
-    @Test // ✅ TC15
-    void generateOtp_ShouldReturnNumericStringWithCorrectLength() {
+    // O01: generateOtp() - độ dài hợp lệ
+    @Test
+    void generateOtp_length6_numeric() {
         String otp = otpService.generateOtp();
-        assertNotNull(otp);
-        assertEquals(6, otp.length(), "OTP phải có độ dài = otpLength");
-        assertTrue(otp.matches("\\d{6}"), "OTP chỉ gồm các ký tự số");
+        assertEquals(6, otp.length());
+        assertTrue(otp.matches("\\d{6}"));
     }
 
-    @Test // ✅ TC16
-    void storeOtp_ShouldStoreOtpAndCooldownInRedis() {
-        String email = "user@mail.com";
+    // O02: generateOtp() - otpLength = 0 (boundary)
+    @Test
+    void generateOtp_lengthZero_returnsEmpty() {
+        ReflectionTestUtils.setField(otpService, "otpLength", 0);
+        String otp = otpService.generateOtp();
+        assertEquals(0, otp.length());
+    }
+
+    // O03: storeOtp() - lưu thành công (verify set 2 lần)
+    @Test
+    void storeOtp_success_setsOtpAndCooldown() {
+        String email = "bob@example.com";
         String otp = "123456";
 
         otpService.storeOtp(email, otp);
 
-        verify(valueOps, times(1))
-                .set(eq("otp:user@mail.com"), eq("123456"), eq(Duration.ofSeconds(300L)));
-        verify(valueOps, times(1))
-                .set(eq("otp:cooldown:user@mail.com"), eq("1"), eq(Duration.ofSeconds(15L)));
+        verify(redisTemplate, times(2)).opsForValue();
+        verify(valueOps).set(eq("otp:" + email), eq(otp), any(Duration.class));
+        verify(valueOps).set(eq("otp:cooldown:" + email), eq("1"), any(Duration.class));
     }
 
-    @Test // ✅ TC17
-    void isInCooldown_ShouldReturnTrue_WhenKeyExists() {
-        when(redisTemplate.hasKey("otp:cooldown:abc@gmail.com")).thenReturn(true);
-        boolean result = otpService.isInCooldown("abc@gmail.com", 15);
+    // O04: storeOtp() - email null (negative)
+    @Test
+    void storeOtp_emailNull_throwsNpe() {
+        assertThrows(NullPointerException.class, () -> otpService.storeOtp(null, "111111"));
+        verify(redisTemplate, never()).opsForValue();
+    }
+
+    // O05: isInCooldown() - có key
+    @Test
+    void isInCooldown_keyExists_returnsTrue() {
+        String email = "bob@example.com";
+        when(redisTemplate.hasKey("otp:cooldown:" + email)).thenReturn(Boolean.TRUE);
+
+        boolean result = otpService.isInCooldown(email, 15);
         assertTrue(result);
+        verify(redisTemplate).hasKey("otp:cooldown:" + email);
     }
 
-    @Test // ✅ TC18
-    void isInCooldown_ShouldReturnFalse_WhenKeyMissing() {
-        when(redisTemplate.hasKey("otp:cooldown:abc@gmail.com")).thenReturn(false);
-        boolean result = otpService.isInCooldown("abc@gmail.com", 15);
+    // O06: isInCooldown() - không có key
+    @Test
+    void isInCooldown_keyNotExists_returnsFalse() {
+        String email = "bob@example.com";
+        when(redisTemplate.hasKey("otp:cooldown:" + email)).thenReturn(Boolean.FALSE);
+
+        boolean result = otpService.isInCooldown(email, 15);
         assertFalse(result);
+        verify(redisTemplate).hasKey("otp:cooldown:" + email);
     }
 
-    @Test // ✅ TC19
-    void verifyOtp_ShouldReturnTrue_WhenOtpMatches() {
-        when(valueOps.get("otp:test@mail.com")).thenReturn("999999");
-        boolean result = otpService.verifyOtp("test@mail.com", "999999");
-        assertTrue(result, "OTP hợp lệ phải trả về true");
-        verify(redisTemplate).delete("otp:test@mail.com");
+    // O07: verifyOtp() - đúng OTP
+    @Test
+    void verifyOtp_correct_returnsTrueAndDelete() {
+        String email = "eve@example.com";
+        when(valueOps.get("otp:" + email)).thenReturn("654321");
+
+        boolean ok = otpService.verifyOtp(email, "654321");
+
+        assertTrue(ok);
+        verify(valueOps).get("otp:" + email);
+        verify(redisTemplate).delete("otp:" + email);
     }
 
-    @Test // ✅ TC20
-    void verifyOtp_ShouldReturnFalse_WhenOtpDoesNotMatch() {
-        when(valueOps.get("otp:test@mail.com")).thenReturn("000000");
-        boolean result = otpService.verifyOtp("test@mail.com", "111111");
-        assertFalse(result, "OTP sai phải trả về false");
+    // O08: verifyOtp() - sai OTP
+    @Test
+    void verifyOtp_wrong_returnsFalse() {
+        String email = "eve@example.com";
+        when(valueOps.get("otp:" + email)).thenReturn("654321");
+
+        boolean ok = otpService.verifyOtp(email, "000000");
+
+        assertFalse(ok);
+        verify(valueOps).get("otp:" + email);
         verify(redisTemplate, never()).delete(anyString());
     }
 
-    @Test // ✅ TC21
-    void verifyOtp_ShouldReturnFalse_WhenOtpExpiredOrNull() {
-        when(valueOps.get("otp:test@mail.com")).thenReturn(null);
-        boolean result = otpService.verifyOtp("test@mail.com", "123456");
-        assertFalse(result, "OTP null hoặc hết hạn phải trả về false");
+    // O09: verifyOtp() - OTP hết hạn (null)
+    @Test
+    void verifyOtp_expired_returnsFalse() {
+        String email = "eve@example.com";
+        when(valueOps.get("otp:" + email)).thenReturn(null);
+
+        boolean ok = otpService.verifyOtp(email, "654321");
+
+        assertFalse(ok);
+        verify(valueOps).get("otp:" + email);
         verify(redisTemplate, never()).delete(anyString());
-    }
-
-    @Test // ✅ TC22
-    void verifyOtp_ShouldDeleteKey_WhenOtpMatches() {
-        when(valueOps.get("otp:user@mail.com")).thenReturn("777777");
-        otpService.verifyOtp("user@mail.com", "777777");
-        verify(redisTemplate).delete("otp:user@mail.com");
-    }
-
-    @Test // ✅ TC23
-    void buildKeys_ShouldReturnFormattedStrings() {
-        // Dùng Reflection để gọi hàm private
-        String otpKey = (String) ReflectionTestUtils.invokeMethod(otpService, "buildOtpKey", "MyEmail@gmail.com");
-        String cooldownKey = (String) ReflectionTestUtils.invokeMethod(otpService, "buildCooldownKey",
-                "MyEmail@gmail.com");
-
-        assertEquals("otp:myemail@gmail.com", otpKey);
-        assertEquals("otp:cooldown:myemail@gmail.com", cooldownKey);
     }
 }

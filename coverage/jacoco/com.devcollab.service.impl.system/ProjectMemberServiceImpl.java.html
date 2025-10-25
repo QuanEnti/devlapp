@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectMemberServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.system</a> &gt; <span class="el_source">ProjectMemberServiceImpl.java</span></div><h1>ProjectMemberServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.system;
+
+import com.devcollab.domain.Project;
+import com.devcollab.domain.ProjectMember;
+import com.devcollab.dto.MemberDTO;
+import com.devcollab.exception.NotFoundException;
+import com.devcollab.repository.ProjectMemberRepository;
+import com.devcollab.repository.ProjectRepository;
+import com.devcollab.repository.UserRepository;
+import com.devcollab.service.system.ProjectMemberService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+
+<span class="nc" id="L20">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+public class ProjectMemberServiceImpl implements ProjectMemberService {
+
+    private final ProjectMemberRepository projectMemberRepo;
+    private final ProjectRepository projectRepo;
+    private final UserRepository userRepo;
+
+    // 🟢 Lấy danh sách thành viên giới hạn
+    @Transactional
+    @Override
+    public List&lt;MemberDTO&gt; getMembersByProject(Long projectId, int limit) {
+<span class="nc bnc" id="L33" title="All 2 branches missed.">        if (projectId == null)</span>
+<span class="nc" id="L34">            return List.of();</span>
+<span class="nc" id="L35">        List&lt;MemberDTO&gt; members = projectMemberRepo.findMembersByProject(projectId);</span>
+<span class="nc" id="L36">        return members.stream().limit(limit).toList();</span>
+    }
+
+    @Transactional
+    @Override
+    public List&lt;MemberDTO&gt; getAllMembersByPmEmail(String email) {
+<span class="nc bnc" id="L42" title="All 4 branches missed.">        if (email == null || email.isEmpty())</span>
+<span class="nc" id="L43">            return List.of();</span>
+<span class="nc" id="L44">        return projectMemberRepo.findAllMembersByPmEmail(email);</span>
+    }
+
+    @Transactional
+    @Override
+    public Page&lt;MemberDTO&gt; getAllMembers(int page, int size, String keyword) {
+<span class="nc" id="L50">        Pageable pageable = PageRequest.of(page, size);</span>
+<span class="nc" id="L51">        return projectMemberRepo.findAllMembers(keyword, pageable);</span>
+    }
+
+    @Transactional
+    @Override
+    public boolean removeMember(Long userId) {
+<span class="nc" id="L57">        List&lt;ProjectMember&gt; members = projectMemberRepo.findByUser_UserId(userId);</span>
+<span class="nc bnc" id="L58" title="All 4 branches missed.">        if (members == null || members.isEmpty()) {</span>
+<span class="nc" id="L59">            throw new NotFoundException(&quot;Không tìm thấy thành viên cần xóa&quot;);</span>
+        }
+<span class="nc" id="L61">        projectMemberRepo.deleteAll(members);</span>
+<span class="nc" id="L62">        return true;</span>
+    }
+
+    @Transactional
+    public boolean removeMemberFromProject(Long projectId, Long userId) {
+<span class="nc" id="L67">        boolean exists = projectMemberRepo</span>
+<span class="nc" id="L68">                .existsByProject_ProjectIdAndUser_UserId(projectId, userId);</span>
+
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (!exists) {</span>
+<span class="nc" id="L71">            throw new RuntimeException(&quot;Không tìm thấy thành viên trong dự án!&quot;);</span>
+        }
+
+<span class="nc" id="L74">        projectMemberRepo.deleteByProject_ProjectIdAndUser_UserId(projectId, userId);</span>
+<span class="nc" id="L75">        return true;</span>
+    }
+
+    @Transactional
+    @Override
+    public boolean addMemberToProject(Long projectId, String pmEmail, String email, String role) {
+<span class="nc" id="L81">        var project = projectRepo.findById(projectId)</span>
+<span class="nc" id="L82">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án có ID: &quot; + projectId));</span>
+
+        // ✅ CHỈ cho phép người tạo dự án được mời
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (!project.getCreatedBy().getEmail().equalsIgnoreCase(pmEmail)</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">                &amp;&amp; !project.getCreatedBy().getProviderId().equalsIgnoreCase(pmEmail)) {</span>
+<span class="nc" id="L87">            throw new IllegalStateException(&quot;Chỉ người tạo dự án mới có quyền mời thành viên!&quot;);</span>
+        }
+
+        // 🔹 2. Tìm người dùng được mời
+<span class="nc" id="L91">        var user = userRepo.findByEmail(email)</span>
+<span class="nc" id="L92">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy người dùng có email: &quot; + email));</span>
+
+        // 🔹 3. Kiểm tra trùng
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (projectMemberRepo.existsByProject_ProjectIdAndUser_UserId(projectId, user.getUserId())) {</span>
+<span class="nc" id="L96">            throw new IllegalStateException(&quot;Người dùng này đã có trong dự án!&quot;);</span>
+        }
+
+        // 🔹 4. Thêm thành viên mới
+<span class="nc" id="L100">        projectMemberRepo.addMember(projectId, user.getUserId(), role.toUpperCase());</span>
+<span class="nc" id="L101">        log.info(&quot;✅ {} (owner) mời {} vào project ID {} ({}) với vai trò {}&quot;,</span>
+<span class="nc" id="L102">                pmEmail, email, projectId, project.getName(), role);</span>
+
+<span class="nc" id="L104">        return true;</span>
+    }
+
+    @Transactional
+    @Override
+    public boolean updateMemberRole(Long projectId, Long userId, String role) {
+<span class="nc" id="L110">        List&lt;ProjectMember&gt; members = projectMemberRepo</span>
+<span class="nc" id="L111">                .findByProject_ProjectIdAndUser_UserId(projectId, userId);</span>
+
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (members.isEmpty()) {</span>
+<span class="nc" id="L114">            throw new NotFoundException(&quot;Không tìm thấy thành viên trong dự án.&quot;);</span>
+        }
+
+<span class="nc" id="L117">        ProjectMember member = members.get(0);</span>
+<span class="nc" id="L118">        member.setRoleInProject(role);</span>
+<span class="nc" id="L119">        projectMemberRepo.save(member);</span>
+<span class="nc" id="L120">        return true;</span>
+    }
+
+    @Transactional
+    @Override
+    public boolean removeUserFromAllProjectsOfPm(String pmEmail, Long userId) {
+<span class="nc" id="L126">        List&lt;Project&gt; projects = projectMemberRepo.findProjectsCreatedByPm(pmEmail);</span>
+
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (projects.isEmpty()) {</span>
+<span class="nc" id="L129">            throw new NotFoundException(&quot;PM chưa có dự án nào để xoá thành viên!&quot;);</span>
+        }
+
+<span class="nc" id="L132">        long beforeCount = projectMemberRepo.count();</span>
+<span class="nc" id="L133">        projectMemberRepo.deleteAllByUserIdAndPmEmail(userId, pmEmail);</span>
+<span class="nc" id="L134">        long afterCount = projectMemberRepo.count();</span>
+
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        return beforeCount != afterCount;</span>
+    }
+    
+    @Override
+    @Transactional
+    public void updateMemberRole(Long projectId, Long userId, String role, String pmEmail) {
+<span class="nc" id="L142">        var project = projectRepo.findById(projectId)</span>
+<span class="nc" id="L143">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+
+<span class="nc" id="L145">        boolean isOwner = project.getCreatedBy().getEmail().equalsIgnoreCase(pmEmail);</span>
+<span class="nc" id="L146">        boolean isManager = projectMemberRepo.hasManagerPermission(projectId, pmEmail, List.of(&quot;PM&quot;, &quot;ADMIN&quot;));</span>
+
+<span class="nc bnc" id="L148" title="All 4 branches missed.">        if (!isOwner &amp;&amp; !isManager) {</span>
+<span class="nc" id="L149">            throw new IllegalStateException(&quot;Bạn không có quyền đổi vai trò thành viên!&quot;);</span>
+        }
+
+<span class="nc" id="L152">        projectMemberRepo.updateMemberRole(projectId, userId, role.toUpperCase());</span>
+<span class="nc" id="L153">        log.info(&quot;🔄 {} đổi vai trò user_id={} thành {}&quot;, pmEmail, userId, role);</span>
+<span class="nc" id="L154">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

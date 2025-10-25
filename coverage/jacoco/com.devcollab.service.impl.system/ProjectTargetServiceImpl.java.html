@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectTargetServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.system</a> &gt; <span class="el_source">ProjectTargetServiceImpl.java</span></div><h1>ProjectTargetServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.system;
+
+import com.devcollab.domain.ProjectTarget;
+import com.devcollab.repository.ProjectTargetRepository;
+import com.devcollab.service.system.ProjectTargetService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class ProjectTargetServiceImpl implements ProjectTargetService {
+
+    private final ProjectTargetRepository projectTargetRepository;
+
+    @Override
+    public ProjectTarget saveOrUpdateTarget(int month, int year, int targetCount, Long createdBy) {
+<span class="nc" id="L20">        Optional&lt;ProjectTarget&gt; existing = projectTargetRepository.findByMonthYearAndPm(month, year, createdBy);</span>
+
+<span class="nc bnc" id="L22" title="All 2 branches missed.">        if (existing.isPresent()) {</span>
+<span class="nc" id="L23">            ProjectTarget pt = existing.get();</span>
+<span class="nc" id="L24">            pt.setTargetCount(targetCount);</span>
+<span class="nc" id="L25">            return projectTargetRepository.save(pt);</span>
+        }
+
+<span class="nc" id="L28">        ProjectTarget newTarget = ProjectTarget.builder()</span>
+<span class="nc" id="L29">                .month(month)</span>
+<span class="nc" id="L30">                .year(year)</span>
+<span class="nc" id="L31">                .targetCount(targetCount)</span>
+<span class="nc" id="L32">                .createdBy(createdBy)</span>
+<span class="nc" id="L33">                .build();</span>
+<span class="nc" id="L34">        return projectTargetRepository.save(newTarget);</span>
+    }
+
+    @Override
+    public List&lt;ProjectTarget&gt; getTargetsByYearAndPm(int year, Long pmId) {
+<span class="nc" id="L39">        return projectTargetRepository.findTargetsByYearAndPm(year, pmId);</span>
+    }
+
+    @Override
+    public Optional&lt;ProjectTarget&gt; getTargetByMonthYearAndPm(int month, int year, Long pmId) {
+<span class="nc" id="L44">        return projectTargetRepository.findByMonthYearAndPm(month, year, pmId);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

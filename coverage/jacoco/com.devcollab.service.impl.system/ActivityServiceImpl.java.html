@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ActivityServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.system</a> &gt; <span class="el_source">ActivityServiceImpl.java</span></div><h1>ActivityServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.system;
+
+import com.devcollab.domain.Activity;
+import com.devcollab.domain.User;
+import com.devcollab.repository.ActivityRepository;
+import com.devcollab.service.system.ActivityService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ActivityServiceImpl implements ActivityService {
+
+    private final ActivityRepository activityRepository;
+
+    @Override
+    public void log(String entityType, Long entityId, String action, String data) {
+        try {
+<span class="nc" id="L23">            System.out.println(&quot;⚠️ [ActivityService] Skip log (no actor) for action: &quot; + action);</span>
+<span class="nc" id="L24">        } catch (Exception e) {</span>
+<span class="nc" id="L25">            System.err.println(&quot;[ActivityService] Error logging: &quot; + e.getMessage());</span>
+<span class="nc" id="L26">        }</span>
+<span class="nc" id="L27">    }</span>
+
+    public void logWithActor(Long actorId, String entityType, Long entityId, String action, String data) {
+        try {
+<span class="nc bnc" id="L31" title="All 2 branches missed.">            if (actorId == null) {</span>
+<span class="nc" id="L32">                System.out.println(&quot;⚠️ [ActivityService] Skip log (actorId=null) for action: &quot; + action);</span>
+<span class="nc" id="L33">                return;</span>
+            }
+
+<span class="nc" id="L36">            Activity log = new Activity();</span>
+<span class="nc" id="L37">            log.setEntityType(entityType);</span>
+<span class="nc" id="L38">            log.setEntityId(entityId);</span>
+<span class="nc" id="L39">            log.setAction(action);</span>
+<span class="nc" id="L40">            log.setDataJson(data);</span>
+<span class="nc" id="L41">            log.setCreatedAt(LocalDateTime.now());</span>
+
+<span class="nc" id="L43">            User user = new User();</span>
+<span class="nc" id="L44">            user.setUserId(actorId);</span>
+<span class="nc" id="L45">            log.setActor(user);</span>
+
+<span class="nc" id="L47">            activityRepository.save(log);</span>
+
+<span class="nc" id="L49">        } catch (Exception e) {</span>
+<span class="nc" id="L50">            System.err.println(&quot;[ActivityService] Error logging with actor: &quot; + e.getMessage());</span>
+<span class="nc" id="L51">        }</span>
+<span class="nc" id="L52">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

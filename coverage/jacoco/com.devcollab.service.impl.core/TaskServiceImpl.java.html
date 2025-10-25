@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TaskServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.core</a> &gt; <span class="el_source">TaskServiceImpl.java</span></div><h1>TaskServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.core;
+
+import com.devcollab.domain.*;
+import com.devcollab.dto.TaskDTO;
+import com.devcollab.dto.request.MoveTaskRequest;
+import com.devcollab.dto.request.TaskDatesUpdateReq;
+import com.devcollab.exception.BadRequestException;
+import com.devcollab.exception.NotFoundException;
+import com.devcollab.repository.*;
+import com.devcollab.service.core.TaskService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class TaskServiceImpl implements TaskService {
+
+    private final ProjectRepository projectRepository;
+    private final BoardColumnRepository boardColumnRepository;
+    private final TaskRepository taskRepository;
+
+    @Override
+    public Task createTaskFromDTO(TaskDTO dto, Long creatorId) {
+<span class="nc bnc" id="L30" title="All 2 branches missed.">        if (dto == null)</span>
+<span class="nc" id="L31">            throw new BadRequestException(&quot;Dữ liệu task rỗng&quot;);</span>
+
+<span class="nc" id="L33">        Task task = new Task();</span>
+<span class="nc" id="L34">        task.setTitle(dto.getTitle());</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        task.setPriority(dto.getPriority() != null ? dto.getPriority() : &quot;MEDIUM&quot;);</span>
+<span class="nc" id="L36">        task.setDescriptionMd(dto.getDescriptionMd());</span>
+<span class="nc" id="L37">        task.setOrderIndex(0);</span>
+<span class="nc" id="L38">        task.setStatus(&quot;OPEN&quot;);</span>
+<span class="nc" id="L39">        task.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L40">        task.setUpdatedAt(LocalDateTime.now());</span>
+
+<span class="nc bnc" id="L42" title="All 4 branches missed.">        if (dto.getDeadline() != null &amp;&amp; !dto.getDeadline().isBlank()) {</span>
+            try {
+<span class="nc" id="L44">                task.setDeadline(LocalDateTime.parse(dto.getDeadline()));</span>
+<span class="nc" id="L45">            } catch (Exception e) {</span>
+                try {
+<span class="nc" id="L47">                    task.setDeadline(LocalDateTime.parse(dto.getDeadline() + &quot;T00:00:00&quot;));</span>
+<span class="nc" id="L48">                } catch (Exception ignored) {</span>
+<span class="nc" id="L49">                }</span>
+<span class="nc" id="L50">            }</span>
+        }
+
+<span class="nc" id="L53">        BoardColumn column = boardColumnRepository.findById(dto.getColumnId())</span>
+<span class="nc" id="L54">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy cột&quot;));</span>
+<span class="nc" id="L55">        Project project = column.getProject();</span>
+
+<span class="nc" id="L57">        task.setColumn(column);</span>
+<span class="nc" id="L58">        task.setProject(project);</span>
+
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (creatorId != null) {</span>
+<span class="nc" id="L61">            User creator = new User();</span>
+<span class="nc" id="L62">            creator.setUserId(creatorId);</span>
+<span class="nc" id="L63">            task.setCreatedBy(creator);</span>
+<span class="nc" id="L64">        } else {</span>
+<span class="nc" id="L65">            throw new BadRequestException(&quot;Không có thông tin người tạo task&quot;);</span>
+        }
+
+<span class="nc" id="L68">        return taskRepository.save(task);</span>
+    }
+    
+    @Override
+    public Task quickCreate(String title, Long columnId, Long projectId, Long creatorId) {
+<span class="nc bnc" id="L73" title="All 4 branches missed.">        if (title == null || title.isBlank()) {</span>
+<span class="nc" id="L74">            throw new BadRequestException(&quot;Tiêu đề task không được để trống&quot;);</span>
+        }
+
+<span class="nc" id="L77">        BoardColumn column = boardColumnRepository.findById(columnId)</span>
+<span class="nc" id="L78">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy cột&quot;));</span>
+<span class="nc" id="L79">        Project project = projectRepository.findById(projectId)</span>
+<span class="nc" id="L80">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+
+<span class="nc" id="L82">        Task task = new Task();</span>
+<span class="nc" id="L83">        task.setTitle(title.trim());</span>
+<span class="nc" id="L84">        task.setColumn(column);</span>
+<span class="nc" id="L85">        task.setProject(project);</span>
+
+<span class="nc" id="L87">        task.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L88">        task.setUpdatedAt(LocalDateTime.now());</span>
+
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (creatorId != null) {</span>
+<span class="nc" id="L91">            User creator = new User();</span>
+<span class="nc" id="L92">            creator.setUserId(creatorId);</span>
+<span class="nc" id="L93">            task.setCreatedBy(creator);</span>
+        }
+
+<span class="nc" id="L96">        return taskRepository.save(task);</span>
+    }
+
+    @Override
+    public Task createTask(Task task, Long creatorId) {
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        if (task == null)</span>
+<span class="nc" id="L102">            throw new BadRequestException(&quot;Task rỗng&quot;);</span>
+
+        // Gán mặc định
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (task.getCreatedAt() == null)</span>
+<span class="nc" id="L106">            task.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (task.getUpdatedAt() == null)</span>
+<span class="nc" id="L108">            task.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (task.getStatus() == null)</span>
+<span class="nc" id="L110">            task.setStatus(&quot;OPEN&quot;);</span>
+
+<span class="nc" id="L112">        return taskRepository.save(task);</span>
+    }
+
+    // ----------------------------------------------------
+    // ✅ 3. Cập nhật Task
+    // ----------------------------------------------------
+    @Override
+    public Task updateTask(Long id, Task patch) {
+<span class="nc" id="L120">        Task existing = taskRepository.findById(id)</span>
+<span class="nc" id="L121">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (patch.getTitle() != null)</span>
+<span class="nc" id="L123">            existing.setTitle(patch.getTitle());</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (patch.getDescriptionMd() != null)</span>
+<span class="nc" id="L125">            existing.setDescriptionMd(patch.getDescriptionMd());</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (patch.getPriority() != null)</span>
+<span class="nc" id="L127">            existing.setPriority(patch.getPriority());</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (patch.getStatus() != null)</span>
+<span class="nc" id="L129">            existing.setStatus(patch.getStatus());</span>
+<span class="nc" id="L130">        existing.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L131">        return taskRepository.save(existing);</span>
+    }
+
+    // ----------------------------------------------------
+    // ✅ 4. Xóa Task
+    // ----------------------------------------------------
+    @Override
+    public void deleteTask(Long id) {
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (!taskRepository.existsById(id))</span>
+<span class="nc" id="L140">            throw new NotFoundException(&quot;Task không tồn tại&quot;);</span>
+<span class="nc" id="L141">        taskRepository.deleteById(id);</span>
+<span class="nc" id="L142">    }</span>
+
+    // ----------------------------------------------------
+    // ✅ 5. Gán người phụ trách
+    // ----------------------------------------------------
+    @Override
+    public Task assignTask(Long taskId, Long assigneeId) {
+<span class="nc" id="L149">        Task task = taskRepository.findById(taskId)</span>
+<span class="nc" id="L150">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</span>
+
+<span class="nc" id="L152">        User assignee = new User();</span>
+<span class="nc" id="L153">        assignee.setUserId(assigneeId);</span>
+<span class="nc" id="L154">        task.setAssignee(assignee);</span>
+<span class="nc" id="L155">        task.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L156">        return taskRepository.save(task);</span>
+    }
+
+    // ----------------------------------------------------
+    // ✅ 6. Di chuyển Task sang cột khác
+    // ----------------------------------------------------
+    @Override
+    public Task moveTask(Long taskId, Long columnId) {
+<span class="nc" id="L164">        Task task = taskRepository.findById(taskId)</span>
+<span class="nc" id="L165">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</span>
+
+<span class="nc" id="L167">        BoardColumn column = new BoardColumn();</span>
+<span class="nc" id="L168">        column.setColumnId(columnId);</span>
+
+<span class="nc" id="L170">        task.setColumn(column);</span>
+<span class="nc" id="L171">        task.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L172">        return taskRepository.save(task);</span>
+    }
+
+    // ----------------------------------------------------
+    // ✅ 7. Đóng / mở lại Task
+    // ----------------------------------------------------
+    @Override
+    public Task closeTask(Long taskId) {
+<span class="nc" id="L180">        Task task = taskRepository.findById(taskId)</span>
+<span class="nc" id="L181">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</span>
+<span class="nc" id="L182">        task.setStatus(&quot;CLOSED&quot;);</span>
+<span class="nc" id="L183">        task.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L184">        return taskRepository.save(task);</span>
+    }
+
+    @Override
+    public Task reopenTask(Long taskId) {
+<span class="nc" id="L189">        Task task = taskRepository.findById(taskId)</span>
+<span class="nc" id="L190">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</span>
+<span class="nc" id="L191">        task.setStatus(&quot;OPEN&quot;);</span>
+<span class="nc" id="L192">        task.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L193">        return taskRepository.save(task);</span>
+    }
+
+    // ----------------------------------------------------
+    // ✅ 8. Truy vấn
+    // ----------------------------------------------------
+    @Override
+    public List&lt;Task&gt; getTasksByProject(Long projectId) {
+<span class="nc" id="L201">        projectRepository.findById(projectId)</span>
+<span class="nc" id="L202">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+<span class="nc" id="L203">        return taskRepository.findByProject_ProjectId(projectId);</span>
+    }
+
+    @Override
+    public List&lt;Task&gt; getTasksByAssignee(Long userId) {
+<span class="nc" id="L208">        return taskRepository.findByAssignee_UserId(userId);</span>
+    }
+
+    @Override
+    public List&lt;Task&gt; getTasksByProjectAndMember(Long projectId, String email) {
+        // TODO Auto-generated method stub
+<span class="nc" id="L214">        throw new UnsupportedOperationException(&quot;Unimplemented method 'getTasksByProjectAndMember'&quot;);</span>
+    }
+
+    @Override
+    public Task getById(Long id) {
+<span class="nc" id="L219">        return taskRepository.findById(id)</span>
+<span class="nc" id="L220">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</span>
+    }
+
+    @Override
+    public Task updateTaskDescription(Long id, String description) {
+<span class="nc" id="L225">        Task task = taskRepository.findById(id)</span>
+<span class="nc" id="L226">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</span>
+<span class="nc" id="L227">        task.setDescriptionMd(description);</span>
+<span class="nc" id="L228">        task.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L229">        return taskRepository.save(task);</span>
+    }
+    
+    @Override
+    @Transactional
+    public TaskDTO updateDates(Long taskId, TaskDTO dto) {
+<span class="nc" id="L235">        Task task = taskRepository.findById(taskId)</span>
+<span class="nc" id="L236">                .orElseThrow(() -&gt; new RuntimeException(&quot;❌ Task not found with ID: &quot; + taskId));</span>
+
+<span class="nc" id="L238">        DateTimeFormatter iso = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd'T'HH:mm&quot;);</span>
+
+<span class="nc" id="L240">        System.out.printf(&quot;📅 UpdateDates → taskId=%d, start=%s, deadline=%s, recurring=%s, reminder=%s%n&quot;,</span>
+<span class="nc" id="L241">                taskId, dto.getStartDate(), dto.getDeadline(), dto.getRecurring(), dto.getReminder());</span>
+
+        // ===== START DATE =====
+<span class="nc bnc" id="L244" title="All 4 branches missed.">        if (dto.getStartDate() != null &amp;&amp; !dto.getStartDate().isBlank()) {</span>
+            try {
+<span class="nc" id="L246">                LocalDateTime parsedStart = LocalDateTime.parse(dto.getStartDate(), iso);</span>
+<span class="nc bnc" id="L247" title="All 4 branches missed.">                if (task.getStartDate() == null || !task.getStartDate().equals(parsedStart)) {</span>
+<span class="nc" id="L248">                    task.setStartDate(parsedStart);</span>
+                }
+<span class="nc" id="L250">            } catch (Exception e) {</span>
+<span class="nc" id="L251">                System.err.println(&quot;⚠️ Parse startDate fail: &quot; + dto.getStartDate());</span>
+<span class="nc" id="L252">            }</span>
+        } else {
+<span class="nc bnc" id="L254" title="All 2 branches missed.">            if (task.getStartDate() != null)</span>
+<span class="nc" id="L255">                task.setStartDate(null);</span>
+        }
+
+        // ===== DEADLINE =====
+<span class="nc bnc" id="L259" title="All 4 branches missed.">        if (dto.getDeadline() != null &amp;&amp; !dto.getDeadline().isBlank()) {</span>
+            try {
+<span class="nc" id="L261">                LocalDateTime parsedDeadline = LocalDateTime.parse(dto.getDeadline(), iso);</span>
+<span class="nc bnc" id="L262" title="All 4 branches missed.">                if (task.getDeadline() == null || !task.getDeadline().equals(parsedDeadline)) {</span>
+<span class="nc" id="L263">                    task.setDeadline(parsedDeadline);</span>
+                }
+<span class="nc" id="L265">            } catch (Exception e) {</span>
+<span class="nc" id="L266">                System.err.println(&quot;⚠️ Parse deadline fail: &quot; + dto.getDeadline());</span>
+<span class="nc" id="L267">            }</span>
+        } else {
+<span class="nc bnc" id="L269" title="All 2 branches missed.">            if (task.getDeadline() != null)</span>
+<span class="nc" id="L270">                task.setDeadline(null);</span>
+        }
+
+        // ===== RECURRENCE &amp; REMINDER =====
+<span class="nc bnc" id="L274" title="All 2 branches missed.">        String recurring = dto.getRecurring() != null ? dto.getRecurring() : &quot;Never&quot;;</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">        String reminder = dto.getReminder() != null ? dto.getReminder() : &quot;Never&quot;;</span>
+
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (!recurring.equals(task.getRecurring()))</span>
+<span class="nc" id="L278">            task.setRecurring(recurring);</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        if (!reminder.equals(task.getReminder()))</span>
+<span class="nc" id="L280">            task.setReminder(reminder);</span>
+
+        // ===== Updated time =====
+<span class="nc" id="L283">        task.setUpdatedAt(LocalDateTime.now());</span>
+
+        // ===== Save =====
+<span class="nc" id="L286">        taskRepository.save(task);</span>
+
+<span class="nc" id="L288">        System.out.println(&quot;✅ Task dates updated successfully → &quot; + task.getTaskId());</span>
+<span class="nc" id="L289">        return TaskDTO.fromEntity(task);</span>
+    }
+
+    @Override
+    @Transactional
+    public TaskDTO moveTask(Long taskId, MoveTaskRequest req) {
+<span class="nc" id="L295">        Task task = taskRepository.findById(taskId)</span>
+<span class="nc" id="L296">                .orElseThrow(() -&gt; new RuntimeException(&quot;Task not found&quot;));</span>
+
+<span class="nc" id="L298">        BoardColumn newCol = boardColumnRepository.findById(req.getTargetColumnId())</span>
+<span class="nc" id="L299">                .orElseThrow(() -&gt; new RuntimeException(&quot;Target column not found&quot;));</span>
+
+        // Cập nhật cột &amp; vị trí
+<span class="nc" id="L302">        task.setColumn(newCol);</span>
+<span class="nc" id="L303">        task.setOrderIndex(req.getNewOrderIndex());</span>
+<span class="nc" id="L304">        task.setUpdatedAt(LocalDateTime.now());</span>
+
+<span class="nc" id="L306">        taskRepository.save(task);</span>
+<span class="nc" id="L307">        return TaskDTO.fromEntity(task);</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

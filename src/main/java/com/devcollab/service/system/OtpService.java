@@ -17,7 +17,7 @@ public class OtpService {
 
     @Value("${app.otp.length:6}")
     private int otpLength;
-
+    
     @Value("${app.otp.ttl-seconds:300}") 
     private long otpTtlSeconds;
 

@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.core</a> &gt; <span class="el_source">ProjectServiceImpl.java</span></div><h1>ProjectServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.core;
+
+import com.devcollab.domain.*;
+import com.devcollab.dto.MemberDTO;
+import com.devcollab.dto.ProjectDTO;
+import com.devcollab.dto.response.ProjectDashboardDTO;
+import com.devcollab.dto.response.ProjectPerformanceDTO;
+import com.devcollab.exception.BadRequestException;
+import com.devcollab.exception.NotFoundException;
+import com.devcollab.repository.*;
+import com.devcollab.service.core.ProjectService;
+import com.devcollab.service.event.AppEventService;
+import com.devcollab.service.system.ActivityService;
+import com.devcollab.service.system.NotificationService;
+import com.devcollab.service.system.ProjectAuthorizationService;
+
+import org.springframework.data.domain.Sort;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import org.springframework.data.domain.Pageable;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ProjectServiceImpl implements ProjectService {
+
+    private final ProjectRepository projectRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final BoardColumnRepository boardColumnRepository;
+    private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
+    private final ProjectAuthorizationService authz;
+
+    private final AppEventService appEventService;
+    private final ActivityService activityService;
+    private final NotificationService notificationService;
+
+    @Override
+    public Project createProject(Project project, Long creatorId) {
+<span class="nc bnc" id="L51" title="All 6 branches missed.">        if (project == null || project.getName() == null || project.getName().isBlank()) {</span>
+<span class="nc" id="L52">            throw new BadRequestException(&quot;Tên dự án không được để trống&quot;);</span>
+        }
+<span class="nc bnc" id="L54" title="All 4 branches missed.">        if (project.getStartDate() != null &amp;&amp; project.getDueDate() != null</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                &amp;&amp; project.getDueDate().isBefore(project.getStartDate())) {</span>
+<span class="nc" id="L56">            throw new BadRequestException(&quot;Ngày kết thúc phải sau ngày bắt đầu&quot;);</span>
+        }
+
+<span class="nc" id="L59">        User creator = userRepository.findById(creatorId)</span>
+<span class="nc" id="L60">                .orElseThrow(() -&gt; new NotFoundException(&quot;User không tồn tại&quot;));</span>
+
+<span class="nc" id="L62">        project.setCreatedBy(creator);</span>
+<span class="nc" id="L63">        project.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L64">        project.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (project.getStatus() == null)</span>
+<span class="nc" id="L66">            project.setStatus(&quot;Active&quot;);</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (project.getPriority() == null)</span>
+<span class="nc" id="L68">            project.setPriority(&quot;Normal&quot;);</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (project.getVisibility() == null)</span>
+<span class="nc" id="L70">            project.setVisibility(&quot;private&quot;);</span>
+
+<span class="nc" id="L72">        Project saved = projectRepository.save(project);</span>
+
+<span class="nc" id="L74">        ProjectMember pm = new ProjectMember();</span>
+<span class="nc" id="L75">        pm.setProject(saved);</span>
+<span class="nc" id="L76">        pm.setUser(creator);</span>
+<span class="nc" id="L77">        pm.setRoleInProject(&quot;PM&quot;);</span>
+<span class="nc" id="L78">        pm.setJoinedAt(LocalDateTime.now());</span>
+<span class="nc" id="L79">        projectMemberRepository.save(pm);</span>
+
+<span class="nc" id="L81">        String[] defaultCols = {&quot;To-do&quot;, &quot;In Progress&quot;, &quot;Review&quot;, &quot;Done&quot;};</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        for (int i = 0; i &lt; defaultCols.length; i++) {</span>
+<span class="nc" id="L83">            BoardColumn col = new BoardColumn();</span>
+<span class="nc" id="L84">            col.setProject(saved);</span>
+<span class="nc" id="L85">            col.setName(defaultCols[i]);</span>
+<span class="nc" id="L86">            col.setOrderIndex(i + 1);</span>
+<span class="nc" id="L87">            col.setIsDefault(true);</span>
+<span class="nc" id="L88">            boardColumnRepository.save(col);</span>
+        }
+
+<span class="nc" id="L91">        activityService.log(&quot;PROJECT&quot;, saved.getProjectId(), &quot;CREATE&quot;, saved.getName());</span>
+<span class="nc" id="L92">        appEventService.publishProjectCreated(saved);</span>
+<span class="nc" id="L93">        notificationService.notifyProjectCreated(saved);</span>
+
+<span class="nc" id="L95">        return saved;</span>
+    }
+
+    @Override
+    public Project updateProject(Long id, Project patch) {
+<span class="nc" id="L100">        Project existing = projectRepository.findById(id)</span>
+<span class="nc" id="L101">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+
+<span class="nc bnc" id="L103" title="All 4 branches missed.">        if (patch.getName() != null &amp;&amp; !patch.getName().isBlank())</span>
+<span class="nc" id="L104">            existing.setName(patch.getName());</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (patch.getDescription() != null)</span>
+<span class="nc" id="L106">            existing.setDescription(patch.getDescription());</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (patch.getPriority() != null)</span>
+<span class="nc" id="L108">            existing.setPriority(patch.getPriority());</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (patch.getVisibility() != null)</span>
+<span class="nc" id="L110">            existing.setVisibility(patch.getVisibility());</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (patch.getStartDate() != null)</span>
+<span class="nc" id="L112">            existing.setStartDate(patch.getStartDate());</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (patch.getDueDate() != null) {</span>
+<span class="nc bnc" id="L114" title="All 4 branches missed.">            if (existing.getStartDate() != null &amp;&amp; patch.getDueDate().isBefore(existing.getStartDate())) {</span>
+<span class="nc" id="L115">                throw new BadRequestException(&quot;Ngày kết thúc không hợp lệ&quot;);</span>
+            }
+<span class="nc" id="L117">            existing.setDueDate(patch.getDueDate());</span>
+        }
+
+<span class="nc" id="L120">        existing.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L121">        Project saved = projectRepository.save(existing);</span>
+
+<span class="nc" id="L123">        activityService.log(&quot;PROJECT&quot;, saved.getProjectId(), &quot;UPDATE&quot;, saved.getName());</span>
+<span class="nc" id="L124">        return saved;</span>
+    }
+
+    @Override
+    public List&lt;Project&gt; getProjectsByUser(Long userId) {
+<span class="nc" id="L129">        List&lt;Project&gt; created = projectRepository.findByCreatedBy_UserId(userId);</span>
+<span class="nc" id="L130">        List&lt;ProjectMember&gt; joined = projectMemberRepository.findByUser_UserId(userId);</span>
+
+<span class="nc" id="L132">        Map&lt;Long, Project&gt; all = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        for (Project p : created) all.put(p.getProjectId(), p);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        for (ProjectMember m : joined) all.put(m.getProject().getProjectId(), m.getProject());</span>
+<span class="nc" id="L135">        return new ArrayList&lt;&gt;(all.values());</span>
+    }
+
+    @Override
+    public ProjectMember addMember(Long projectId, Long userId, String role) {
+<span class="nc" id="L140">        Project project = projectRepository.findById(projectId)</span>
+<span class="nc" id="L141">                .orElseThrow(() -&gt; new NotFoundException(&quot;Dự án không tồn tại&quot;));</span>
+<span class="nc" id="L142">        User user = userRepository.findById(userId)</span>
+<span class="nc" id="L143">                .orElseThrow(() -&gt; new NotFoundException(&quot;User không tồn tại&quot;));</span>
+
+<span class="nc" id="L145">        boolean exists = projectMemberRepository.findByProject_ProjectId(projectId)</span>
+<span class="nc" id="L146">                .stream()</span>
+<span class="nc" id="L147">                .anyMatch(m -&gt; m.getUser().getUserId().equals(userId));</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (exists) {</span>
+<span class="nc" id="L149">            return projectMemberRepository.findByProject_ProjectId(projectId)</span>
+<span class="nc" id="L150">                    .stream()</span>
+<span class="nc" id="L151">                    .filter(m -&gt; m.getUser().getUserId().equals(userId))</span>
+<span class="nc" id="L152">                    .findFirst().get();</span>
+        }
+
+<span class="nc" id="L155">        ProjectMember pm = new ProjectMember();</span>
+<span class="nc" id="L156">        pm.setProject(project);</span>
+<span class="nc" id="L157">        pm.setUser(user);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        pm.setRoleInProject(role != null ? role : &quot;Member&quot;);</span>
+<span class="nc" id="L159">        pm.setJoinedAt(LocalDateTime.now());</span>
+<span class="nc" id="L160">        ProjectMember saved = projectMemberRepository.save(pm);</span>
+
+<span class="nc" id="L162">        activityService.log(&quot;PROJECT&quot;, projectId, &quot;ADD_MEMBER&quot;, user.getEmail());</span>
+<span class="nc" id="L163">        appEventService.publishMemberAdded(project, user);</span>
+<span class="nc" id="L164">        notificationService.notifyMemberAdded(project, user);</span>
+<span class="nc" id="L165">        return saved;</span>
+    }
+
+    @Override
+    public void removeMember(Long projectId, Long userId) {
+<span class="nc" id="L170">        List&lt;ProjectMember&gt; members = projectMemberRepository.findByProject_ProjectId(projectId);</span>
+<span class="nc" id="L171">        ProjectMember target = members.stream()</span>
+<span class="nc" id="L172">                .filter(m -&gt; m.getUser().getUserId().equals(userId))</span>
+<span class="nc" id="L173">                .findFirst()</span>
+<span class="nc" id="L174">                .orElseThrow(() -&gt; new NotFoundException(&quot;Thành viên không tồn tại&quot;));</span>
+
+<span class="nc" id="L176">        long pmCount = members.stream()</span>
+<span class="nc" id="L177">                .filter(m -&gt; &quot;PM&quot;.equalsIgnoreCase(m.getRoleInProject()))</span>
+<span class="nc" id="L178">                .count();</span>
+<span class="nc bnc" id="L179" title="All 4 branches missed.">        if (&quot;PM&quot;.equalsIgnoreCase(target.getRoleInProject()) &amp;&amp; pmCount &lt;= 1) {</span>
+<span class="nc" id="L180">            throw new BadRequestException(&quot;Không thể xóa PM cuối cùng của dự án&quot;);</span>
+        }
+
+<span class="nc" id="L183">        projectMemberRepository.delete(target);</span>
+<span class="nc" id="L184">        activityService.log(&quot;PROJECT&quot;, projectId, &quot;REMOVE_MEMBER&quot;, target.getUser().getEmail());</span>
+<span class="nc" id="L185">    }</span>
+
+    @Override
+    public Project archiveProject(Long projectId) {
+<span class="nc" id="L189">        Project project = projectRepository.findById(projectId)</span>
+<span class="nc" id="L190">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (!&quot;Archived&quot;.equalsIgnoreCase(project.getStatus())) {</span>
+<span class="nc" id="L193">            project.setStatus(&quot;Archived&quot;);</span>
+<span class="nc" id="L194">            project.setArchivedAt(LocalDateTime.now());</span>
+<span class="nc" id="L195">            project.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L196">            project = projectRepository.save(project);</span>
+
+<span class="nc" id="L198">            activityService.log(&quot;PROJECT&quot;, projectId, &quot;ARCHIVE&quot;, project.getName());</span>
+<span class="nc" id="L199">            notificationService.notifyProjectArchived(project);</span>
+        }
+<span class="nc" id="L201">        return project;</span>
+    }
+
+    @Override
+    public void deleteProject(Long projectId) {
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (!projectRepository.existsById(projectId)) {</span>
+<span class="nc" id="L207">            throw new NotFoundException(&quot;Dự án không tồn tại&quot;);</span>
+        }
+<span class="nc" id="L209">        projectRepository.deleteById(projectId);</span>
+<span class="nc" id="L210">        activityService.log(&quot;PROJECT&quot;, projectId, &quot;DELETE&quot;, &quot;Hard delete&quot;);</span>
+<span class="nc" id="L211">    }</span>
+
+    @Override
+    public Project getById(Long projectId) {
+<span class="nc" id="L215">        return projectRepository.findById(projectId)</span>
+<span class="nc" id="L216">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+    }
+
+    @Override
+    public ProjectDashboardDTO getDashboardForPm(Long projectId, String pmEmail) {
+<span class="nc" id="L221">        Project project = projectRepository.findById(projectId)</span>
+<span class="nc" id="L222">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+
+<span class="nc" id="L224">        authz.ensurePmOfProject(pmEmail, projectId);</span>
+
+<span class="nc" id="L226">        long total = taskRepository.countByProject_ProjectId(projectId);</span>
+<span class="nc" id="L227">        long open = taskRepository.countByProject_ProjectIdAndStatus(projectId, &quot;OPEN&quot;);</span>
+<span class="nc" id="L228">        long inProgress = taskRepository.countByProject_ProjectIdAndStatus(projectId, &quot;IN_PROGRESS&quot;);</span>
+<span class="nc" id="L229">        long review = taskRepository.countByProject_ProjectIdAndStatus(projectId, &quot;REVIEW&quot;);</span>
+<span class="nc" id="L230">        long done = taskRepository.countByProject_ProjectIdAndStatus(projectId, &quot;DONE&quot;);</span>
+<span class="nc" id="L231">        long overdue = taskRepository.countOverdue(projectId, LocalDateTime.now());</span>
+
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        BigDecimal percentDone = total == 0</span>
+<span class="nc" id="L234">                ? BigDecimal.ZERO</span>
+<span class="nc" id="L235">                : BigDecimal.valueOf(done)</span>
+<span class="nc" id="L236">                        .multiply(BigDecimal.valueOf(100))</span>
+<span class="nc" id="L237">                        .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);</span>
+
+<span class="nc" id="L239">        return ProjectDashboardDTO.builder()</span>
+<span class="nc" id="L240">                .projectId(projectId)</span>
+<span class="nc" id="L241">                .totalTasks(total)</span>
+<span class="nc" id="L242">                .openTasks(open)</span>
+<span class="nc" id="L243">                .inProgressTasks(inProgress)</span>
+<span class="nc" id="L244">                .reviewTasks(review)</span>
+<span class="nc" id="L245">                .doneTasks(done)</span>
+<span class="nc" id="L246">                .overdueTasks(overdue)</span>
+<span class="nc" id="L247">                .percentDone(percentDone)</span>
+<span class="nc" id="L248">                .build();</span>
+    }
+
+    @Override
+    public Project getByIdWithMembers(Long projectId) {
+<span class="nc" id="L253">        return projectRepository.findByIdWithMembers(projectId)</span>
+<span class="nc" id="L254">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+    }
+
+    @Override
+    public ProjectPerformanceDTO getPerformanceData(Long projectId, String pmEmail) {
+<span class="nc" id="L259">    authz.ensurePmOfProject(pmEmail, projectId);</span>
+
+<span class="nc" id="L261">    LocalDate today = LocalDate.now();</span>
+<span class="nc" id="L262">    LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);</span>
+<span class="nc" id="L263">    LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);</span>
+
+<span class="nc" id="L265">    List&lt;Object[]&gt; results = taskRepository.countCompletedTasksPerDay(</span>
+        projectId,
+<span class="nc" id="L267">        startOfWeek.atStartOfDay(),</span>
+<span class="nc" id="L268">        endOfWeek.atTime(23, 59, 59)</span>
+    );
+
+<span class="nc" id="L271">    Map&lt;String, Long&gt; dayMap = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L272">    results.forEach(r -&gt; dayMap.put((String) r[0], (Long) r[1]));</span>
+
+<span class="nc" id="L274">    List&lt;String&gt; labels = List.of(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;);</span>
+<span class="nc" id="L275">    List&lt;Long&gt; achieved = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">    for (String d : labels) {</span>
+<span class="nc" id="L277">        achieved.add(dayMap.getOrDefault(d, 0L));</span>
+<span class="nc" id="L278">    }</span>
+
+<span class="nc" id="L280">    long total = taskRepository.countByProject_ProjectId(projectId);</span>
+<span class="nc" id="L281">    long targetPerDay = Math.max(1, total / 7);</span>
+<span class="nc" id="L282">    List&lt;Long&gt; target = labels.stream().map(d -&gt; targetPerDay).toList();</span>
+
+<span class="nc" id="L284">    return new ProjectPerformanceDTO(labels, achieved, target);</span>
+}
+    @Override
+    public List&lt;ProjectDTO&gt; getTopProjects(int limit) {
+<span class="nc" id="L288">        Pageable pageable = PageRequest.of(0, limit);</span>
+<span class="nc" id="L289">        return projectRepository.findTop9Projects(pageable);</span>
+    }
+    
+  
+    
+    @Override
+    public Page&lt;ProjectDTO&gt; getAllProjects(int page, int size, String keyword) {
+<span class="nc" id="L296">        Pageable pageable = PageRequest.of(page, size, Sort.by(&quot;updatedAt&quot;).descending());</span>
+<span class="nc" id="L297">        Page&lt;ProjectDTO&gt; projects = projectRepository.findAllProjects(keyword, pageable);</span>
+
+<span class="nc" id="L299">        return projects.map(dto -&gt; {</span>
+<span class="nc" id="L300">            List&lt;MemberDTO&gt; allMembers = projectMemberRepository.findMembersByProject(dto.getProjectId());</span>
+<span class="nc" id="L301">            int totalMembers = allMembers.size();</span>
+
+<span class="nc" id="L303">            List&lt;MemberDTO&gt; topMembers = allMembers.stream()</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">                    .filter(m -&gt; m.getAvatarUrl() != null)</span>
+<span class="nc" id="L305">                    .limit(4)</span>
+<span class="nc" id="L306">                    .toList();</span>
+
+<span class="nc" id="L308">            dto.setMemberCount(totalMembers); </span>
+<span class="nc" id="L309">            dto.setMemberAvatars(</span>
+<span class="nc" id="L310">                    topMembers.stream()</span>
+<span class="nc" id="L311">                            .map(MemberDTO::getAvatarUrl)</span>
+<span class="nc" id="L312">                            .toList());</span>
+<span class="nc" id="L313">            dto.setMemberNames(</span>
+<span class="nc" id="L314">                    topMembers.stream()</span>
+<span class="nc" id="L315">                            .map(MemberDTO::getName)</span>
+<span class="nc" id="L316">                            .toList());</span>
+
+<span class="nc" id="L318">            return dto;</span>
+        });
+    }
+    @Override
+    public Project enableShareLink(Long projectId, String pmEmail) {
+<span class="nc" id="L323">        Project project = projectRepository.findById(projectId)</span>
+<span class="nc" id="L324">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+
+<span class="nc" id="L326">        authz.ensurePmOfProject(pmEmail, projectId);</span>
+
+<span class="nc bnc" id="L328" title="All 2 branches missed.">        if (!project.isAllowLinkJoin()) {</span>
+<span class="nc" id="L329">            String inviteLink = UUID.randomUUID().toString();</span>
+<span class="nc" id="L330">            project.setInviteLink(inviteLink);</span>
+<span class="nc" id="L331">            project.setAllowLinkJoin(true);</span>
+<span class="nc" id="L332">            project.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L333">            projectRepository.save(project);</span>
+
+<span class="nc" id="L335">            activityService.log(&quot;PROJECT&quot;, projectId, &quot;ENABLE_SHARE&quot;, &quot;Link: &quot; + inviteLink);</span>
+        }
+
+<span class="nc" id="L338">        return project;</span>
+    }
+    @Override
+    public Project disableShareLink(Long projectId, String pmEmail) {
+<span class="nc" id="L342">        Project project = projectRepository.findById(projectId)</span>
+<span class="nc" id="L343">                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</span>
+
+<span class="nc" id="L345">        authz.ensurePmOfProject(pmEmail, projectId);</span>
+
+<span class="nc bnc" id="L347" title="All 2 branches missed.">        if (project.isAllowLinkJoin()) {</span>
+<span class="nc" id="L348">            project.setAllowLinkJoin(false);</span>
+<span class="nc" id="L349">            project.setInviteLink(null);</span>
+<span class="nc" id="L350">            project.setUpdatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L351">            projectRepository.save(project);</span>
+
+<span class="nc" id="L353">            activityService.log(&quot;PROJECT&quot;, projectId, &quot;DISABLE_SHARE&quot;, &quot;Share link disabled&quot;);</span>
+        }
+
+<span class="nc" id="L356">        return project;</span>
+    }
+    @Override
+    public ProjectMember joinProjectByLink(String inviteLink, Long userId) {
+<span class="nc" id="L360">        Project project = projectRepository.findActiveSharedProject(inviteLink)</span>
+<span class="nc" id="L361">                .orElseThrow(() -&gt; new BadRequestException(&quot;Link mời không hợp lệ hoặc đã bị tắt&quot;));</span>
+
+<span class="nc" id="L363">        User user = userRepository.findById(userId)</span>
+<span class="nc" id="L364">                .orElseThrow(() -&gt; new NotFoundException(&quot;User không tồn tại&quot;));</span>
+
+<span class="nc" id="L366">        boolean exists = projectMemberRepository.findByProject_ProjectId(project.getProjectId())</span>
+<span class="nc" id="L367">                .stream()</span>
+<span class="nc" id="L368">                .anyMatch(m -&gt; m.getUser().getUserId().equals(userId));</span>
+
+<span class="nc bnc" id="L370" title="All 2 branches missed.">        if (exists) {</span>
+<span class="nc" id="L371">            throw new BadRequestException(&quot;Bạn đã là thành viên của dự án này&quot;);</span>
+        }
+
+<span class="nc" id="L374">        ProjectMember newMember = new ProjectMember();</span>
+<span class="nc" id="L375">        newMember.setProject(project);</span>
+<span class="nc" id="L376">        newMember.setUser(user);</span>
+<span class="nc" id="L377">        newMember.setRoleInProject(&quot;Member&quot;);</span>
+<span class="nc" id="L378">        newMember.setJoinedAt(LocalDateTime.now());</span>
+<span class="nc" id="L379">        projectMemberRepository.save(newMember);</span>
+
+<span class="nc" id="L381">        activityService.log(&quot;PROJECT&quot;, project.getProjectId(), &quot;JOIN_BY_LINK&quot;, user.getEmail());</span>
+<span class="nc" id="L382">        notificationService.notifyMemberAdded(project, user);</span>
+
+<span class="nc" id="L384">        return newMember;</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

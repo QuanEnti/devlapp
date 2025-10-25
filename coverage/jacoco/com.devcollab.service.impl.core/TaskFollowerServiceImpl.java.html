@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TaskFollowerServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.core</a> &gt; <span class="el_source">TaskFollowerServiceImpl.java</span></div><h1>TaskFollowerServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.core;
+
+import com.devcollab.domain.Task;
+import com.devcollab.domain.TaskFollower;
+import com.devcollab.domain.User;
+import com.devcollab.dto.TaskFollowerDTO;
+import com.devcollab.exception.NotFoundException;
+import com.devcollab.repository.TaskFollowerRepository;
+import com.devcollab.repository.TaskRepository;
+import com.devcollab.repository.UserRepository;
+import com.devcollab.service.core.TaskFollowerService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class TaskFollowerServiceImpl implements TaskFollowerService {
+
+    private final TaskFollowerRepository followerRepo;
+    private final TaskRepository taskRepo;
+    private final UserRepository userRepo;
+
+    @Override
+    public List&lt;TaskFollowerDTO&gt; getFollowersByTask(Long taskId) {
+<span class="nc" id="L28">        return followerRepo.findByTask_TaskId(taskId)</span>
+<span class="nc" id="L29">                .stream()</span>
+<span class="nc" id="L30">                .map(TaskFollowerDTO::fromEntity)</span>
+<span class="nc" id="L31">                .toList();</span>
+    }
+
+    @Override
+    @Transactional
+    public boolean assignMember(Long taskId, Long userId) {
+        // 🔹 Kiểm tra đã tồn tại chưa
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (followerRepo.existsByTaskAndUser(taskId, userId)) {</span>
+<span class="nc" id="L39">            System.out.println(&quot;⚠️ Member &quot; + userId + &quot; đã được gán vào task &quot; + taskId);</span>
+<span class="nc" id="L40">            return false;</span>
+        }
+
+        // 🔹 Kiểm tra task và user có tồn tại
+<span class="nc" id="L44">        Task task = taskRepo.findById(taskId)</span>
+<span class="nc" id="L45">                .orElseThrow(() -&gt; new NotFoundException(&quot;Task not found&quot;));</span>
+<span class="nc" id="L46">        User user = userRepo.findById(userId)</span>
+<span class="nc" id="L47">                .orElseThrow(() -&gt; new NotFoundException(&quot;User not found&quot;));</span>
+
+        // 🔹 Thêm vào bảng TaskFollower
+<span class="nc" id="L50">        followerRepo.save(new TaskFollower(task, user));</span>
+<span class="nc" id="L51">        System.out.println(&quot;✅ Gán member &quot; + userId + &quot; vào task &quot; + taskId + &quot; thành công&quot;);</span>
+<span class="nc" id="L52">        return true;</span>
+    }
+
+    @Override
+    @Transactional
+    public boolean unassignMember(Long taskId, Long userId) {
+        // 🔹 Kiểm tra có tồn tại trước khi xóa
+<span class="nc" id="L59">        boolean exists = followerRepo.existsByTaskAndUser(taskId, userId);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (!exists) {</span>
+<span class="nc" id="L61">            System.out.println(&quot;⚠️ Member &quot; + userId + &quot; chưa được gán trong task &quot; + taskId);</span>
+<span class="nc" id="L62">            return false;</span>
+        }
+
+        // 🔹 Xóa khỏi bảng TaskFollower
+<span class="nc" id="L66">        followerRepo.deleteByTaskAndUser(taskId, userId);</span>
+<span class="nc" id="L67">        System.out.println(&quot;🗑️ Đã bỏ gán member &quot; + userId + &quot; khỏi task &quot; + taskId);</span>
+<span class="nc" id="L68">        return true;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

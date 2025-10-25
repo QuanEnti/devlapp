@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OtpService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.system</a> &gt; <span class="el_source">OtpService.java</span></div><h1>OtpService.java</h1><pre class="source lang-java linenums">package com.devcollab.service.system;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.security.SecureRandom;
+import java.time.Duration;
+
+@Service
+@RequiredArgsConstructor
+public class OtpService {
+
+    private final RedisTemplate&lt;String, String&gt; redisTemplate;
+    private final SecureRandom random = new SecureRandom();
+
+    @Value(&quot;${app.otp.length:6}&quot;)
+    private int otpLength;
+    
+    @Value(&quot;${app.otp.ttl-seconds:300}&quot;) 
+    private long otpTtlSeconds;
+
+    @Value(&quot;${app.otp.cooldown-seconds:15}&quot;) 
+    private long cooldownSeconds;
+
+    public String generateOtp() {
+<span class="fc" id="L28">        StringBuilder otp = new StringBuilder(otpLength);</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        for (int i = 0; i &lt; otpLength; i++) {</span>
+<span class="fc" id="L30">            otp.append(random.nextInt(10));</span>
+        }
+<span class="fc" id="L32">        return otp.toString();</span>
+    }
+
+    public void storeOtp(String email, String otp) {
+<span class="fc" id="L36">        String otpKey = buildOtpKey(email);</span>
+<span class="fc" id="L37">        redisTemplate.opsForValue().set(otpKey, otp, Duration.ofSeconds(otpTtlSeconds));</span>
+
+<span class="fc" id="L39">        String cooldownKey = buildCooldownKey(email);</span>
+<span class="fc" id="L40">        redisTemplate.opsForValue().set(cooldownKey, &quot;1&quot;, Duration.ofSeconds(cooldownSeconds));</span>
+
+<span class="fc" id="L42">        System.out.printf(&quot;[OtpService] Stored OTP %s for %s (TTL: %ds, Cooldown: %ds)%n&quot;,</span>
+<span class="fc" id="L43">                otp, email, otpTtlSeconds, cooldownSeconds);</span>
+<span class="fc" id="L44">    }</span>
+
+    public boolean isInCooldown(String email, int cooldownSeconds) {
+<span class="fc" id="L47">        String cooldownKey = buildCooldownKey(email);</span>
+<span class="fc" id="L48">        Boolean exists = redisTemplate.hasKey(cooldownKey);</span>
+<span class="fc" id="L49">        return Boolean.TRUE.equals(exists);</span>
+    }
+    public boolean verifyOtp(String email, String inputOtp) {
+<span class="fc" id="L52">        String otpKey = buildOtpKey(email);</span>
+<span class="fc" id="L53">        String storedOtp = redisTemplate.opsForValue().get(otpKey);</span>
+
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (storedOtp == null) {</span>
+<span class="fc" id="L56">            System.out.printf(&quot;⚠️ [OtpService] No OTP found or expired for %s%n&quot;, email);</span>
+<span class="fc" id="L57">            return false;</span>
+        }
+
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (!storedOtp.equals(inputOtp)) {</span>
+<span class="fc" id="L61">            System.out.printf(&quot; [OtpService] Invalid OTP for %s (expected %s, got %s)%n&quot;,</span>
+                    email, storedOtp, inputOtp);
+<span class="fc" id="L63">            return false;</span>
+        }
+
+<span class="fc" id="L66">        redisTemplate.delete(otpKey);</span>
+<span class="fc" id="L67">        System.out.printf(&quot;[OtpService] OTP verified successfully for %s%n&quot;, email);</span>
+<span class="fc" id="L68">        return true;</span>
+    }
+
+    private String buildOtpKey(String email) {
+<span class="fc" id="L72">        return &quot;otp:&quot; + email.trim().toLowerCase();</span>
+    }
+
+    private String buildCooldownKey(String email) {
+<span class="fc" id="L76">        return &quot;otp:cooldown:&quot; + email.trim().toLowerCase();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -34,7 +34,7 @@ public class AuthServiceImpl implements AuthService {
 
         Object principal = auth.getPrincipal();
 
-        // ✅ 1. Google OAuth2 Login
+
         if (principal instanceof OAuth2User oauthUser) {
             String email = oauthUser.getAttribute("email");
             String name = oauthUser.getAttribute("name");
@@ -45,7 +45,6 @@ public class AuthServiceImpl implements AuthService {
                 throw new IllegalStateException("Missing email attribute from Google account");
             }
 
-            // Nếu user đã tồn tại trong DB thì lấy thông tin từ DB
             var existingUserOpt = userRepository.findByEmail(email);
             if (existingUserOpt.isPresent()) {
                 var user = existingUserOpt.get();
@@ -53,7 +52,6 @@ public class AuthServiceImpl implements AuthService {
                 return UserDTO.fromEntity(user);
             }
 
-            // Nếu chưa tồn tại, tạo tạm DTO từ OAuth info
             log.debug("✅ Authenticated via Google OAuth2 (new user session): {}", email);
             return UserDTO.builder()
                     .userId(null)
@@ -64,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
                     .build();
         }
 
-        // ✅ 2. Local Login (JWT)
+  
         if (principal instanceof UserDetails userDetails) {
             String email = userDetails.getUsername();
             var userOpt = userRepository.findByEmail(email);
@@ -88,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
                     .build();
         }
 
-        // ✅ 3. Unsupported Type
+
         String type = principal != null ? principal.getClass().getSimpleName() : "null";
         log.error("❌ Unsupported authentication principal type: {}", type);
         throw new IllegalArgumentException("Unsupported authentication type: " + type);

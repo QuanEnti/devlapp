@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.system</a> &gt; <span class="el_source">NotificationServiceImpl.java</span></div><h1>NotificationServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.system;
+
+import com.devcollab.domain.Notification;
+import com.devcollab.domain.Project;
+import com.devcollab.domain.Task;
+import com.devcollab.domain.User;
+import com.devcollab.repository.NotificationRepository;
+import com.devcollab.service.system.ActivityService;
+import com.devcollab.service.system.NotificationService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class NotificationServiceImpl implements NotificationService {
+
+    private final NotificationRepository notificationRepository;
+    private final ActivityService activityService;
+
+    @Override
+    public void notifyProjectCreated(Project project) {
+<span class="nc" id="L26">        Notification n = new Notification();</span>
+<span class="nc" id="L27">        n.setUser(project.getCreatedBy());</span>
+<span class="nc" id="L28">        n.setType(&quot;PROJECT_CREATED&quot;);</span>
+<span class="nc" id="L29">        n.setReferenceId(project.getProjectId());</span>
+<span class="nc" id="L30">        n.setStatus(&quot;unread&quot;);</span>
+<span class="nc" id="L31">        n.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L32">        notificationRepository.save(n);</span>
+
+<span class="nc" id="L34">        activityService.log(&quot;PROJECT&quot;, project.getProjectId(), &quot;NOTIFY_CREATE&quot;,</span>
+<span class="nc" id="L35">                &quot;Thông báo tạo dự án: &quot; + project.getName());</span>
+<span class="nc" id="L36">    }</span>
+
+    @Override
+    public void notifyMemberAdded(Project project, User user) {
+<span class="nc" id="L40">        Notification n = new Notification();</span>
+<span class="nc" id="L41">        n.setUser(user);</span>
+<span class="nc" id="L42">        n.setType(&quot;MEMBER_ADDED&quot;);</span>
+<span class="nc" id="L43">        n.setReferenceId(project.getProjectId());</span>
+<span class="nc" id="L44">        n.setStatus(&quot;unread&quot;);</span>
+<span class="nc" id="L45">        n.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L46">        notificationRepository.save(n);</span>
+
+<span class="nc" id="L48">        activityService.log(&quot;PROJECT_MEMBER&quot;, project.getProjectId(), &quot;NOTIFY_ADD_MEMBER&quot;,</span>
+<span class="nc" id="L49">                &quot;Thêm thành viên: &quot; + user.getName());</span>
+<span class="nc" id="L50">    }</span>
+
+    @Override
+    public void notifyProjectArchived(Project project) {
+<span class="nc" id="L54">        Notification n = new Notification();</span>
+<span class="nc" id="L55">        n.setUser(project.getCreatedBy());</span>
+<span class="nc" id="L56">        n.setType(&quot;PROJECT_ARCHIVED&quot;);</span>
+<span class="nc" id="L57">        n.setReferenceId(project.getProjectId());</span>
+<span class="nc" id="L58">        n.setStatus(&quot;unread&quot;);</span>
+<span class="nc" id="L59">        n.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L60">        notificationRepository.save(n);</span>
+
+<span class="nc" id="L62">        activityService.log(&quot;PROJECT&quot;, project.getProjectId(), &quot;NOTIFY_ARCHIVE&quot;,</span>
+<span class="nc" id="L63">                &quot;Dự án đã được lưu trữ: &quot; + project.getName());</span>
+<span class="nc" id="L64">    }</span>
+
+    @Override
+    public void notifyTaskAssigned(Task task) {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (task.getAssignee() == null)</span>
+<span class="nc" id="L69">            return;</span>
+
+<span class="nc" id="L71">        Notification n = new Notification();</span>
+<span class="nc" id="L72">        n.setUser(task.getAssignee());</span>
+<span class="nc" id="L73">        n.setType(&quot;TASK_ASSIGNED&quot;);</span>
+<span class="nc" id="L74">        n.setReferenceId(task.getTaskId());</span>
+<span class="nc" id="L75">        n.setStatus(&quot;unread&quot;);</span>
+<span class="nc" id="L76">        n.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L77">        notificationRepository.save(n);</span>
+
+<span class="nc" id="L79">        activityService.log(&quot;TASK&quot;, task.getTaskId(), &quot;NOTIFY_ASSIGN&quot;,</span>
+<span class="nc" id="L80">                &quot;Task được giao cho: &quot; + task.getAssignee().getName());</span>
+<span class="nc" id="L81">    }</span>
+
+    @Override
+    public void notifyTaskClosed(Task task) {
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (task.getAssignee() == null)</span>
+<span class="nc" id="L86">            return;</span>
+
+<span class="nc" id="L88">        Notification n = new Notification();</span>
+<span class="nc" id="L89">        n.setUser(task.getAssignee());</span>
+<span class="nc" id="L90">        n.setType(&quot;TASK_CLOSED&quot;);</span>
+<span class="nc" id="L91">        n.setReferenceId(task.getTaskId());</span>
+<span class="nc" id="L92">        n.setStatus(&quot;unread&quot;);</span>
+<span class="nc" id="L93">        n.setCreatedAt(LocalDateTime.now());</span>
+<span class="nc" id="L94">        notificationRepository.save(n);</span>
+
+<span class="nc" id="L96">        activityService.log(&quot;TASK&quot;, task.getTaskId(), &quot;NOTIFY_CLOSE&quot;,</span>
+<span class="nc" id="L97">                &quot;Task đã được đóng: &quot; + task.getTitle());</span>
+<span class="nc" id="L98">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

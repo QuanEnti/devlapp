@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DashboardServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">devlapp</a> &gt; <a href="index.source.html" class="el_package">com.devcollab.service.impl.system</a> &gt; <span class="el_source">DashboardServiceImpl.java</span></div><h1>DashboardServiceImpl.java</h1><pre class="source lang-java linenums">package com.devcollab.service.impl.system;
+
+import com.devcollab.domain.ProjectTarget;
+import com.devcollab.domain.User;
+import com.devcollab.dto.response.ProjectPerformanceDTO;
+import com.devcollab.dto.response.ProjectSummaryDTO;
+import com.devcollab.repository.ProjectRepository;
+import com.devcollab.service.impl.core.UserServiceImpl;
+import com.devcollab.service.system.DashboardService;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.*;
+
+@Service
+@RequiredArgsConstructor
+public class DashboardServiceImpl 
+implements DashboardService {
+
+    private final ProjectRepository projectRepository;
+    private final ProjectTargetServiceImpl projectTargetService;
+    private final UserServiceImpl userService;
+
+    @Override
+    public ProjectSummaryDTO getProjectSummary(String range) {
+
+<span class="nc bnc" id="L32" title="All 4 branches missed.">        LocalDateTime startDate = switch (range.toLowerCase()) {</span>
+<span class="nc" id="L33">            case &quot;week&quot; -&gt; LocalDateTime.now().minusWeeks(1);</span>
+<span class="nc" id="L34">            case &quot;month&quot; -&gt; LocalDateTime.now().minusMonths(1);</span>
+<span class="nc" id="L35">            case &quot;year&quot; -&gt; LocalDateTime.now().minusYears(1);</span>
+<span class="nc" id="L36">            default -&gt; LocalDateTime.now().minusMonths(6);</span>
+        };
+
+<span class="nc" id="L39">        List&lt;Object[]&gt; stats = projectRepository.countProjectsByStatusSince(startDate);</span>
+
+<span class="nc" id="L41">        long total = 0, active = 0, completed = 0, onHold = 0, pending = 0, inProgress = 0;</span>
+
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (Object[] row : stats) {</span>
+<span class="nc" id="L44">            String status = (String) row[0];</span>
+<span class="nc" id="L45">            long count = ((Number) row[1]).longValue();</span>
+<span class="nc" id="L46">            total += count;</span>
+
+<span class="nc bnc" id="L48" title="All 6 branches missed.">            switch (status.toUpperCase()) {</span>
+<span class="nc" id="L49">                case &quot;ACTIVE&quot; -&gt; active = count;</span>
+<span class="nc" id="L50">                case &quot;COMPLETED&quot; -&gt; completed = count;</span>
+<span class="nc" id="L51">                case &quot;ON_HOLD&quot; -&gt; onHold = count;</span>
+<span class="nc" id="L52">                case &quot;PENDING&quot; -&gt; pending = count;</span>
+<span class="nc" id="L53">                case &quot;IN_PROGRESS&quot; -&gt; inProgress = count;</span>
+            }
+<span class="nc" id="L55">        }</span>
+
+<span class="nc" id="L57">        return new ProjectSummaryDTO(total, active, completed, onHold, pending, inProgress);</span>
+    }
+
+    @Override
+    public ProjectPerformanceDTO getProjectPerformance(String range) {
+<span class="nc" id="L62">        Authentication auth = (Authentication) SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="nc" id="L63">        Long pmId = getUserIdFromAuth(auth);</span>
+
+<span class="nc bnc" id="L65" title="All 4 branches missed.">        LocalDateTime startDate = switch (range.toLowerCase()) {</span>
+<span class="nc" id="L66">            case &quot;week&quot; -&gt; LocalDateTime.now().minusWeeks(1);</span>
+<span class="nc" id="L67">            case &quot;month&quot; -&gt; LocalDateTime.now().minusMonths(1);</span>
+<span class="nc" id="L68">            case &quot;year&quot; -&gt; LocalDateTime.now().minusYears(1);</span>
+<span class="nc" id="L69">            default -&gt; LocalDateTime.now().minusMonths(6);</span>
+        };
+
+<span class="nc" id="L72">        int currentYear = Calendar.getInstance().get(Calendar.YEAR);</span>
+
+<span class="nc" id="L74">        List&lt;Object[]&gt; results = projectRepository.countCompletedProjectsSince(startDate);</span>
+<span class="nc" id="L75">        Map&lt;String, Long&gt; achievedMap = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L76">        results.forEach(r -&gt; achievedMap.put((String) r[0], ((Number) r[1]).longValue()));</span>
+
+<span class="nc" id="L78">        List&lt;ProjectTarget&gt; targets = projectTargetService.getTargetsByYearAndPm(currentYear, pmId);</span>
+<span class="nc" id="L79">        Map&lt;Integer, Integer&gt; targetMap = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L80">        targets.forEach(t -&gt; targetMap.put(t.getMonth(), t.getTargetCount()));</span>
+
+<span class="nc" id="L82">        List&lt;String&gt; labels = new ArrayList&lt;&gt;(achievedMap.keySet());</span>
+<span class="nc" id="L83">        List&lt;Long&gt; achieved = new ArrayList&lt;&gt;(achievedMap.values());</span>
+<span class="nc" id="L84">        List&lt;Long&gt; target = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (String monthName : labels) {</span>
+<span class="nc" id="L87">            int month = monthNameToNumber(monthName);</span>
+<span class="nc" id="L88">            target.add((long) targetMap.getOrDefault(month, 0));</span>
+<span class="nc" id="L89">        }</span>
+
+<span class="nc" id="L91">        return new ProjectPerformanceDTO(labels, achieved, target);</span>
+    }
+
+    private int monthNameToNumber(String name) {
+        try {
+<span class="nc" id="L96">            return Month.valueOf(name.toUpperCase()).getValue();</span>
+<span class="nc" id="L97">        } catch (Exception e) {</span>
+<span class="nc bnc" id="L98" title="All 13 branches missed.">            return switch (name.toLowerCase()) {</span>
+<span class="nc" id="L99">                case &quot;january&quot; -&gt; 1;</span>
+<span class="nc" id="L100">                case &quot;february&quot; -&gt; 2;</span>
+<span class="nc" id="L101">                case &quot;march&quot; -&gt; 3;</span>
+<span class="nc" id="L102">                case &quot;april&quot; -&gt; 4;</span>
+<span class="nc" id="L103">                case &quot;may&quot; -&gt; 5;</span>
+<span class="nc" id="L104">                case &quot;june&quot; -&gt; 6;</span>
+<span class="nc" id="L105">                case &quot;july&quot; -&gt; 7;</span>
+<span class="nc" id="L106">                case &quot;august&quot; -&gt; 8;</span>
+<span class="nc" id="L107">                case &quot;september&quot; -&gt; 9;</span>
+<span class="nc" id="L108">                case &quot;october&quot; -&gt; 10;</span>
+<span class="nc" id="L109">                case &quot;november&quot; -&gt; 11;</span>
+<span class="nc" id="L110">                case &quot;december&quot; -&gt; 12;</span>
+<span class="nc" id="L111">                default -&gt; 0;</span>
+            };
+        }
+    }
+    private Long getUserIdFromAuth(Authentication auth) {
+        String email;
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (auth instanceof OAuth2AuthenticationToken oauth2Auth) {</span>
+<span class="nc" id="L118">            email = oauth2Auth.getPrincipal().getAttribute(&quot;email&quot;);</span>
+        } else {
+<span class="nc" id="L120">            email = auth.getName();</span>
+        }
+
+<span class="nc" id="L123">        return userService.getByEmail(email)</span>
+<span class="nc" id="L124">                .map(User::getUserId)</span>
+<span class="nc" id="L125">                .orElseThrow(() -&gt; new RuntimeException(&quot;Không tìm thấy user với email: &quot; + email));</span>
+    }
+
+    
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
