@@ -2,6 +2,7 @@ package com.devcollab.service.core;
 
 import com.devcollab.domain.Project;
 import com.devcollab.domain.ProjectMember;
+import com.devcollab.dto.response.ProjectSearchResponseDTO;
 
 import java.util.List;
 
@@ -22,4 +23,9 @@ public interface ProjectService {
     void deleteProject(Long projectId);
     
     Project getById(Long projectId);
+
+    List<Project> getProjectsByUsername(String username);
+
+    List<ProjectSearchResponseDTO> searchProjectsByKeyword(String keyword);
+
 }

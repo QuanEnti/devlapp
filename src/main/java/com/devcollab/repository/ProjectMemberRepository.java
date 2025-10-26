@@ -39,7 +39,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Pr
     // 🔹 Add a new project member
     @Transactional
     @Modifying
-    @Query(value = "INSERT INTO project_member (project_id, user_id, role_in_project, joined_at) VALUES (:projectId, :userId, :role, GETDATE())", nativeQuery = true)
+    @Query(value = "INSERT INTO dbo.ProjectMember (project_id, user_id, role_in_project, joined_at) VALUES (:projectId, :userId, :role, GETDATE())", nativeQuery = true)
     void addMember(@Param("projectId") Long projectId,
                    @Param("userId") Long userId,
                    @Param("role") String role);

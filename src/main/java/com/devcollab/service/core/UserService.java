@@ -1,40 +1,40 @@
-package com.devcollab.service.core;
+    package com.devcollab.service.core;
 
-import com.devcollab.domain.User;
-import jakarta.transaction.Transactional;
-import org.springframework.security.core.userdetails.UserDetails;
-import java.util.List;
-import java.util.Optional;
+    import com.devcollab.domain.User;
+    import jakarta.transaction.Transactional;
+    import org.springframework.security.core.userdetails.UserDetails;
+    import java.util.List;
+    import java.util.Optional;
 
-public interface UserService {
+    public interface UserService {
 
-    List<User> getAll();
+        List<User> getAll();
 
-    Optional<User> getById(Long id);
+        Optional<User> getById(Long id);
 
-    Optional<User> getByEmail(String email);
+        Optional<User> getByEmail(String email);
 
-    User create(User user);
+        User create(User user);
 
-    User update(Long id, User patch);
+        User update(Long id, User patch);
 
-    User updateStatus(Long id, String status);
+        User updateStatus(Long id, String status);
 
-    void updateLastSeen(Long userId);
+        void updateLastSeen(Long userId);
 
-    void delete(Long id);
+        void delete(Long id);
 
-    @Transactional
-    void inactivate(Long id);
+        @Transactional
+        void inactivate(Long id);
 
-    boolean existsByEmail(String email);
+        boolean existsByEmail(String email);
 
-    boolean checkPassword(String email, String rawPassword);
+        boolean checkPassword(String email, String rawPassword);
 
-    void markVerified(String email);
+        void markVerified(String email);
 
-    void updatePassword(String email, String newPassword);
+        void updatePassword(String email, String newPassword);
 
 
-    UserDetails loadUserByUsername(String username);
-}
+        UserDetails loadUserByUsername(String username);
+    }

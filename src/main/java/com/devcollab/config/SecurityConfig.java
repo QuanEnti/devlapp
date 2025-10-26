@@ -44,13 +44,14 @@ public class SecurityConfig {
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
                 http
-                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**")
+                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/user/**")
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(
                                                 sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(
                                                                 "/",
+                                                                "/view/home",
                                                                 "/view/signin",
                                                                 "/view/login",
                                                                 "/view/register",
@@ -62,6 +63,7 @@ public class SecurityConfig {
                                                                 "/favicon.ico", "/webjars/**",
                                                                 "/oauth2/**")
                                                 .permitAll()
+                                                .requestMatchers("/user/**").authenticated()
                                                 .anyRequest().authenticated())
 
                                 .oauth2Login(oauth -> oauth

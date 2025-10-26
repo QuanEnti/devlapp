@@ -150,7 +150,7 @@
         if (res.ok && data.status === 'SUCCESS') {
           msg.style.color = 'green';
           msg.textContent = 'Đăng nhập thành công!';
-          setTimeout(() => window.location.href = '/view/home', 800);
+          setTimeout(() => window.location.href = '/user/view/dashboard', 800);
         } 
         else if (data.status === 'VERIFY_REQUIRED') {
           msg.style.color = 'orange';
