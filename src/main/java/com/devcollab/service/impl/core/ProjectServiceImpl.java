@@ -14,8 +14,9 @@ import com.devcollab.service.event.AppEventService;
 import com.devcollab.service.system.ActivityService;
 import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.system.ProjectAuthorizationService;
-import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -283,6 +284,7 @@ public class ProjectServiceImpl implements ProjectService {
     List<Long> target = labels.stream().map(d -> targetPerDay).toList();
 
     return new ProjectPerformanceDTO(labels, achieved, target);
+
 }
     @Override
     public List<ProjectDTO> getTopProjects(int limit) {
@@ -384,7 +386,8 @@ public class ProjectServiceImpl implements ProjectService {
 
         return newMember;
     }
-    public List<Project> getProjectsByUsername(String username) { 
+    
+    public List<Project> getProjectsByUsername(String username) {
         // 1. Tìm User bằng username (email)
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new NotFoundException("User không tồn tại"));
