@@ -3,6 +3,9 @@ package com.devcollab.service.system;
 import com.devcollab.repository.ProjectMemberRepository;
 import com.devcollab.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -18,12 +21,11 @@ public class ProjectAuthorizationService {
                 .orElseThrow(() -> new AccessDeniedException("User không tồn tại"))
                 .getUserId();
 
-        boolean isPm = projectMemberRepository.existsByProject_ProjectIdAndUser_UserIdAndRoleInProject(projectId, uid,
-                "PM");
+        boolean isAuthorized = projectMemberRepository
+                .existsByProject_ProjectIdAndUser_UserIdAndRoleInProjectIn(projectId, uid, List.of("PM", "ADMIN"));
 
-        if (!isPm) {
-            throw new AccessDeniedException("Bạn không có quyền PM của dự án này");
-        }
+        if (!isAuthorized)
+            throw new AccessDeniedException("Bạn không có quyền PM hoặc ADMIN của dự án này");
 
         return uid;
     }

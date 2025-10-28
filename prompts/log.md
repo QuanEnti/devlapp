@@ -325,6 +325,8 @@ class AuthServiceImplTest {
     // A01–A10: Bao phủ toàn bộ logic OAuth2 + Local + Unsupported
     // ...
 }
+---
+
  Kết quả: 10 test cases bao phủ đầy đủ các nhánh logic:
 
 Email tồn tại / không tồn tại / null
@@ -374,6 +376,7 @@ class OtpServiceTest {
     // ...
 }
 
+---
 
  Kết quả: 9 test cases bao phủ toàn bộ logic:
 
@@ -413,6 +416,7 @@ class JwtServiceTest {
     // ...
 }
 
+---
 
  Kết quả:
 
@@ -458,6 +462,7 @@ class MailServiceTest {
     // ...
 }
 
+---
 
  Kết quả:
 
@@ -468,10 +473,12 @@ SMTP lỗi → không throw
 OTP null → body vẫn render “null”
 
 Gửi nhiều domain → không lỗi
-
+---
 ➡ Coverage ước lượng: ~90%.
 Stage 3 hoàn tất.
-Toàn bộ 28 test case đã được hiện thực hóa thành JUnit 5 + Mockito test code,
+Toàn bộ 28 test case đã được hiện thực hóa thành JUnit 5 + Mockito test code
+
+---
 
 #  Unit Testing with AI Prompt – Stage 4: Test Execution & Coverage Analysis
 
@@ -486,12 +493,12 @@ Hãy xác nhận rằng tất cả test đã pass, coverage đạt yêu cầu, v
 ###  1️ Tổng quan kết quả test
 
 | Lớp   | Số test         | Pass | Fail / Error | Ghi chú |
-|------ |---------- ------|------|---------------|----------|
-| **AuthServiceImplTest** | 10 |  4 pass / 6 error | Lỗi `UnnecessaryStubbingException` trong `@BeforeEach` |
+|-------|----------------|------|---------------|----------|
+| **AuthServiceImplTest** | 10 |  2 pass / 8 error | Lỗi `UnnecessaryStubbingException` trong `@BeforeEach` |
 | **OtpServiceTest** | 9 |  4 pass / 5 error | Lỗi tương tự (stub Redis thừa) |
 | **JwtServiceTest** | 5 |  5/5 pass | Ổn định, không lỗi |
 | **MailServiceTest** | 4 |  4/4 pass | Ổn định, không lỗi |
-| **Tổng cộng module Authentication** | **28** |  **13 pass / 15 error** | Coverage logic đạt >90%, nhưng build báo fail do strict stubbing |
+| **Tổng cộng module Authentication** | **28** |  **15 pass / 13 error** | Coverage logic đạt >90%, nhưng build báo fail do strict stubbing |
 
 ---
 

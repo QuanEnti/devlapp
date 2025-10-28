@@ -17,9 +17,17 @@ public class MemberDTO {
     private String name;
     private String email;
     private String avatarUrl;
+    private String roleInProject;
     public MemberDTO(Long userId, String name, String avatarUrl) {
         this.userId = userId;
         this.name = name;
+        this.avatarUrl = avatarUrl;
+    }
+    
+    public MemberDTO(Long userId, String name, String email, String avatarUrl) {
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
         this.avatarUrl = avatarUrl;
     }
     

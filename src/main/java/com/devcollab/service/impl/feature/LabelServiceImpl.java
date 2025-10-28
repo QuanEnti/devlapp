@@ -3,128 +3,127 @@ package com.devcollab.service.impl.feature;
 import com.devcollab.domain.Label;
 import com.devcollab.domain.Project;
 import com.devcollab.domain.Task;
-import com.devcollab.exception.BadRequestException;
-import com.devcollab.exception.NotFoundException;
+import com.devcollab.dto.LabelDTO;
 import com.devcollab.repository.LabelRepository;
 import com.devcollab.repository.ProjectRepository;
 import com.devcollab.repository.TaskRepository;
 import com.devcollab.service.feature.LabelService;
-import com.devcollab.service.system.ActivityService;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
+
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class LabelServiceImpl implements LabelService {
 
     private final LabelRepository labelRepository;
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
-    private final ActivityService activityService;
 
-    @Override
-    public List<Label> getLabelsByProject(Long projectId) {
-        projectRepository.findById(projectId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
-        return labelRepository.findByProject_ProjectId(projectId);
+    public LabelServiceImpl(LabelRepository labelRepository,
+            ProjectRepository projectRepository,
+            TaskRepository taskRepository) {
+        this.labelRepository = labelRepository;
+        this.projectRepository = projectRepository;
+        this.taskRepository = taskRepository;
     }
 
     @Override
-    public Label createLabel(Long projectId, String name, String color) {
-        if (name == null || name.isBlank())
-            throw new BadRequestException("Tên label không được để trống");
+    public List<LabelDTO> getLabelsByProject(Long projectId, String keyword) {
+        return labelRepository.findByProjectAndKeyword(projectId, keyword)
+                .stream()
+                .map(l -> new LabelDTO(l.getLabelId(), l.getName(), l.getColor()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public LabelDTO createLabel(Long projectId, String name, String color) {
+        if (labelRepository.existsByProject_ProjectIdAndNameIgnoreCase(projectId, name))
+            throw new IllegalArgumentException("Label name already exists in this project");
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
 
         Label label = new Label();
         label.setProject(project);
-        label.setName(name.trim());
-        label.setColor(color != null && !color.isBlank() ? color : "#888888");
+        label.setName(name);
+        label.setColor(color != null ? color : "#61bd4f");
 
-        try {
-            Label saved = labelRepository.save(label);
-            activityService.log("LABEL", saved.getLabelId(), "CREATE", saved.getName());
-            return saved;
-        } catch (DataIntegrityViolationException e) {
-            throw new BadRequestException("Tên label đã tồn tại trong dự án này");
-        }
+        Label saved = labelRepository.save(label);
+        return new LabelDTO(saved.getLabelId(), saved.getName(), saved.getColor());
     }
 
     @Override
-    public Label updateLabel(Long labelId, String name, String color) {
+    public LabelDTO updateLabel(Long labelId, String name, String color) {
         Label label = labelRepository.findById(labelId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy label"));
-
+                .orElseThrow(() -> new IllegalArgumentException("Label not found"));
         if (name != null && !name.isBlank())
-            label.setName(name.trim());
+            label.setName(name);
         if (color != null && !color.isBlank())
             label.setColor(color);
 
-        try {
-            Label saved = labelRepository.save(label);
-            activityService.log("LABEL", saved.getLabelId(), "UPDATE", saved.getName());
-            return saved;
-        } catch (DataIntegrityViolationException e) {
-            throw new BadRequestException("Tên label đã tồn tại trong dự án này");
-        }
+        Label saved = labelRepository.save(label);
+        return new LabelDTO(saved.getLabelId(), saved.getName(), saved.getColor());
     }
 
     @Override
+    @Transactional
     public void deleteLabel(Long labelId) {
-        Label label = labelRepository.findById(labelId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy label"));
+        // 1️⃣ Xóa toàn bộ bản ghi liên kết trong bảng TaskLabel
+        labelRepository.deleteAllTaskRelations(labelId);
 
-        if (!label.getTasks().isEmpty())
-            throw new BadRequestException("Không thể xoá label đang được gán cho task");
-
-        labelRepository.delete(label);
-        activityService.log("LABEL", labelId, "DELETE", "Hard delete");
+        // 2️⃣ Sau đó mới xóa label chính
+        labelRepository.deleteById(labelId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public LabelDTO getLabelById(Long labelId) {
+        LabelDTO dto = labelRepository.findDtoById(labelId);
+        if (dto == null) {
+            throw new IllegalArgumentException("Label not found");
+        }
+        return dto;
+    }
+
+    @Override
+    public List<LabelDTO> getLabelsByTask(Long taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+
+        Hibernate.initialize(task.getLabels());
+
+        return task.getLabels().stream()
+                .map(l -> new LabelDTO(l.getLabelId(), l.getName(), l.getColor()))
+                .collect(Collectors.toList());
+    }
     @Override
     public void assignLabelToTask(Long taskId, Long labelId) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
         Label label = labelRepository.findById(labelId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy label"));
+                .orElseThrow(() -> new IllegalArgumentException("Label not found"));
 
-        if (!task.getProject().getProjectId().equals(label.getProject().getProjectId()))
-            throw new BadRequestException("Label và Task không cùng thuộc một dự án");
-
+        // tránh duplicate
         boolean exists = task.getLabels().stream()
-                .anyMatch(l -> l.getLabelId().equals(labelId));
-        if (exists)
-            throw new BadRequestException("Task đã có label này rồi");
+                .anyMatch(l -> Objects.equals(l.getLabelId(), labelId));
+        if (!exists) task.getLabels().add(label);
 
-        task.getLabels().add(label);
         taskRepository.save(task);
-
-        activityService.log("TASK", taskId, "ASSIGN_LABEL", label.getName());
     }
 
     @Override
     public void removeLabelFromTask(Long taskId, Long labelId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
-
-        boolean removed = task.getLabels().removeIf(l -> l.getLabelId().equals(labelId));
-        if (!removed)
-            throw new NotFoundException("Label không tồn tại trong task này");
-
-        taskRepository.save(task);
-        activityService.log("TASK", taskId, "REMOVE_LABEL", "Label ID: " + labelId);
+        if (!taskRepository.existsById(taskId) || !labelRepository.existsById(labelId)) {
+            throw new IllegalArgumentException("Task or Label not found");
+        }
+        labelRepository.deleteTaskLabel(taskId, labelId);
     }
+    
 
-    @Override
-    public List<Task> getTasksByLabel(Long labelId) {
-        labelRepository.findById(labelId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy label"));
-        return taskRepository.findByLabels_LabelId(labelId);
-    }
-}
+}   

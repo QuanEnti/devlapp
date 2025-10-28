@@ -27,7 +27,7 @@ public interface TaskService {
 
     Task reopenTask(Long taskId);
 
-    List<Task> getTasksByProject(Long projectId);
+    List<TaskDTO> getTasksByProject(Long projectId);
 
     List<Task> getTasksByAssignee(Long userId);
 
@@ -42,6 +42,6 @@ public interface TaskService {
     TaskDTO updateDates(Long taskId, TaskDTO dto);
 
     TaskDTO moveTask(Long taskId, MoveTaskRequest req);
-
-
+    
+    TaskDTO getByIdAsDTO(Long id);
 }

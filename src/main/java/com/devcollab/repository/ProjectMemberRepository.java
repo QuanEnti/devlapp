@@ -24,7 +24,9 @@
         
         List<ProjectMember> findByProject_ProjectIdAndUser_UserId(Long projectId, Long userId);
         
-        boolean existsByProject_ProjectIdAndUser_UserIdAndRoleInProject(Long projectId, Long userId, String role);
+        boolean existsByProject_ProjectIdAndUser_UserIdAndRoleInProjectIn(
+                Long projectId, Long userId, List<String> roles);
+
         @Query("""
             SELECT new com.devcollab.dto.UserDTO(u)
             FROM ProjectMember pm
@@ -85,7 +87,9 @@
                     select new com.devcollab.dto.MemberDTO(
                         u.userId,
                         u.name,
-                        u.avatarUrl
+                        u.email,
+                        u.avatarUrl,
+                        pm.roleInProject
                     )
                     from ProjectMember pm
                     join pm.user u

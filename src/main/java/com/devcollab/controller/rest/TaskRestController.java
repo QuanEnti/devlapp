@@ -31,10 +31,8 @@ public class TaskRestController {
     // ====================== TASK CRUD ======================
 
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<List<TaskDTO>> getByProject(@PathVariable Long projectId) {
-        return ResponseEntity.ok(
-                taskService.getTasksByProject(projectId)
-                        .stream().map(TaskDTO::fromEntity).toList());
+    public ResponseEntity<List<TaskDTO>> getTasksByProject(@PathVariable Long projectId) {
+        return ResponseEntity.ok(taskService.getTasksByProject(projectId));
     }
 
     @PostMapping("/quick")
@@ -68,8 +66,7 @@ public class TaskRestController {
 
     @GetMapping("/{taskId}")
     public ResponseEntity<TaskDTO> getTaskById(@PathVariable Long taskId) {
-        Task task = taskService.getById(taskId);
-        return ResponseEntity.ok(TaskDTO.fromEntity(task));
+        return ResponseEntity.ok(taskService.getByIdAsDTO(taskId));
     }
 
     @PutMapping("/{taskId}/description")

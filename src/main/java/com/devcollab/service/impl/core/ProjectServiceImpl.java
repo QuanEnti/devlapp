@@ -324,6 +324,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
 
         authz.ensurePmOfProject(pmEmail, projectId);
+        
 
         if (!project.isAllowLinkJoin()) {
             String inviteLink = UUID.randomUUID().toString();
@@ -332,7 +333,7 @@ public class ProjectServiceImpl implements ProjectService {
             project.setUpdatedAt(LocalDateTime.now());
             projectRepository.save(project);
 
-            activityService.log("PROJECT", projectId, "ENABLE_SHARE", "Link: " + inviteLink);
+            // activityService.log("PROJECT", projectId, "ENABLE_SHARE", "Link: " + inviteLink);
         }
 
         return project;
@@ -355,6 +356,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         return project;
     }
+   
     @Override
     public ProjectMember joinProjectByLink(String inviteLink, Long userId) {
         Project project = projectRepository.findActiveSharedProject(inviteLink)
@@ -363,10 +365,8 @@ public class ProjectServiceImpl implements ProjectService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User không tồn tại"));
 
-        boolean exists = projectMemberRepository.findByProject_ProjectId(project.getProjectId())
-                .stream()
-                .anyMatch(m -> m.getUser().getUserId().equals(userId));
-
+        boolean exists = projectMemberRepository.existsByProject_ProjectIdAndUser_UserId(project.getProjectId(),
+                userId);
         if (exists) {
             throw new BadRequestException("Bạn đã là thành viên của dự án này");
         }
