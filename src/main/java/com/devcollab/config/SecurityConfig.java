@@ -15,7 +15,7 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 
 @Configuration
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class    SecurityConfig {
 
         private final JwtAuthenticationFilter jwtFilter;
         private final OAuth2SuccessHandler oAuth2SuccessHandler;

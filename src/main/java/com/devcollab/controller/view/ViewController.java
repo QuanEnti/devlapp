@@ -85,7 +85,7 @@ public class ViewController {
 
     @GetMapping("/dashboard")
     public String dashboardPage() {
-        return "dashboard";
+        return "user/user-dashboard";
     } 
 }
 

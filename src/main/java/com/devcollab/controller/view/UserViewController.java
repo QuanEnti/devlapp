@@ -108,5 +108,4 @@ public class UserViewController {
 
         return "user/user-profile";
     }
-
 }

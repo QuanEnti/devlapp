@@ -6,9 +6,12 @@ import com.devcollab.repository.ActivityRepository;
 import com.devcollab.service.system.ActivityService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -50,4 +53,19 @@ public class ActivityServiceImpl implements ActivityService {
             System.err.println("[ActivityService] Error logging with actor: " + e.getMessage());
         }
     }
+
+    @Override
+    public List<Activity> getAllActivities() {
+        try {
+            return activityRepository.findAllByOrderByCreatedAtDesc();
+        } catch (Exception e) {
+            System.err.println("[ActivityService] Error fetching logs: " + e.getMessage());
+            return List.of();
+        }
+    }
+    @Override
+    public Page<Activity> getPaginatedActivities(Pageable pageable) {
+        return activityRepository.findAllByOrderByCreatedAtDesc(pageable);
+    }
+
 }
