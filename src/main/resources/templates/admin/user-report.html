@@ -37,14 +37,6 @@
             color: #fff;
             font-weight: 600;
         }
-        .card {
-            border: none;
-            border-radius: 12px;
-        }
-        .card h2 {
-            margin-top: 10px;
-            font-size: 2rem;
-        }
     </style>
 </head>
 <body>
@@ -85,7 +77,7 @@
                 </div>
             </div>
 
-
+            <!-- Report Table -->
             <div class="table-responsive mt-3">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
@@ -103,6 +95,13 @@
                     </thead>
                     <tbody id="reportTable"></tbody>
                 </table>
+            </div>
+
+            <!-- ✅ Pagination controls -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <button class="btn btn-secondary btn-sm" id="prevBtn" onclick="changePage(-1)">Previous</button>
+                <span id="pageInfo" class="fw-bold"></span>
+                <button class="btn btn-secondary btn-sm" id="nextBtn" onclick="changePage(1)">Next</button>
             </div>
         </main>
     </div>
@@ -158,92 +157,97 @@
     </div>
 </div>
 
-<!-- Script -->
+<!-- ====================== Script ====================== -->
 <script>
     let reportsCache = [];
     let selectedReportId = null;
     let bootstrapModal;
+    let currentPage = 0;
+    let totalPages = 0;
+    document.addEventListener("DOMContentLoaded", () => loadReports(0));
+    // ------------------ LOAD REPORTS ------------------
+    async function loadReports(page = 0) {
+        // Ensure page is a number, not an event object
+        if (typeof page === 'object') {
+            page = 0;
+        }
 
-    async function loadReports() {
-        const res = await fetch('/api/admin/reports');
-        const data = await res.json();
-        reportsCache = data;
-        renderReports(data);
+        const res = await fetch(`/api/admin/reports?page=${page}&size=10`);
 
-        const tbody = document.getElementById('reportTable');
-        tbody.innerHTML = data.map(r => `
-        <tr>
-            <td>${r.id}</td>
-            <td>${r.reporterName || '—'}</td>
-            <td>${r.reportedName || '—'}</td>
-            <td>${r.reason}</td>
-            <td>
-                <span class="badge ${r.status === 'pending' ? 'bg-warning' :
-            r.status === 'reviewed' ? 'bg-info' : 'bg-success'}">
-                    ${r.status}
-                </span>
-            </td>
-            <td>${r.actionTaken || ''}</td>
-            <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
-            <td>${r.reviewedAt ? new Date(r.reviewedAt).toLocaleString() : '<span class="text-muted">—</span>'}</td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.id})">Update</button>
-            </td>
-        </tr>
-    `).join('');
+        if (!res.ok) {
+            console.error('Failed to load reports');
+            return;
+        }
+
+        const json = await res.json();
+
+        reportsCache = json.content;
+        currentPage = json.currentPage;
+        totalPages = json.totalPages;
+
+        renderReports(reportsCache);
+        updatePaginationControls();
     }
+
+
+    function updatePaginationControls() {
+        document.getElementById("pageInfo").innerText =
+            `Page ${currentPage + 1} of ${totalPages}`;
+        document.getElementById("prevBtn").disabled = currentPage === 0;
+        document.getElementById("nextBtn").disabled = currentPage >= totalPages - 1;
+    }
+
+    function changePage(delta) {
+        const newPage = currentPage + delta;
+        if (newPage >= 0 && newPage < totalPages) {
+            loadReports(newPage);
+        }
+    }
+
+    // ------------------ RENDER TABLE ------------------
+    function renderReports(data) {
+        const tbody = document.getElementById('reportTable');
+        if (!data.length) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">No reports found</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.map(r => `
+            <tr>
+                <td>${r.id}</td>
+                <td>${r.reporterName || '—'}</td>
+                <td>${r.reportedName || '—'}</td>
+                <td>${r.reason}</td>
+                <td>
+                    <span class="badge ${r.status === 'pending' ? 'bg-warning text-dark' :
+            r.status === 'reviewed' ? 'bg-info text-dark' : 'bg-success'}">${r.status}</span>
+                </td>
+                <td>${r.actionTaken || ''}</td>
+                <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
+                <td>${r.reviewedAt ? new Date(r.reviewedAt).toLocaleString() : '<span class="text-muted">—</span>'}</td>
+                <td><button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.id})">Update</button></td>
+            </tr>
+        `).join('');
+    }
+
+    // ------------------ SORTING ------------------
     function applySort() {
         const sortBy = document.getElementById("sortOption").value;
-        let sorted = [...reportsCache]; // copy current reports
+        let sorted = [...reportsCache];
 
         switch (sortBy) {
-            case "newest":
-                sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                break;
-            case "oldest":
-                sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                break;
-            case "status_pending":
-                sorted.sort((a, b) => (a.status === 'pending' ? -1 : 1));
-                break;
-            case "status_reviewed":
-                sorted.sort((a, b) => (a.status === 'reviewed' ? -1 : 1));
-                break;
-            case "reporter":
-                sorted.sort((a, b) => (a.reporterName || '').localeCompare(b.reporterName || ''));
-                break;
-            case "reported":
-                sorted.sort((a, b) => (a.reportedName || '').localeCompare(b.reportedName || ''));
-                break;
+            case "newest": sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); break;
+            case "oldest": sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); break;
+            case "status_pending": sorted.sort((a, b) => (a.status === 'pending' ? -1 : 1)); break;
+            case "status_reviewed": sorted.sort((a, b) => (a.status === 'reviewed' ? -1 : 1)); break;
+            case "reporter": sorted.sort((a, b) => (a.reporterName || '').localeCompare(b.reporterName || '')); break;
+            case "reported": sorted.sort((a, b) => (a.reportedName || '').localeCompare(b.reportedName || '')); break;
         }
 
         renderReports(sorted);
     }
 
-    function renderReports(data) {
-        const tbody = document.getElementById('reportTable');
-        tbody.innerHTML = data.map(r => `
-        <tr>
-            <td>${r.id}</td>
-            <td>${r.reporterName || '—'}</td>
-            <td>${r.reportedName || '—'}</td>
-            <td>${r.reason}</td>
-            <td>
-                <span class="badge ${r.status === 'pending' ? 'bg-warning' :
-            r.status === 'reviewed' ? 'bg-info' : 'bg-success'}">
-                    ${r.status}
-                </span>
-            </td>
-            <td>${r.actionTaken || ''}</td>
-            <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.id})">Update</button>
-            </td>
-        </tr>
-    `).join('');
-    }
-
-
+    // ------------------ MODAL ------------------
     function openModal(id) {
         const report = reportsCache.find(r => r.id === id);
         if (!report) return;
@@ -266,87 +270,68 @@
 
         const statusView = document.getElementById("modalStatusView");
         statusView.textContent = report.status || "Unknown";
-
         statusView.className = `badge fs-6 px-3 py-2 ${
             report.status === 'pending' ? 'bg-warning text-dark' :
                 report.status === 'reviewed' ? 'bg-info text-dark' :
-                    report.status === 'resolved' ? 'bg-success' :
-                        'bg-secondary'
+                    'bg-secondary'
         }`;
-        document.getElementById("actionTaken").value = '';
 
+        document.getElementById("actionTaken").value = '';
         bootstrapModal = new bootstrap.Modal(document.getElementById('reportModal'));
         bootstrapModal.show();
     }
 
+    // ------------------ SAVE CHANGES ------------------
     document.getElementById("saveChangesBtn").addEventListener("click", async () => {
         const actionTaken = document.getElementById("actionTaken").value;
         const warningMessage = document.getElementById("warningMessage").value.trim();
 
-        // 🟡 Case 1: Admin chooses to Ban
+        // 🟡 Case 1: Ban
         if (actionTaken === "Ban") {
-            if (!confirm("⚠️ Are you sure you want to ban this user? This will change their status to 'banned'.")) {
-                return;
-            }
+            if (!confirm("⚠️ Are you sure you want to ban this user?")) return;
             const res = await fetch(`/api/admin/reports/${selectedReportId}/ban`, { method: "PUT" });
             if (res.ok) {
                 alert("✅ User has been banned.");
                 bootstrapModal.hide();
                 await loadReports();
-            } else {
-                alert("❌ Failed to ban user.");
-            }
+            } else alert("❌ Failed to ban user.");
             return;
         }
 
-        // 🟢 Case 2: Admin chooses Warning
+        // 🟢 Case 2: Warning
         if (actionTaken === "Warning") {
-            if (!warningMessage) {
-                alert("Please enter a warning message.");
-                return;
-            }
-
+            if (!warningMessage) return alert("Please enter a warning message.");
             const res = await fetch(`/api/admin/reports/${selectedReportId}/warn`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: warningMessage, status })
+                body: JSON.stringify({ message: warningMessage })
             });
             if (res.ok) {
-                alert("✅ Warning sent to the user.");
+                alert("✅ Warning sent.");
                 bootstrapModal.hide();
                 await loadReports();
-            } else {
-                alert("❌ Failed to send warning.");
-            }
+            } else alert("❌ Failed to send warning.");
             return;
         }
 
-        // 🟣 Otherwise normal update (status only)
+        // 🟣 Default: Update status/action only
         const res = await fetch(`/api/admin/reports/${selectedReportId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status, actionTaken })
+            body: JSON.stringify({ status: "reviewed", actionTaken })
         });
-
         if (res.ok) {
+            alert("✅ Report updated.");
             bootstrapModal.hide();
             await loadReports();
-            alert("✅ Report updated successfully!");
-        } else {
-            alert("❌ Failed to update report");
-        }
+        } else alert("❌ Failed to update report.");
     });
 
-
+    // ------------------ ACTION CHANGE ------------------
     function handleActionChange() {
         const action = document.getElementById("actionTaken").value;
-        const warningBox = document.getElementById("warningCommentBox");
-
-        if (action === "Warning") {
-            warningBox.style.display = "block";
-        } else {
-            warningBox.style.display = "none";
-        }
+        document.getElementById("warningCommentBox").style.display =
+            action === "Warning" ? "block" : "none";
     }
 
     document.addEventListener("DOMContentLoaded", loadReports);

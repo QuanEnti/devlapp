@@ -37,6 +37,10 @@
             color: #fff;
             font-weight: 600;
         }
+        .pagination-info {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +99,22 @@
                     <tbody id="reportTable"></tbody>
                 </table>
             </div>
+
+            <!-- Pagination Controls -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="pagination-info" id="paginationInfo">
+                    Showing 0 of 0 reports
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm" id="prevBtn" onclick="changePage(-1)">
+                        Previous
+                    </button>
+                    <span class="mx-3 fw-bold" id="pageInfo">Page 0 of 0</span>
+                    <button class="btn btn-outline-secondary btn-sm" id="nextBtn" onclick="changePage(1)">
+                        Next
+                    </button>
+                </div>
+            </div>
         </main>
     </div>
 </div>
@@ -149,19 +169,69 @@
     let reportsCache = [];
     let selectedReportId = null;
     let bootstrapModal;
+    let currentPage = 0;
+    let totalPages = 0;
+    let totalItems = 0;
+    const pageSize = 10;
 
-    async function loadReports() {
-        const res = await fetch('/api/admin/project-reports');
-        const data = await res.json();
-        reportsCache = data;
-        renderReports(data);
+    // ------------------ LOAD REPORTS WITH PAGINATION ------------------
+    async function loadReports(page = 0) {
+        try {
+            const res = await fetch(`/api/admin/project-reports?page=${page}&size=${pageSize}`);
+
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            reportsCache = data.content || [];
+            currentPage = data.currentPage || 0;
+            totalPages = data.totalPages || 0;
+            totalItems = data.totalItems || 0;
+
+            renderReports(reportsCache);
+            updatePaginationControls();
+        } catch (error) {
+            console.error('Error loading reports:', error);
+            document.getElementById('reportTable').innerHTML =
+                `<tr><td colspan="9" class="text-center text-danger">Failed to load reports</td></tr>`;
+        }
     }
 
+    function updatePaginationControls() {
+        const startItem = (currentPage * pageSize) + 1;
+        const endItem = Math.min((currentPage + 1) * pageSize, totalItems);
+
+        document.getElementById("paginationInfo").innerText =
+            `Showing ${reportsCache.length > 0 ? startItem : 0}-${endItem} of ${totalItems} reports`;
+
+        document.getElementById("pageInfo").innerText =
+            `Page ${currentPage + 1} of ${totalPages}`;
+
+        document.getElementById("prevBtn").disabled = currentPage === 0;
+        document.getElementById("nextBtn").disabled = currentPage >= totalPages - 1;
+    }
+
+    function changePage(delta) {
+        const newPage = currentPage + delta;
+        if (newPage >= 0 && newPage < totalPages) {
+            loadReports(newPage);
+        }
+    }
+
+    // ------------------ RENDER TABLE ------------------
     function renderReports(data) {
         const tbody = document.getElementById('reportTable');
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">No reports found</td></tr>`;
+            return;
+        }
+
         tbody.innerHTML = data.map(r => `
             <tr>
-                <td>${r.reportId}</td>
+                <td>${r.reportId || r.id}</td>
                 <td>${r.reporterName || '—'}</td>
                 <td>${r.projectName || '—'}</td>
                 <td>${r.reason}</td>
@@ -172,75 +242,12 @@
                 <td>${r.actionTaken || ''}</td>
                 <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
                 <td>${r.reviewedAt ? new Date(r.reviewedAt).toLocaleString() : '<span class="text-muted">—</span>'}</td>
-                <td><button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.reportId})">Update</button></td>
+                <td><button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.reportId || r.id})">Update</button></td>
             </tr>
         `).join('');
     }
 
-    function openModal(id) {
-        const report = reportsCache.find(r => r.reportId === id);
-        if (!report) return;
-        selectedReportId = id;
-
-        document.getElementById("modalId").innerText = report.id;
-        document.getElementById("modalReporter").innerText = report.reporterName || '—';
-        document.getElementById("modalProject").innerText = report.projectName || '—';
-        document.getElementById("modalReason").innerText = report.reason;
-        document.getElementById("modalDetails").innerText = report.details || '—';
-        document.getElementById("modalProof").innerHTML = report.proofUrl
-            ? `<a href="${report.proofUrl}" target="_blank">View Proof</a>`
-            : '<span class="text-muted">No proof submitted</span>';
-        document.getElementById("modalCreatedAt").innerText = report.createdAt ? new Date(report.createdAt).toLocaleString() : '';
-        document.getElementById("modalReviewedAt").innerText = report.reviewedAt ? new Date(report.reviewedAt).toLocaleString() : '—';
-
-        const statusView = document.getElementById("modalStatusView");
-        statusView.textContent = report.status;
-        statusView.className = `badge fs-6 px-3 py-2 ${
-            report.status === 'pending' ? 'bg-warning text-dark' :
-                report.status === 'reviewed' ? 'bg-info text-dark' :
-                    'bg-success'
-        }`;
-
-        document.getElementById("actionTaken").value = '';
-        bootstrapModal = new bootstrap.Modal(document.getElementById('reportModal'));
-        bootstrapModal.show();
-    }
-
-    async function saveChanges() {
-        const actionTaken = document.getElementById("actionTaken").value;
-        const warningMessage = document.getElementById("warningMessage").value.trim();
-
-        if (actionTaken === "Ban") {
-            if (!confirm("⚠️ Are you sure you want to remove this project?")) return;
-            const res = await fetch(`/api/admin/project-reports/${selectedReportId}/ban`, { method: "PUT" });
-            if (res.ok) {
-                alert("🚫 Project removed successfully.");
-                bootstrapModal.hide();
-                await loadReports();
-            } else alert("❌ Failed to remove project.");
-            return;
-        }
-
-        if (actionTaken === "Warning") {
-            if (!warningMessage) {
-                alert("Please enter a warning message.");
-                return;
-            }
-            const res = await fetch(`/api/admin/project-reports/${selectedReportId}/warn`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: warningMessage })
-            });
-            if (res.ok) {
-                alert("⚠️ Warning sent to project owner.");
-                bootstrapModal.hide();
-                await loadReports();
-            } else alert("❌ Failed to send warning.");
-            return;
-        }
-
-        alert("Please choose an action.");
-    }
+    // ------------------ SORTING ------------------
     function applySort() {
         const sortBy = document.getElementById("sortOption").value;
         let sorted = [...reportsCache];
@@ -269,14 +276,85 @@
         renderReports(sorted);
     }
 
+    // ------------------ MODAL FUNCTIONS ------------------
+    function openModal(id) {
+        const report = reportsCache.find(r => (r.reportId || r.id) === id);
+        if (!report) return;
+
+        selectedReportId = id;
+
+        document.getElementById("modalId").innerText = report.reportId || report.id;
+        document.getElementById("modalReporter").innerText = report.reporterName || '—';
+        document.getElementById("modalProject").innerText = report.projectName || '—';
+        document.getElementById("modalReason").innerText = report.reason;
+        document.getElementById("modalDetails").innerText = report.details || '—';
+        document.getElementById("modalProof").innerHTML = report.proofUrl
+            ? `<a href="${report.proofUrl}" target="_blank">View Proof</a>`
+            : '<span class="text-muted">No proof submitted</span>';
+        document.getElementById("modalCreatedAt").innerText = report.createdAt ? new Date(report.createdAt).toLocaleString() : '';
+        document.getElementById("modalReviewedAt").innerText = report.reviewedAt ? new Date(report.reviewedAt).toLocaleString() : '—';
+
+        const statusView = document.getElementById("modalStatusView");
+        statusView.textContent = report.status;
+        statusView.className = `badge fs-6 px-3 py-2 ${
+            report.status === 'pending' ? 'bg-warning text-dark' :
+                report.status === 'reviewed' ? 'bg-info text-dark' :
+                    'bg-success'
+        }`;
+
+        document.getElementById("actionTaken").value = '';
+        document.getElementById("warningCommentBox").style.display = 'none';
+        document.getElementById("warningMessage").value = '';
+
+        bootstrapModal = new bootstrap.Modal(document.getElementById('reportModal'));
+        bootstrapModal.show();
+    }
 
     function handleActionChange() {
         const action = document.getElementById("actionTaken").value;
         document.getElementById("warningCommentBox").style.display = action === "Warning" ? "block" : "none";
     }
 
+    // ------------------ SAVE CHANGES ------------------
+    async function saveChanges() {
+        const actionTaken = document.getElementById("actionTaken").value;
+        const warningMessage = document.getElementById("warningMessage").value.trim();
+
+        if (actionTaken === "Ban") {
+            if (!confirm("⚠️ Are you sure you want to remove this project?")) return;
+            const res = await fetch(`/api/admin/project-reports/${selectedReportId}/ban`, { method: "PUT" });
+            if (res.ok) {
+                alert("🚫 Project removed successfully.");
+                bootstrapModal.hide();
+                await loadReports(currentPage); // Reload current page
+            } else alert("❌ Failed to remove project.");
+            return;
+        }
+
+        if (actionTaken === "Warning") {
+            if (!warningMessage) {
+                alert("Please enter a warning message.");
+                return;
+            }
+            const res = await fetch(`/api/admin/project-reports/${selectedReportId}/warn`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: warningMessage })
+            });
+            if (res.ok) {
+                alert("⚠️ Warning sent to project owner.");
+                bootstrapModal.hide();
+                await loadReports(currentPage); // Reload current page
+            } else alert("❌ Failed to send warning.");
+            return;
+        }
+
+        alert("Please choose an action.");
+    }
+
+    // ------------------ INITIALIZATION ------------------
     document.getElementById("saveChangesBtn").addEventListener("click", saveChanges);
-    document.addEventListener("DOMContentLoaded", loadReports);
+    document.addEventListener("DOMContentLoaded", () => loadReports(0));
 </script>
 </body>
 </html>

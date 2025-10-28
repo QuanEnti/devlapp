@@ -9,8 +9,13 @@ import com.devcollab.repository.UserRepository;
 import com.devcollab.repository.NotificationRepository;
 import com.devcollab.service.system.ActivityService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +41,27 @@ public class AdminUserReportRestController {
     }
 
     /** 🟢 Get all reports for admin view */
-    @GetMapping public List<UserReportDto> getAllReports() { return reportRepo.findAllWithUsers() .stream() .map(UserReportDto::new) .toList(); }
+//    @GetMapping public List<UserReportDto> getAllReports() { return reportRepo.findAllWithUsers() .stream() .map(UserReportDto::new) .toList(); }
+
+    @GetMapping
+    public Map<String, Object> getAllReports(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        if (page < 0) page = 0;
+        if (size <= 0 || size > 100) size = 10;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<UserReportDto> pageData = reportRepo.findAllWithUsers(pageable)
+                .map(UserReportDto::new);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", pageData.getContent());
+        response.put("currentPage", pageData.getNumber());
+        response.put("totalItems", pageData.getTotalElements());
+        response.put("totalPages", pageData.getTotalPages());
+        return response;
+    }
 
 
     /** 🟡 Update report (status/action only) */

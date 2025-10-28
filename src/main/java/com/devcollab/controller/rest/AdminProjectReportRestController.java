@@ -4,18 +4,21 @@ import com.devcollab.domain.ProjectReport;
 import com.devcollab.domain.Project;
 import com.devcollab.domain.Notification;
 import com.devcollab.dto.ProjectReportDto;
-import com.devcollab.dto.UserReportDto;
 import com.devcollab.repository.ProjectReportRepository;
 import com.devcollab.repository.ProjectRepository;
 import com.devcollab.repository.NotificationRepository;
-import com.devcollab.service.core.ProjectReportService;
-import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.system.ActivityService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/project-reports")
@@ -25,26 +28,42 @@ public class AdminProjectReportRestController {
     private final ProjectRepository projectRepo;
     private final NotificationRepository notificationRepo;
     private final ActivityService activityService;
-    private final ProjectReportService service;
 
     public AdminProjectReportRestController(ProjectReportRepository reportRepo, ProjectRepository projectRepo,
-                                            NotificationRepository notificationRepo, ActivityService activityService,
-                                            ProjectReportService service) {
+                                            NotificationRepository notificationRepo, ActivityService activityService) {
         this.reportRepo = reportRepo;
         this.projectRepo = projectRepo;
         this.notificationRepo = notificationRepo;
         this.activityService = activityService;
-        this.service = service;
     }
 
     @GetMapping
-    public List<ProjectReportDto> getAllReports() {
-        return reportRepo.findAllWithReporterAndProject()
+    public Map<String, Object> getAllReports(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        // Validate parameters
+        if (page < 0) page = 0;
+        if (size <= 0 || size > 100) size = 10;
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Use the EntityGraph method
+        Page<ProjectReport> projectReportsPage = reportRepo.findAllByOrderByCreatedAtDesc(pageable);
+
+        // Convert to DTOs
+        List<ProjectReportDto> content = projectReportsPage.getContent()
                 .stream()
                 .map(ProjectReportDto::new)
-                .toList();
-    }
+                .collect(Collectors.toList());
 
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", content);
+        response.put("currentPage", projectReportsPage.getNumber());
+        response.put("totalItems", projectReportsPage.getTotalElements());
+        response.put("totalPages", projectReportsPage.getTotalPages());
+        return response;
+    }
 
     @PostMapping("/{id}/warn")
     public void warnOwner(@PathVariable Long id, @RequestBody Map<String, String> body) {

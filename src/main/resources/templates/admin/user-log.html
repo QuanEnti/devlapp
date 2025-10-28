@@ -74,19 +74,40 @@
                     <tbody id="logTable"></tbody>
                 </table>
             </div>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <button class="btn btn-secondary btn-sm" id="prevBtn" onclick="changePage(-1)">Previous</button>
+                <span id="pageInfo" class="fw-bold"></span>
+                <button class="btn btn-secondary btn-sm" id="nextBtn" onclick="changePage(1)">Next</button>
+            </div>
         </main>
     </div>
 </div>
 
 <script>
+    // --- State ---
     let logs = [];
+    let currentPage = 0;
+    let totalPages = 0;
 
-    async function loadLogs() {
-        const res = await fetch("/api/admin/logs");
-        logs = await res.json();
-        renderLogs(logs);
+    // --- Load paginated logs from backend ---
+    async function loadLogs(page = 0) {
+        try {
+            const res = await fetch(`/api/admin/logs?page=${page}&size=10`);
+            const json = await res.json();
+
+            // handle non-Page format
+            logs = json.content || [];
+            totalPages = json.totalPages || 1;
+            currentPage = json.currentPage || 0;
+
+            renderLogs(logs);
+            updatePaginationControls();
+        } catch (err) {
+            console.error("Error loading logs:", err);
+        }
     }
 
+    // --- Render logs to table ---
     function renderLogs(data) {
         const tbody = document.getElementById("logTable");
         tbody.innerHTML = "";
@@ -110,6 +131,19 @@
         });
     }
 
+    // --- Pagination controls ---
+    function updatePaginationControls() {
+        document.getElementById("pageInfo").innerText = `Page ${currentPage + 1} of ${totalPages}`;
+        document.getElementById("prevBtn").disabled = currentPage === 0;
+        document.getElementById("nextBtn").disabled = currentPage >= totalPages - 1;
+    }
+
+    function changePage(delta) {
+        const newPage = currentPage + delta;
+        if (newPage >= 0 && newPage < totalPages) loadLogs(newPage);
+    }
+
+    // --- Filter (client-side only) ---
     function applyFilter() {
         const userQuery = document.getElementById("searchUser").value.toLowerCase();
         const actionQuery = document.getElementById("searchAction").value.toLowerCase();
@@ -124,6 +158,7 @@
         renderLogs(filtered);
     }
 
+    // --- Initial load ---
     loadLogs();
 </script>
 </body>

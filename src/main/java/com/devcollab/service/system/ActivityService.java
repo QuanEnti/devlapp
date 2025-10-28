@@ -1,6 +1,8 @@
 package com.devcollab.service.system;
 
 import com.devcollab.domain.Activity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -20,5 +22,7 @@ public interface ActivityService {
     void logWithActor(Long actorId, String entityType, Long entityId, String action, String data);
 
     List<Activity> getAllActivities();
+    public Page<Activity> getPaginatedActivities(Pageable pageable);
+
 
 }
