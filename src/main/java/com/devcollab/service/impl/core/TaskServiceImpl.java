@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -197,15 +198,26 @@ public class TaskServiceImpl implements TaskService {
     // ✅ 8. Truy vấn
     // ----------------------------------------------------
     @Override
-    public List<Task> getTasksByProject(Long projectId) {
-        projectRepository.findById(projectId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
-        return taskRepository.findByProject_ProjectId(projectId);
-    }
+public List<TaskDTO> getTasksByProject(Long projectId) {
+    projectRepository.findById(projectId)
+        .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+
+    return taskRepository.findByProject_ProjectId(projectId)
+        .stream()
+        .map(TaskDTO::fromEntity) // ✅ chuyển entity sang DTO
+        .collect(Collectors.toList());
+}
 
     @Override
     public List<Task> getTasksByAssignee(Long userId) {
         return taskRepository.findByAssignee_UserId(userId);
+    }
+    
+    @Override
+    public TaskDTO getByIdAsDTO(Long id) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+        return TaskDTO.fromEntity(task);
     }
 
     @Override

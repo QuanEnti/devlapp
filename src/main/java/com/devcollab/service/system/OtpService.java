@@ -50,6 +50,10 @@ public class OtpService {
     }
     public boolean verifyOtp(String email, String inputOtp) {
         String otpKey = buildOtpKey(email);
+        System.out.println("[DEBUG] OTP Key check: " + otpKey);
+        Boolean exists = redisTemplate.hasKey(otpKey);
+        System.out.println("[DEBUG] Exists in Redis: " + exists);
+
         String storedOtp = redisTemplate.opsForValue().get(otpKey);
 
         if (storedOtp == null) {

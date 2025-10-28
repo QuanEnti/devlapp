@@ -4,6 +4,8 @@ import com.devcollab.domain.Task;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -28,7 +30,7 @@ public class TaskDTO {
     private String reminder;
     private String descriptionMd;
     private String deadline;
-
+    private List<LabelDTO> labels;
     
     public static TaskDTO fromEntity(Task task) {
         // ✅ Dùng ISO 8601 format – frontend có thể parse bằng new Date() hoặc
@@ -56,6 +58,11 @@ public class TaskDTO {
                 .reminder(task.getReminder())
                 .descriptionMd(task.getDescriptionMd())
                 .deadline(task.getDeadline() != null ? task.getDeadline().format(iso) : "")
+                 .labels(task.getLabels() != null
+                        ? task.getLabels().stream()
+                              .map(l -> new LabelDTO(l.getLabelId(), l.getName(), l.getColor()))
+                              .collect(Collectors.toList())
+                        : List.of())
                 .build();
     }
 

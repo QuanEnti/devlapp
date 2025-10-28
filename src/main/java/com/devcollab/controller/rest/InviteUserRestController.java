@@ -105,7 +105,6 @@ public class InviteUserRestController {
                 "allowLinkJoin", updated.isAllowLinkJoin()));
     }
 
-    /** 🟣 User join project qua link mời */
     @PostMapping("/join/{inviteLink}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> joinByInviteLink(@PathVariable String inviteLink, Authentication auth) {
@@ -113,17 +112,40 @@ public class InviteUserRestController {
         var user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy user!"));
 
-        ProjectMember newMember = projectService.joinProjectByLink(inviteLink, user.getUserId());
-        return ResponseEntity.ok(Map.of(
-                "message", "Tham gia dự án thành công!",
-                "projectId", newMember.getProject().getProjectId(),
-                "projectName", newMember.getProject().getName()));
-    }
+        ProjectMember joined = projectService.joinProjectByLink(inviteLink, user.getUserId());
 
+        var project = joined.getProject();
+        return ResponseEntity.ok(Map.of(
+                "message", "joined_success",
+                "projectId", project.getProjectId(),
+                "projectName", project.getName()));
+    }
+    
     private String extractEmail(Authentication auth) {
         if (auth instanceof OAuth2AuthenticationToken oauth) {
             return oauth.getPrincipal().getAttribute("email");
         }
         return auth.getName();
     }
+    
+    @PutMapping("/project/{projectId}/member/{userId}/role")
+    @PreAuthorize("hasAnyRole('PM','ADMIN')")
+    public ResponseEntity<?> updateMemberRole(
+            @PathVariable Long projectId,
+            @PathVariable Long userId,
+            @RequestParam String role) {
+        try {
+            boolean updated = projectMemberService.updateMemberRole(projectId, userId, role);
+            return ResponseEntity.ok(Map.of(
+                    "message", "✅ Vai trò đã được cập nhật!",
+                    "projectId", projectId,
+                    "userId", userId,
+                    "role", role));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
+
 }

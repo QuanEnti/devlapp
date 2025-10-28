@@ -3,6 +3,8 @@ package com.devcollab.domain;
 import jakarta.persistence.*;
 import java.util.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Entity
 @Table(name = "Label", uniqueConstraints = @UniqueConstraint(columnNames = { "project_id", "name" }))
 public class Label {
@@ -22,8 +24,10 @@ public class Label {
     @Column(length = 24)
     private String color;
 
-    @ManyToMany(mappedBy = "labels")
-    private Set<Task> tasks = new HashSet<>();
+   @ManyToMany(mappedBy = "labels", fetch = FetchType.LAZY)
+@JsonIgnoreProperties("labels") // 💥 Cắt vòng lặp JSON
+private Set<Task> tasks = new HashSet<>();
+
 
     public Label() {
     }

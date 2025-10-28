@@ -20,19 +20,28 @@ public class SecurityConfig {
         private final JwtAuthenticationFilter jwtFilter;
         private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
+        // 🧩 API security
         @Bean
         @Order(1)
         public SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
                 http
                                 .securityMatcher("/api/**")
                                 .csrf(csrf -> csrf.disable())
-                                .sessionManagement( sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                                .sessionManagement(
+                                                sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/api/auth/**", "/api/users/**", "/api/admin/**",
-                                                                "/api/pm/**",
-                                                                "user/**")
+                                                // Các API public
+                                                .requestMatchers(
+                                                                "/api/auth/**",
+                                                                "/api/users/**",
+                                                                "/api/admin/**",
+                                                                "/api/pm/public/**",
+                                                                "/user/**")
                                                 .permitAll()
+                                                // 🔹 Cho phép truy cập dashboard public nếu có
                                                 .requestMatchers("/api/pm/project/*/dashboard").permitAll()
+                                                // 🔹 API join cần đăng nhập (Bearer hoặc cookie JWT)
+                                                .requestMatchers("/api/pm/invite/join/**").authenticated()
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                                 .formLogin(form -> form.disable())
@@ -41,11 +50,12 @@ public class SecurityConfig {
                 return http.build();
         }
 
+        // 🎨 View security
         @Bean
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
                 http
-                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**")
+                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**")
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(
                                                 sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -58,25 +68,23 @@ public class SecurityConfig {
                                                                 "/view/forgot-password",
                                                                 "/view/reset-password",
                                                                 "/view/password-reset-success",
-                                                                "/view/verify-otp",
-                                                                "/css/**", "/js/**", "/images/**",
+                                                                "/view/verify-otp",     
+                                                                "/join/**",
+                                                                "/css/**", "/js/**", "/images/**", "/assets/**",
                                                                 "/favicon.ico", "/webjars/**",
                                                                 "/oauth2/**")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
-
                                 .oauth2Login(oauth -> oauth
                                                 .loginPage("/view/signin")
                                                 .successHandler(oAuth2SuccessHandler)
                                                 .failureUrl("/view/signin?error=oauth"))
-
                                 .formLogin(form -> form.disable())
-
                                 .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, e) -> {
+                                        String redirect = req.getRequestURI();
                                         res.setStatus(HttpServletResponse.SC_FOUND);
-                                        res.setHeader("Location", "/view/signin");
+                                        res.setHeader("Location", "/view/signin?redirect=" + redirect);
                                 }))
-
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/view/signin?logout")
@@ -84,7 +92,6 @@ public class SecurityConfig {
                                                 .clearAuthentication(true)
                                                 .deleteCookies("AUTH_TOKEN", "REFRESH_TOKEN")
                                                 .permitAll())
-
                                 .addFilterAfter((request, response, chain) -> {
                                         if (response instanceof HttpServletResponse httpResp) {
                                                 httpResp.setHeader("Cache-Control",
@@ -94,7 +101,6 @@ public class SecurityConfig {
                                         }
                                         chain.doFilter(request, response);
                                 }, SecurityContextHolderAwareRequestFilter.class)
-
                                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();

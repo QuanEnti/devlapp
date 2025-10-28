@@ -6,10 +6,39 @@
   <title>Kanban Board - Members Popup</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    /* Nhẹ nhàng hơn khi popup mở */
-    .popup-enter { opacity: 0; transform: scale(0.98); }
-    .popup-enter-active { opacity: 1; transform: scale(1); transition: .12s ease-out; }
+    @keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+body { font-family: 'Inter', sans-serif; }
+
+/* Popup transition */
+.popup-enter { opacity: 0; transform: scale(0.98); }
+.popup-enter-active { opacity: 1; transform: scale(1); transition: .12s ease-out; }
+
+/* Color picker */
+.color-option {
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.color-option:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+.color-option.selected {
+  outline: 3px solid #3b82f6;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
+}
+
+/* Fade-in animation for popups */
+#edit-label-popup-wrapper,
+#labels-popup,
+#create-label-popup {
+  animation: fadeIn .15s ease-out;
+}
+
+
   </style>
 </head>
 
@@ -46,6 +75,11 @@
                   class="flex items-center gap-1 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded">
             👥 Members
           </button>
+          <button id="open-labels-btn"
+                  class="flex items-center gap-1 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded">
+            🏷️ Labels
+          </button>
+
           <span class="text-sm bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded cursor-pointer">
             Marketing Website ▼
           </span>
@@ -139,6 +173,92 @@
 
   <div id="members-section" class="space-y-2 max-h-[300px] overflow-y-auto"></div>
 </div>
+<!-- 🏷️ LABELS POPUP -->
+<div id="labels-popup"
+     class="hidden fixed z-[70] bg-white border border-gray-300 rounded-lg shadow-lg w-80 p-3">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="font-semibold text-gray-800 text-sm">Labels</h3>
+    <button id="close-labels-btn" class="text-gray-500 hover:text-gray-700 text-lg">×</button>
+  </div>
+
+  <input id="search-label-input" type="text"
+         placeholder="Search labels..."
+         class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400">
+
+  <div id="labels-list" class="space-y-2 max-h-[300px] overflow-y-auto"></div>
+
+  <button id="create-label-btn"
+          class="mt-3 w-full text-center border border-gray-300 hover:bg-gray-50 text-sm rounded-md py-2">
+    + Create a new label
+  </button>
+</div>
+
+<!-- 🆕 CREATE LABEL POPUP -->
+<div id="create-label-popup"
+     class="hidden fixed z-[80] bg-white border border-gray-300 rounded-lg shadow-xl w-96 p-4">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="font-semibold text-gray-800 text-sm">Create label</h3>
+    <button id="close-create-label-btn" class="text-gray-500 hover:text-gray-700 text-lg">×</button>
+  </div>
+  <div id="label-preview" class="w-full h-8 rounded-md mb-3 border border-gray-300 flex items-center justify-center text-sm font-semibold text-white">
+  New Label
+</div>
+
+  <input id="new-label-name" type="text" placeholder="Title"
+         class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400">
+
+  <label class="text-sm text-gray-700 mb-1 block">Select a color</label>
+  <div id="color-grid" class="grid grid-cols-8 gap-2 mb-3"></div>
+
+  <div class="flex items-center justify-between">
+    <button id="remove-color-btn"
+            class="text-gray-600 hover:text-red-600 text-sm">Remove color</button>
+    <button id="create-label-confirm"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium">
+      Create
+    </button>
+  </div>
+</div>
+<!-- ✏️ EDIT LABEL POPUP -->
+<div id="edit-label-popup-wrapper"
+     class="hidden fixed inset-0 z-[90] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div id="edit-label-popup"
+       class="bg-white border border-gray-300 rounded-lg shadow-xl w-96 p-4 animate-[fadeIn_0.15s_ease-out]">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-semibold text-gray-800 text-sm">Edit label</h3>
+      <button onclick="closeEditLabelPopup()" class="text-gray-500 hover:text-gray-700 text-lg">×</button>
+    </div>
+
+    <div id="edit-label-preview"
+         class="w-full h-8 rounded-md mb-3 flex items-center justify-center text-sm font-semibold text-white">
+      New
+    </div>
+
+    <input id="edit-label-name" type="text" placeholder="Title"
+           class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400">
+
+    <label class="text-sm text-gray-700 mb-1 block">Select a color</label>
+    <div id="edit-color-grid" class="grid grid-cols-8 gap-2 mb-3"></div>
+
+    <div class="flex items-center justify-between mb-3">
+      <button onclick="removeEditColor()"
+              class="text-gray-600 hover:text-red-600 text-sm">✕ Remove color</button>
+    </div>
+
+    <div class="flex justify-between">
+      <button onclick="saveEditedLabel()"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium">
+        Save
+      </button>
+      <button onclick="deleteEditedLabel()"
+              class="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-medium">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+
 <!-- 🔗 SHARE BOARD POPUP -->
 <div id="share-board-popup"
      class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -343,14 +463,31 @@ document.getElementById("share-board-btn").addEventListener("click", () => {
   }
 
   function renderCard(t) {
-    const taskId = t.id || t.taskId;
-    return `
-      <div data-open-task="${taskId}"
-           class="bg-white border border-slate-200 rounded-md p-3 shadow-sm hover:shadow-md transition cursor-pointer">
-        <p class="font-medium text-slate-800 text-sm">${escapeHtml(t.title)}</p>
+  const taskId = t.id || t.taskId;
+
+  // 🔹 Render danh sách label mini
+  const labelHtml = (t.labels && Array.isArray(t.labels) && t.labels.length)
+    ? t.labels.map(l => `
+        <span class="inline-block text-[10px] px-2 py-[1px] rounded-md text-white mr-1"
+              style="background:${l.color || '#94a3b8'}">
+          ${escapeHtml(l.name)}
+        </span>
+      `).join('')
+    : '';
+
+  return `
+    <div data-open-task="${taskId}"
+         class="bg-white border border-slate-200 rounded-md p-3 shadow-sm hover:shadow-md transition cursor-pointer">
+      
+      <div class="flex flex-wrap gap-1 mb-1">
+        ${labelHtml}
       </div>
-    `;
-  }
+
+      <p class="font-medium text-slate-800 text-sm">${escapeHtml(t.title)}</p>
+    </div>
+  `;
+}
+
 
   // ================== QUICK ADD ==================
   function showAddCardInput(columnId) {
@@ -674,6 +811,168 @@ document.getElementById("share-board-btn").addEventListener("click", () => {
     statusEl.className = "ml-2 text-xs font-medium rounded px-2 py-0.5 bg-green-100 text-green-700";
   }
 }
+
+// ================= LABELS POPUP =================
+const labelsPopup = document.getElementById("labels-popup");
+const openLabelsBtn = document.getElementById("open-labels-btn");
+const closeLabelsBtn = document.getElementById("close-labels-btn");
+const searchLabelInput = document.getElementById("search-label-input");
+const labelsList = document.getElementById("labels-list");
+
+openLabelsBtn.addEventListener("click", e => openLabelsPopup(e));
+closeLabelsBtn.addEventListener("click", () => labelsPopup.classList.add("hidden"));
+
+function openLabelsPopup(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  labelsPopup.style.top = `${rect.bottom + window.scrollY + 6}px`;
+  labelsPopup.style.left = `${rect.left + window.scrollX}px`;
+  labelsPopup.classList.remove("hidden");
+  loadLabels();
+}
+
+async function loadLabels(keyword = "") {
+  const projectId = PROJECT_ID;
+  const taskId = window.CURRENT_TASK_ID;
+  labelsList.innerHTML = `<p class="text-gray-400 text-sm italic">Loading...</p>`;
+
+  try {
+    // 🔹 Gửi token cho cả 2 request
+    const headers = { "Authorization": "Bearer " + localStorage.getItem("token") };
+
+    const resAll = await fetch(
+      `/api/labels?projectId=${projectId}&keyword=${encodeURIComponent(keyword)}`,
+      { headers }
+    );
+    const allLabels = await resAll.json();
+
+    const resTask = await fetch(`/api/tasks/${taskId}/labels`, { headers });
+    if (!resTask.ok) throw new Error("Failed to fetch task labels");
+
+    const taskLabels = await resTask.json();
+    const labelsArray = Array.isArray(taskLabels) ? taskLabels : [];
+    const assignedIds = labelsArray.map(l => l.labelId);
+
+
+    labelsList.innerHTML = allLabels.map(l => `
+      <div class="flex items-center justify-between p-1 hover:bg-gray-50 rounded-md">
+        <div class="flex items-center gap-2">
+          <input type="checkbox" ${assignedIds.includes(l.labelId) ? 'checked' : ''}
+                 onchange="${assignedIds.includes(l.labelId)
+                   ? `unassignLabel(${taskId},${l.labelId})`
+                   : `assignLabel(${taskId},${l.labelId})`}">
+          <div class="w-16 h-5 rounded-md" style="background:${l.color || '#ccc'}"></div>
+          <p class="text-sm text-gray-700">${l.name}</p>
+        </div>
+        <button class="text-gray-400 hover:text-blue-600 text-sm" onclick="editLabel(${l.labelId})">✎</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error("❌ loadLabels error:", err);
+    labelsList.innerHTML = `<p class="text-red-500 text-sm">Failed to load labels</p>`;
+  }
+}
+
+
+async function assignLabel(taskId, labelId) {
+  await fetch(`/api/tasks/${taskId}/labels/${labelId}`, {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+  });
+  await loadLabels(searchLabelInput.value.trim());
+}
+
+
+async function unassignLabel(taskId, labelId) {
+  await fetch(`/api/tasks/${taskId}/labels/${labelId}`, {
+    method: "DELETE",
+    headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+  });
+  await loadLabels(searchLabelInput.value.trim());
+}
+
+
+let debounceLabelTimer;
+searchLabelInput.addEventListener('input', e => {
+  clearTimeout(debounceLabelTimer);
+  debounceLabelTimer = setTimeout(() => loadLabels(e.target.value.trim()), 300);
+});
+
+// ================= CREATE LABEL POPUP =================
+const createLabelPopup = document.getElementById("create-label-popup");
+const createLabelBtn = document.getElementById("create-label-btn");
+const closeCreateLabelBtn = document.getElementById("close-create-label-btn");
+const createLabelConfirm = document.getElementById("create-label-confirm");
+const colorGrid = document.getElementById("color-grid");
+const newLabelName = document.getElementById("new-label-name");
+
+createLabelBtn.addEventListener("click", (e) => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  createLabelPopup.style.position = "absolute";
+  createLabelPopup.style.top = `${rect.bottom + window.scrollY + 8}px`;
+  createLabelPopup.style.left = `${rect.left + window.scrollX}px`;
+  createLabelPopup.classList.remove("hidden");
+  labelsPopup.classList.add("hidden");
+  renderColorGrid();
+  updateLabelPreview(); 
+});
+
+
+closeCreateLabelBtn.addEventListener("click", () => createLabelPopup.classList.add("hidden"));
+
+let selectedColor = null;
+newLabelName.addEventListener("input", updateLabelPreview);
+
+function renderColorGrid() {
+  const colors = ["#16a34a","#ef4444","#f59e0b","#eab308","#06b6d4","#3b82f6","#8b5cf6","#ec4899",
+                  "#f97316","#10b981","#4ade80","#a855f7","#6366f1","#14b8a6","#84cc16","#94a3b8"];
+  colorGrid.innerHTML = colors.map(c => `
+    <div class="w-6 h-6 rounded cursor-pointer border border-gray-200 hover:scale-105"
+         style="background:${c}"
+         onclick="selectColor('${c}')"></div>
+  `).join('');
+}
+function renderColorGrid() {
+  const colors = ["#16a34a","#ef4444","#f59e0b","#eab308","#06b6d4","#3b82f6","#8b5cf6","#ec4899",
+                  "#f97316","#10b981","#4ade80","#a855f7","#6366f1","#14b8a6","#84cc16","#94a3b8"];
+  colorGrid.innerHTML = colors.map(c => `
+    <div class="w-6 h-6 rounded color-option cursor-pointer border border-gray-200"
+         style="background:${c}"
+         onclick="selectColor('${c}')"></div>
+  `).join('');
+}
+
+function selectColor(c) {
+  selectedColor = c;
+  updateLabelPreview();
+}
+function updateLabelPreview() {
+  const preview = document.getElementById("label-preview");
+  const name = newLabelName.value.trim() || "New Label";
+  preview.textContent = name;
+  preview.style.background = selectedColor || "#d1d5db"; // xám nhẹ nếu chưa chọn màu
+  preview.style.color = "#fff";
+  preview.style.borderColor = selectedColor ? selectedColor : "#ccc";
+}
+
+createLabelConfirm.addEventListener("click", async () => {
+  const name = newLabelName.value.trim();
+  if (!name) return alert("Please enter label name");
+  const body = new URLSearchParams({ projectId: PROJECT_ID, name, color: selectedColor || "#ccc" });
+  try {
+   const res = await fetch(`/api/labels?${body.toString()}`, {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+  });
+
+    if (!res.ok) throw new Error();
+    alert("✅ Label created!");
+    createLabelPopup.classList.add("hidden");
+    await loadLabels();
+  } catch {
+    alert("❌ Failed to create label");
+  }
+});
+
 // ================= DATE POPUP =================
 const datePopup = document.getElementById('date-popup');
 const closeDateBtn = document.getElementById('close-date-btn');
@@ -879,37 +1178,68 @@ document.getElementById("delete-link").addEventListener("click", async (e) => {
   }
 });
 
-// ✅ Load danh sách thành viên
 async function loadBoardMembers(projectId) {
+  const membersList = document.getElementById("members-list");
   membersList.innerHTML = `<p class="text-gray-400 text-sm italic">Loading...</p>`;
+
   try {
     const res = await fetch(`/api/pm/invite/project/${projectId}`);
-    if (!res.ok) throw new Error("Cannot load members");
+    if (!res.ok) throw new Error(`Cannot load members: ${res.status}`);
+
     const data = await res.json();
+    // ✅ Backend trả về mảng members (List<MemberDTO>)
     const members = data.members || [];
 
-   membersList.innerHTML = members.map(m => `
-  <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-    <div class="flex items-center gap-2">
-      ${m.avatarUrl
-        ? `<img src="${m.avatarUrl}" class="w-8 h-8 rounded-full border">`
-        : `<div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-semibold">${getInitials(m.name)}</div>`}
-      <div>
-        <p class="text-sm font-medium text-gray-800">${m.name}</p>
-        <p class="text-xs text-gray-500">${m.email || ''}</p>
+    if (!Array.isArray(members) || members.length === 0) {
+      membersList.innerHTML = `<p class="text-gray-500 text-sm italic">No members found.</p>`;
+      return;
+    }
+
+    membersList.innerHTML = members.map(m => `
+      <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+        <div class="flex items-center gap-2">
+          ${renderAvatar(m)}
+          <div>
+            <p class="text-sm font-medium text-gray-800">${m.name || "Unnamed"}</p>
+            <p class="text-xs text-gray-500">${m.email || ""}</p>
+          </div>
+        </div>
+
+        <select onchange="updateMemberRole(${projectId}, ${m.userId}, this.value)"
+                class="text-xs border border-gray-300 rounded-md px-2 py-1 bg-white focus:ring-2 focus:ring-blue-400">
+          ${renderRoleOptions(m.roleInProject)}
+        </select>
       </div>
-    </div>
-    <select onchange="updateMemberRole(${projectId}, ${m.userId}, this.value)"
-            class="text-xs border border-gray-300 rounded-md px-2 py-1 bg-white focus:ring-2 focus:ring-blue-400">
-      <option value="MEMBER" ${m.roleInProject === 'MEMBER' ? 'selected' : ''}>Member</option>
-      <option value="ADMIN" ${m.roleInProject === 'ADMIN' ? 'selected' : ''}>Admin</option>
-    </select>
-  </div>
-`).join('');}
-  catch (err) {
+    `).join('');
+  } catch (err) {
+    console.error("❌ loadBoardMembers error:", err);
     membersList.innerHTML = `<p class="text-red-500 text-sm">Failed to load members</p>`;
   }
 }
+
+// ✅ Avatar fallback logic
+function renderAvatar(m) {
+  const url = m.avatarUrl && m.avatarUrl.trim() !== ""
+    ? m.avatarUrl
+    : `https://i.pravatar.cc/100?u=${m.userId}`;
+
+  return `<img src="${url}" alt="${m.name}"
+              onerror="this.src='https://i.pravatar.cc/100?u=${m.userId}'"
+              class="w-8 h-8 rounded-full border object-cover">`;
+}
+
+// ✅ Dropdown role render
+function renderRoleOptions(currentRole) {
+  const roles = ["ADMIN", "MEMBER", "DEVELOPER", "BA", "TESTER", "DESIGNER"];
+  const role = (currentRole || "").toUpperCase();
+
+  return roles.map(r =>
+    `<option value="${r}" ${r === role ? "selected" : ""}>${r.charAt(0) + r.slice(1).toLowerCase()}</option>`
+  ).join("");
+}
+
+
+
 async function updateMemberRole(projectId, userId, newRole) {
   try {
     const selectEl = event?.target;
@@ -926,16 +1256,18 @@ async function updateMemberRole(projectId, userId, newRole) {
     if (!res.ok) throw new Error("Failed to update role");
     const data = await res.json();
 
+    // ✅ Reload lại danh sách thật sau khi DB cập nhật
     await loadBoardMembers(projectId);
-    alert(data.message || "✅ Cập nhật vai trò thành công!");
+
+    // ✅ Thông báo nhẹ (hoặc toast)
+    console.log("✅ Vai trò đã cập nhật:", data);
   } catch (err) {
     console.error("❌ Update role failed:", err);
     alert("❌ Không thể cập nhật vai trò!");
   } finally {
-    if (event?.target) event.target.disabled = false; // ✅ enable lại
+    if (event?.target) event.target.disabled = false;
   }
 }
-
 
 inviteBtn.addEventListener("click", async () => {
   const email = inviteEmail.value.trim();
@@ -959,7 +1291,164 @@ inviteBtn.addEventListener("click", async () => {
     alert("❌ Không thể mời thành viên!");
   }
 });
+// ================= JOIN PROJECT BY INVITE LINK =================
+document.addEventListener("DOMContentLoaded", async () => {
+  // Nếu URL dạng /join/<inviteLink>
+  const path = window.location.pathname;
+  if (path.startsWith("/join/")) {
+    const inviteLink = path.split("/join/")[1];
 
+    // Gọi API join project
+    try {
+      const res = await fetch(`/api/pm/invite/join/${inviteLink}`, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + localStorage.getItem("token"),
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err);
+      }
+
+      const data = await res.json();
+      alert(`✅ ${data.message}\n➡️ Dự án: ${data.projectName}`);
+
+      // Optional: chuyển hướng về project dashboard
+      if (data.projectId) {
+        window.location.href = `/dashboard.html?projectId=${data.projectId}`;
+      }
+
+    } catch (err) {
+      console.error("❌ Join by link failed:", err);
+      alert("❌ Không thể tham gia dự án qua link mời!\n" + (err.message || ""));
+    }
+  }
+
+  // ✅ Gọi renderDashboard như cũ nếu không phải /join/
+  if (!path.startsWith("/join/")) {
+    await renderDashboard(PROJECT_ID);
+  }
+});
+// ================= EDIT LABEL POPUP =================
+let CURRENT_EDIT_LABEL_ID = null;
+let selectedEditColor = "#94a3b8";
+
+function closeEditLabelPopup() {
+  document.getElementById("edit-label-popup-wrapper").classList.add("hidden");
+}
+
+async function editLabel(labelId) {
+  CURRENT_EDIT_LABEL_ID = labelId;
+  try {
+    const res = await fetch(`/api/labels/${labelId}`);
+    if (!res.ok) throw new Error("Failed to fetch label");
+    const label = await res.json();
+
+    document.getElementById("edit-label-name").value = label.name;
+    selectedEditColor = label.color || "#94a3b8";
+    updateEditLabelPreview();
+    renderEditColorGrid();
+
+    // Ẩn popup danh sách, hiện popup edit
+    document.getElementById("labels-popup").classList.add("hidden");
+    document.getElementById("edit-label-popup-wrapper").classList.remove("hidden");
+  } catch (err) {
+    console.error("❌ editLabel error:", err);
+    alert("Failed to open edit popup");
+  }
+}
+
+
+function renderEditColorGrid() {
+  const grid = document.getElementById("edit-color-grid");
+  const colors = ["#16a34a","#ef4444","#f59e0b","#eab308","#06b6d4","#3b82f6","#8b5cf6","#ec4899",
+                  "#f97316","#10b981","#4ade80","#a855f7","#6366f1","#14b8a6","#84cc16","#94a3b8"];
+
+  grid.innerHTML = colors.map(c => `
+    <div class="w-6 h-6 rounded-md cursor-pointer border border-gray-200 hover:scale-105 transition-all"
+         style="background:${c}"
+         onclick="selectEditColor('${c}')">
+    </div>
+  `).join('');
+}
+
+function selectEditColor(c) {
+  selectedEditColor = c;
+  updateEditLabelPreview();
+}
+
+function removeEditColor() {
+  selectedEditColor = "#94a3b8";
+  updateEditLabelPreview();
+}
+
+function updateEditLabelPreview() {
+  const preview = document.getElementById("edit-label-preview");
+  const name = document.getElementById("edit-label-name").value.trim() || "New";
+  preview.textContent = name;
+  preview.style.background = selectedEditColor;
+  preview.style.color = "#fff";
+}
+
+document.getElementById("edit-label-name")?.addEventListener("input", updateEditLabelPreview);
+
+async function saveEditedLabel() {
+  const name = document.getElementById("edit-label-name").value.trim();
+  const color = selectedEditColor;
+  try {
+    const res = await fetch(`/api/labels/${CURRENT_EDIT_LABEL_ID}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, color })
+    });
+    if (!res.ok) throw new Error();
+    alert("✅ Label updated!");
+    closeEditLabelPopup();
+    await loadLabels();
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to update label");
+  }
+}
+
+async function deleteEditedLabel() {
+  const choice = confirm("🗑️ Delete this label from ALL tasks (not just this one)?");
+  const token = localStorage.getItem("token");
+  try {
+    let res;
+    if (choice) {
+      // ✅ Xóa hoàn toàn label khỏi hệ thống
+      res = await fetch(`/api/labels/${CURRENT_EDIT_LABEL_ID}`, {
+        method: "DELETE",
+        headers: { "Authorization": "Bearer " + token },
+      });
+    } else {
+      // ✅ Chỉ gỡ label khỏi task hiện tại
+      res = await fetch(`/api/tasks/${window.CURRENT_TASK_ID}/labels/${CURRENT_EDIT_LABEL_ID}`, {
+        method: "DELETE",
+        headers: { "Authorization": "Bearer " + token },
+      });
+    }
+
+    if (!res.ok) throw new Error("Delete failed");
+    alert("✅ Label deleted successfully!");
+    closeEditLabelPopup();
+    await loadLabels();
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to delete label");
+  }
+}
+
+
+document.getElementById("edit-label-popup-wrapper").addEventListener("click", e => {
+  if (e.target.id === "edit-label-popup-wrapper") {
+    closeEditLabelPopup();
+  }
+});
 
   document.addEventListener("DOMContentLoaded", async () => {
     await renderDashboard(PROJECT_ID);

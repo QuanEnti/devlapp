@@ -1,3 +1,5 @@
+#  Unit Testing Report – Authentication Module (DevCollab)
+
 ## 1. Giới thiệu
 
 Dự án kiểm thử tự động được xây dựng cho **module Authentication** của hệ thống **DevCollab**,  
@@ -12,11 +14,11 @@ bao gồm 4 service chính:
 
 Bộ test được sinh bằng **AI Prompt (GPT-5)**, sau đó được debug, tối ưu mock và chạy thực tế với **JUnit 5 + Mockito + Jacoco**.
 
-----------------------------------------------------------------------------------------------------------------------------------
+---
 
 ## 2. Cách chạy test
 
-###  Yêu cầu môi trường
+### Yêu cầu môi trường
 
 | Thành phần  | Phiên bản khuyến nghị |
 |-------------|------------------------|
@@ -26,38 +28,40 @@ Bộ test được sinh bằng **AI Prompt (GPT-5)**, sau đó được debug, t
 | IDE         | IntelliJ IDEA / VS Code / NetBeans |
 | Plugin      | Jacoco 0.8.12 (tự động qua Maven) |
 
-### Chạy test 
+### Chạy test   
 
 ```bash
-# 1 Chạy bằng terminal trong vscode
-.\mvnw clean 
+# 1️ Chạy bằng terminal trong VSCode hoặc IntelliJ
+./mvnw clean 
 
 # 2️ Chạy toàn bộ test suite
-.\mvnw clean  test
+./mvnw clean test
+```
+
 Sau khi chạy thành công, kiểm tra:
 ```
 target/site/jacoco/index.html
 ```
 → Báo cáo coverage chi tiết theo từng class.
 
-###  Cấu trúc thư mục
+### Cấu trúc thư mục
 
 ```
 /prompts/log.md           # Prompt & AI output qua 5 giai đoạn
 /tests/                   # 28 file test JUnit 5 + Mockito
-/coverage/                # Báo cáo Jacoco (HTML) xem trong coverage\jacaco\index.html
+/coverage/                # Báo cáo Jacoco (HTML) xem trong coverage/jacoco/index.html
 /src/main/java/...        # Source code module Authentication
 /pom.xml                  # Cấu hình Maven build + plugin Jacoco
 ```
 
 ---
 
-##  3. Kết quả
+## 3. Kết quả
 
 | Tiêu chí  | Kết quả |
 |-----------|----------|
 | Tổng số test | 28 |
-| Pass      |  28/28 |
+| Pass      | 28/28 |
 | Fail/Error | 0 |
 | Coverage   | ~94% (Jacoco) |
 | Thời gian chạy | ~9.3 giây |
@@ -72,10 +76,10 @@ target/site/jacoco/index.html
 
 ---
 
-##  4. Giới hạn (Limitations)
+## 4. Giới hạn (Limitations)
 
 | Hạng mục                 | Mô tả giới hạn |
-|--------------------------|------------------------------------------------------------------------------------------
+|--------------------------|------------------------------------------------------------|
 | **Scope kiểm thử**       | Chỉ kiểm thử module Authentication (không bao gồm Controller hoặc Integration Test). |
 | **Mocking Redis & Mail** | RedisTemplate và JavaMailSender được mock; không thực sự kết nối tới Redis hoặc SMTP. |
 | **Token Validation**     | JWT được kiểm thử bằng secret giả (không decode ngoài môi trường thật). |
@@ -85,7 +89,7 @@ target/site/jacoco/index.html
 
 ---
 
-##  5. Rủi ro & Giải pháp
+## 5. Rủi ro & Giải pháp
 
 | Rủi ro tiềm ẩn               | Mô tả                                                              | Biện pháp khắc phục |
 |------------------------------|--------------------------------------------------------------------|---------------------|
@@ -97,18 +101,18 @@ target/site/jacoco/index.html
 
 ---
 
-##  6. Hướng mở rộng
+## 6. Hướng mở rộng
 
--  **Giai đoạn 5 → 6:** gom test trùng thành `@ParameterizedTest`, thêm benchmark hiệu năng.  
--  Tăng coverage lên **100%** bằng test branch nhỏ (TTL=0, token=null).  
--  Tích hợp **CI/CD pipeline** với GitHub Actions hoặc Jenkins để tự động chạy test + coverage report.  
--  Xuất báo cáo coverage ra PDF để nộp hoặc trình bày demo.
+- **Giai đoạn 5 → 6:** gom test trùng thành `@ParameterizedTest`, thêm benchmark hiệu năng.  
+- Tăng coverage lên **100%** bằng test branch nhỏ (TTL=0, token=null).  
+- Tích hợp **CI/CD pipeline** với GitHub Actions hoặc Jenkins để tự động chạy test + coverage report.  
+- Xuất báo cáo coverage ra PDF để nộp hoặc trình bày demo.
 
 ---
 
-##  7. Kết luận
+## 7. Kết luận
 
->  **Module Authentication – Test suite đạt chuẩn Production**  
+> **Module Authentication – Test suite đạt chuẩn Production**  
 > 28/28 test PASS · Coverage 94% · Build stable & reproducible
 
 Dự án minh họa cách **AI Prompt có thể sinh, tối ưu và chạy test JUnit thực tế**,  

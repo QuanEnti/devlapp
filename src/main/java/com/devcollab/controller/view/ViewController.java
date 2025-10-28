@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.devcollab.service.core.ProjectService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 
 @Controller
 @RequestMapping("/view")
@@ -28,11 +30,20 @@ public class ViewController {
         return "home";
     }
 
+
     @GetMapping("/signin")
-    public String signinPage(Authentication authentication) {
+    public String signinPage(
+            @RequestParam(value = "redirect", required = false) String redirect,
+            Authentication authentication,
+            Model model) {
         if (authentication != null && authentication.isAuthenticated()) {
+            
+            if (redirect != null && !redirect.isEmpty()) {
+                return "redirect:" + redirect;
+            }
             return "redirect:/view/home";
         }
+        model.addAttribute("redirect", redirect);
         return "auth/signin";
     }
 

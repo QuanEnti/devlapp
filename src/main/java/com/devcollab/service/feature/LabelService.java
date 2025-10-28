@@ -1,16 +1,16 @@
 package com.devcollab.service.feature;
 
-import com.devcollab.domain.Label;
-import com.devcollab.domain.Task;
+import com.devcollab.dto.LabelDTO;
 import java.util.List;
 
 public interface LabelService {
+    List<LabelDTO> getLabelsByProject(Long projectId, String keyword);
 
-    List<Label> getLabelsByProject(Long projectId);
+    List<LabelDTO> getLabelsByTask(Long taskId);
 
-    Label createLabel(Long projectId, String name, String color);
+    LabelDTO createLabel(Long projectId, String name, String color);
 
-    Label updateLabel(Long labelId, String name, String color);
+    LabelDTO updateLabel(Long labelId, String name, String color);
 
     void deleteLabel(Long labelId);
 
@@ -18,5 +18,7 @@ public interface LabelService {
 
     void removeLabelFromTask(Long taskId, Long labelId);
 
-    List<Task> getTasksByLabel(Long labelId);
+    LabelDTO getLabelById(Long labelId);
+
+
 }

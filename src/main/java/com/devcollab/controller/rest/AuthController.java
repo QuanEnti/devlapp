@@ -75,7 +75,11 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO request) {
+    public ResponseEntity<?> login(
+            @Valid @RequestBody LoginRequestDTO request,
+            @RequestParam(value = "redirect", required = false) String redirect,
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
+
         String email = request.getEmail();
         String password = request.getPassword();
 
@@ -105,11 +109,43 @@ public class AuthController {
                     user.getProvider(), null, email, "/view/verify-otp"));
         }
 
-        return issueTokensAndRedirect(email, user.getProvider(), "Đăng nhập thành công");
+        // ✅ Thiết lập SecurityContext (giữ login session chuẩn Spring Security)
+        var userDetails = userService.loadUserByUsername(email);
+        var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+        var context = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(auth);
+        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+
+        servletRequest.getSession(true).setAttribute(
+                org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                context);
+
+        // ✅ Truyền redirect để quay lại trang mời sau khi login
+        return issueTokensAndRedirect(email, user.getProvider(), "Đăng nhập thành công", redirect);
+    }
+
+    private ResponseEntity<?> issueTokensAndRedirect(String email, String provider, String message, String redirect) {
+        String accessToken = jwtService.generateAccessToken(email);
+        String refreshToken = jwtService.generateRefreshToken(email);
+
+        ResponseCookie accessCookie = ResponseCookie.from("AUTH_TOKEN", accessToken)
+                .httpOnly(true).secure(false).path("/").maxAge(15 * 60).sameSite("Lax").build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", refreshToken)
+                .httpOnly(true).secure(false).path("/").maxAge(7 * 24 * 60 * 60).sameSite("Lax").build();
+
+        String redirectPath = (redirect != null && !redirect.isEmpty()) ? redirect : "/view/home";
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(org.springframework.http.HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(new AuthResponseDTO(message, "SUCCESS", provider, accessToken, email, redirectPath));
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequestDTO request) {
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequestDTO request,
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
         String email = request.getEmail();
         String otp = request.getOtp();
         String mode = request.getMode();
@@ -126,7 +162,19 @@ public class AuthController {
                     new AuthResponseDTO("OTP xác minh thành công", "RESET_READY", null, null, email,
                             "/view/reset-password"));
         }
+
         userService.markVerified(email);
+        var userDetails = userService.loadUserByUsername(email);
+        var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+        var context = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(auth);
+        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+
+        servletRequest.getSession(true).setAttribute(
+                org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                context);
+
         return issueTokensAndRedirect(email, "local", "Xác minh email thành công");
     }
 
@@ -182,7 +230,37 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponseDTO(
                 "Mã OTP đã được gửi đến email của bạn", "OTP_SENT", "otp", null, email, "/view/verify-otp"));
     }
+    
+    @PostMapping("/resend-otp")
+    public ResponseEntity<?> resendOtp(@Valid @RequestBody EmailOnlyDTO request) {
+        String email = request.getEmail();
 
+        Optional<User> userOpt = userService.getByEmail(email);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponseDTO("NOT_FOUND", "Không tìm thấy tài khoản với email này"));
+        }
+
+        try {
+            String otp = otpService.generateOtp();
+            otpService.storeOtp(email, otp);
+            mailService.sendOtpMail(email, otp);
+            log.info("[AuthController] OTP resent to {}", email);
+
+            return ResponseEntity.ok(
+                    new AuthResponseDTO(
+                            "Mã OTP mới đã được gửi đến email của bạn.",
+                            "OTP_RESENT",
+                            null,
+                            null,
+                            email,
+                            "/view/verify-otp"));
+        } catch (Exception e) {
+            log.error(" resend-otp error for {}: {}", email, e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(new ErrorResponseDTO("SERVER_ERROR", e.getMessage()));
+        }
+    }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody EmailOnlyDTO request) {
