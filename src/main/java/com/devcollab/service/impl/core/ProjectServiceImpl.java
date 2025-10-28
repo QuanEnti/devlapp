@@ -5,6 +5,7 @@ import com.devcollab.dto.MemberDTO;
 import com.devcollab.dto.ProjectDTO;
 import com.devcollab.dto.response.ProjectDashboardDTO;
 import com.devcollab.dto.response.ProjectPerformanceDTO;
+import com.devcollab.dto.response.ProjectSearchResponseDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
@@ -13,9 +14,8 @@ import com.devcollab.service.event.AppEventService;
 import com.devcollab.service.system.ActivityService;
 import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.system.ProjectAuthorizationService;
-
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Sort;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -88,9 +88,10 @@ public class ProjectServiceImpl implements ProjectService {
             boardColumnRepository.save(col);
         }
 
-        activityService.log("PROJECT", saved.getProjectId(), "CREATE", saved.getName());
+        // activityService.log("PROJECT", saved.getProjectId(), "CREATE",
+        // saved.getName());
         appEventService.publishProjectCreated(saved);
-        notificationService.notifyProjectCreated(saved);
+        // notificationService.notifyProjectCreated(saved);
 
         return saved;
     }
@@ -383,6 +384,23 @@ public class ProjectServiceImpl implements ProjectService {
 
         return newMember;
     }
+    public List<Project> getProjectsByUsername(String username) { 
+        // 1. Tìm User bằng username (email)
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new NotFoundException("User không tồn tại"));
 
+        // 2. Gọi lại phương thức cũ bằng userId
+        return this.getProjectsByUser(user.getUserId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectSearchResponseDTO> searchProjectsByKeyword(String keyword) {
+        List<Project> projects = projectRepository
+                .findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
+        return projects.stream()
+                .map(ProjectSearchResponseDTO::new)
+                .toList();
+    }
 }
 

@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(
                                                                 "/",
+                                                                "/view/home",
                                                                 "/view/signin",
                                                                 "/view/login",
                                                                 "/view/register",
@@ -74,6 +75,7 @@ public class SecurityConfig {
                                                                 "/favicon.ico", "/webjars/**",
                                                                 "/oauth2/**")
                                                 .permitAll()
+                                                .requestMatchers("/user/**").authenticated()
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth -> oauth
                                                 .loginPage("/view/signin")

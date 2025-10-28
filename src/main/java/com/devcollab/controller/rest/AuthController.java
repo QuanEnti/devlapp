@@ -13,6 +13,7 @@ import com.devcollab.service.system.JwtService;
 import com.devcollab.service.system.MailService;
 import com.devcollab.service.system.OtpService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ import org.springframework.security.core.Authentication;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -177,7 +179,6 @@ public class AuthController {
 
         return issueTokensAndRedirect(email, "local", "Xác minh email thành công");
     }
-
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO request) {
@@ -359,33 +360,36 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(org.springframework.http.HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(org.springframework.http.HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .body(new AuthResponseDTO(message, "SUCCESS", provider, accessToken, email, "/view/home"));
+                .body(new AuthResponseDTO(message, "SUCCESS", provider, accessToken, email, "user/view/dashboard"));
     }
-   
+
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        // Xóa token cookie
         ResponseCookie clearAccess = ResponseCookie.from("AUTH_TOKEN", "")
                 .httpOnly(true)
                 .secure(false)
                 .path("/")
-                .maxAge(0)
                 .sameSite("Lax")
+                .maxAge(0)
                 .build();
 
         ResponseCookie clearRefresh = ResponseCookie.from("REFRESH_TOKEN", "")
                 .httpOnly(true)
                 .secure(false)
                 .path("/")
-                .maxAge(0)
                 .sameSite("Lax")
+                .maxAge(0)
                 .build();
 
-        log.info("[AuthController] User logged out, tokens cleared");
+        response.addHeader("Set-Cookie", clearAccess.toString());
+        response.addHeader("Set-Cookie", clearRefresh.toString());
 
-        return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.SET_COOKIE, clearAccess.toString())
-                .header(org.springframework.http.HttpHeaders.SET_COOKIE, clearRefresh.toString())
-                .body(new AuthResponseDTO("Đăng xuất thành công.", "LOGOUT_SUCCESS", null, null, null, "/view/signin"));
+        // Xóa session và context bảo mật
+        request.getSession().invalidate();
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication auth) {

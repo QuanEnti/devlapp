@@ -10,6 +10,7 @@ import com.devcollab.service.system.NotificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 import java.time.LocalDateTime;
 
@@ -95,5 +96,56 @@ public class NotificationServiceImpl implements NotificationService {
 
         activityService.log("TASK", task.getTaskId(), "NOTIFY_CLOSE",
                 "Task đã được đóng: " + task.getTitle());
+    }
+
+    @Override
+    public void notifyChangeProfile(User user) { // Khi người dùng thay đổi hồ sơ sẽ tạo thông báo nhưng sẽ bị lỗi (Hàm này không cần thiết lắm)
+        Notification n = new Notification();
+        n.setUser(user);
+        n.setType("PROFILE_UPDATED");
+        n.setReferenceId(null); // lỗi ở đây vì null referenceId
+        n.setStatus("unread");
+        n.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(n);
+
+        activityService.log("USER", user.getUserId(), "NOTIFY_CHANGE_PROFILE",
+                "Hồ sơ người dùng đã được cập nhật: " + user.getName());
+    }
+
+    @Override
+    public void notifyChangePassword(User user) {// Khi người dùng thay đổi mật khẩu sẽ tạo thông báo nhưng sẽ bị lỗi (Hàm này không cần thiết lắm)
+        Notification n = new Notification();
+        n.setUser(user);
+        n.setType("PASSWORD_CHANGED");
+        n.setReferenceId(null);// lỗi ở đây vì null referenceId
+        n.setStatus("unread");
+        n.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(n);
+
+        activityService.log("USER", user.getUserId(), "NOTIFY_CHANGE_PASSWORD",
+                "Người dùng đã đổi mật khẩu: " + user.getEmail());
+    }
+
+    @Override
+    public int countUnread(String username) {
+        return notificationRepository.countUnreadByUserEmail(username);
+    }
+
+    @Override
+    public List<Notification> getNotificationsByUser(String email) {
+        return notificationRepository.findNotificationsByUserEmail(email);
+    }
+
+    @Override
+    public void markAsRead(Long notificationId) {
+        notificationRepository.findById(notificationId).ifPresent(n -> {
+            n.setStatus("read");
+            notificationRepository.save(n);
+        });
+    }
+
+    @Override
+    public void deleteNotification(Long notificationId) {
+        notificationRepository.deleteById(notificationId);
     }
 }

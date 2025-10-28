@@ -132,7 +132,6 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-thymeleaf</artifactId>
     </dependency>
-   <!-- ✅ JUnit Jupiter (JUnit 5) -->
     <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
@@ -163,6 +162,19 @@
         <version>3.24.2</version>
         <scope>test</scope>
     </dependency>
+
+    <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.36.0</version>
+            <!-- Exclude commons-logging to avoid conflicts with Spring Boot's logging -->
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
 </dependencies>
 

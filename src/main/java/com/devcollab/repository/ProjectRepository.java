@@ -18,7 +18,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
   Optional<Project> findByInviteLink(String inviteLink);
 
   long countByStatus(String status);
-
+  
+  List<Project> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String name, String description);
   @Query("""
           SELECT DISTINCT p
           FROM Project p
