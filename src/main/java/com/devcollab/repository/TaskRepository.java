@@ -61,13 +61,55 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Object[]> countCompletedTasksPerMonth(@Param("projectId") Long projectId);
 
     /**
-     * Gọi Stored Procedure [sp_GetUserTasks] đã tạo trong CSDL.
+     * Lấy Task Card của User (dùng Native Query thay vì SP).
+     * Spring Data JPA sẽ tự động map kết quả vào List<TaskCardDTO>
+     * vì tên cột (aliases) trong SELECT khớp với tên trường trong DTO.
      */
-    @Procedure("sp_GetUserTasks")
+    @Query(value = """
+        SELECT
+            t.task_id AS id,
+            t.title,
+            t.status,
+            t.priority,
+            t.created_at AS createdAt,
+            t.deadline,
+            creator.name AS creatorName,
+            assignee.avatar_url AS assigneeAvatarUrl,
+            
+            -- Dùng Correlated Subquery (Hiệu năng cao)
+            (SELECT COUNT(*) FROM Checklist c WHERE c.task_id = t.task_id) AS checklistCount,
+            (SELECT COUNT(*) FROM Comment co WHERE co.task_id = t.task_id) AS commentCount
+            
+        FROM
+            Task AS t
+        -- JOIN để lọc bảo mật (dựa trên Entity)
+        INNER JOIN
+            Project AS p ON t.project_id = p.project_id
+        INNER JOIN
+            ProjectMember AS pm ON p.project_id = pm.project_id
+        -- JOIN để lấy thông tin
+        LEFT JOIN
+            [User] AS creator ON t.created_by = creator.user_id
+        LEFT JOIN
+            [User] AS assignee ON t.assignee_id = assignee.user_id
+        WHERE
+            t.assignee_id = :userId       -- 1. Gán cho tôi
+            AND p.status = 'active'       -- 2. Project đang 'active'
+            AND pm.user_id = :userId      -- 3. Tôi là thành viên project
+            
+            -- 4. Bộ lọc Project (NULL = lấy tất cả)
+            AND (:projectId IS NULL OR p.project_id = :projectId) 
+            
+            -- 5. Bộ lọc Status (NULL = lấy tất cả)
+            AND (
+                :statuses IS NULL 
+                OR t.status IN (SELECT value FROM STRING_SPLIT(:statuses, ','))
+            )
+        """, nativeQuery = true)
     List<TaskCardDTO> findUserTasks(
-        @Param("UserId") Long userId, 
-        @Param("FilterProjectId") Long projectId, 
-        @Param("FilterStatuses") String statuses
+        @Param("userId") Long userId, 
+        @Param("projectId") Long projectId, 
+        @Param("statuses") String statuses
     );
 
 }
