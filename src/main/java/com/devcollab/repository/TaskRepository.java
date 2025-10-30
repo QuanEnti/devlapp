@@ -4,9 +4,11 @@ import com.devcollab.domain.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Procedure;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByProject_ProjectId(Long projectId);
@@ -57,5 +59,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             ORDER BY MONTH(closed_at)
         """, nativeQuery = true)
     List<Object[]> countCompletedTasksPerMonth(@Param("projectId") Long projectId);
+
+    /**
+     * Gọi Stored Procedure [sp_GetUserTasks] đã tạo trong CSDL.
+     */
+    @Procedure("sp_GetUserTasks")
+    List<TaskCardDTO> findUserTasks(
+        @Param("UserId") Long userId, 
+        @Param("FilterProjectId") Long projectId, 
+        @Param("FilterStatuses") String statuses
+    );
 
 }

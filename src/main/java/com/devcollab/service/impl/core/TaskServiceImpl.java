@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -317,6 +318,11 @@ public List<TaskDTO> getTasksByProject(Long projectId) {
 
         taskRepository.save(task);
         return TaskDTO.fromEntity(task);
+    }
+
+    @Override
+    public List<TaskCardDTO> getUserTasks(Long userId, Long projectId, String statuses) {
+        return taskRepository.findUserTasks(userId, projectId, statuses);
     }
 
 

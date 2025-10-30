@@ -10,14 +10,30 @@ import com.devcollab.dto.request.TaskQuickCreateReq;
 import com.devcollab.service.core.TaskService;
 import com.devcollab.service.core.TaskFollowerService; // ✅ Thêm service cho member
 import com.devcollab.service.system.AuthService;
+import com.devcollab.service.core.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
+import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
+import org.springframework.web.bind.annotation.RequestParam;
+import com.devcollab.repository.TaskRepository;
+import com.devcollab.repository.CommentRepository;
+import com.devcollab.repository.AttachmentRepository;
+import com.devcollab.repository.UserRepository;
+import com.devcollab.domain.Comment;
+import com.devcollab.domain.Attachment;
+import com.devcollab.domain.User;
+import com.devcollab.service.system.CloudinaryService;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,6 +43,12 @@ public class TaskRestController {
     private final TaskService taskService;
     private final AuthService authService;
     private final TaskFollowerService taskFollowerService; // ✅ Thêm service cho assign/unassign
+    private final ProjectService projectService;
+    private final TaskRepository taskRepository;
+    private final CommentRepository commentRepository;
+    private final AttachmentRepository attachmentRepository;
+    private final UserRepository userRepository;
+    private final CloudinaryService cloudinaryService;
 
     // ====================== TASK CRUD ======================
 
@@ -130,6 +152,72 @@ public class TaskRestController {
                         .body(Map.of("error", e.getMessage()));
             }
         }
+
+    // ====================== MODAL-SPECIFIC ENDPOINTS ======================
+
+    @PostMapping("/{taskId}/comments")
+    public ResponseEntity<?> addComment(@PathVariable Long taskId, @RequestBody Map<String, String> body, Authentication auth) {
+        String content = body != null ? body.get("content") : null;
+        if (content == null || content.isBlank()) return ResponseEntity.badRequest().body(Map.of("error", "Missing content"));
+        Task task = taskRepository.findById(taskId).orElse(null);
+        if (task == null) return ResponseEntity.notFound().build();
+        String email = auth != null ? auth.getName() : null;
+        if (email == null) return ResponseEntity.status(401).build();
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) return ResponseEntity.status(401).build();
+        Comment c = new Comment();
+        c.setTask(task);
+        c.setUser(user);
+        c.setContent(content);
+        c.setCreatedAt(LocalDateTime.now());
+        commentRepository.save(c);
+        return ResponseEntity.status(201).body(Map.of("message", "Comment added"));
+    }
+
+    @PostMapping("/{taskId}/attachments")
+    public ResponseEntity<?> uploadAttachment(@PathVariable Long taskId, @RequestParam("file") MultipartFile file, Authentication auth) {
+        if (file == null || file.isEmpty()) return ResponseEntity.badRequest().body(Map.of("error", "Missing file"));
+        Task task = taskRepository.findById(taskId).orElse(null);
+        if (task == null) return ResponseEntity.notFound().build();
+        String email = auth != null ? auth.getName() : null;
+        if (email == null) return ResponseEntity.status(401).build();
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) return ResponseEntity.status(401).build();
+        String url = cloudinaryService.uploadFile(file);
+        Attachment a = new Attachment();
+        a.setTask(task);
+        a.setUploadedBy(user);
+        a.setFileUrl(url);
+        a.setFileName(file.getOriginalFilename());
+        a.setMimeType(file.getContentType());
+        a.setFileSize((int) file.getSize());
+        a.setUploadedAt(LocalDateTime.now());
+        attachmentRepository.save(a);
+        return ResponseEntity.status(201).body(Map.of("message", "Attachment uploaded", "fileUrl", url));
+    }
+
+    @GetMapping("/user/my-tasks")
+    public ResponseEntity<List<TaskCardDTO>> getMyTasks(
+            @RequestParam(value = "projectId", required = false) Long projectId,
+            @RequestParam(value = "statuses", required = false) String statuses,
+            Authentication auth) {
+        UserDTO current = authService.getCurrentUser(auth);
+        if (current == null || current.getUserId() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<TaskCardDTO> tasks = taskService.getUserTasks(current.getUserId(), projectId, statuses);
+        return ResponseEntity.ok(tasks);
+    }
+
+    @GetMapping("/user/projects")
+    public ResponseEntity<List<ProjectFilterDTO>> getUserProjects(Authentication auth) {
+        UserDTO current = authService.getCurrentUser(auth);
+        if (current == null || current.getUserId() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<ProjectFilterDTO> projects = projectService.getActiveProjectsForUser(current.getUserId());
+        return ResponseEntity.ok(projects);
+    }
 
 
 }

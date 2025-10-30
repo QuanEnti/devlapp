@@ -6,6 +6,7 @@ import com.devcollab.dto.ProjectDTO;
 import com.devcollab.dto.response.ProjectDashboardDTO;
 import com.devcollab.dto.response.ProjectPerformanceDTO;
 import com.devcollab.dto.response.ProjectSearchResponseDTO;
+import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
@@ -404,6 +405,12 @@ public class ProjectServiceImpl implements ProjectService {
         return projects.stream()
                 .map(ProjectSearchResponseDTO::new)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectFilterDTO> getActiveProjectsForUser(Long userId) {
+        return projectRepository.findActiveProjectsByUser(userId);
     }
 }
 

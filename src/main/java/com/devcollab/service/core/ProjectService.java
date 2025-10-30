@@ -8,6 +8,7 @@ import com.devcollab.dto.response.ProjectDashboardDTO;
 import com.devcollab.dto.response.ProjectPerformanceDTO;
 
 import com.devcollab.dto.response.ProjectSearchResponseDTO;
+import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
 
 
 import java.util.List;
@@ -51,5 +52,6 @@ public interface ProjectService {
 
     List<ProjectSearchResponseDTO> searchProjectsByKeyword(String keyword);
 
+    List<ProjectFilterDTO> getActiveProjectsForUser(Long userId);
 
 }

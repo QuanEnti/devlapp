@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
   List<Project> findByCreatedBy_UserId(Long userId);
@@ -111,4 +112,18 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 AND p.allowLinkJoin = true
           """)
   Optional<Project> findActiveSharedProject(@Param("inviteLink") String inviteLink);
+
+    /**
+     * Lấy danh sách Project (chỉ ID và Tên)
+     * mà user là thành viên VÀ project đó đang 'active'.
+     * Sử dụng JPQL Constructor Expression để map thẳng vào DTO.
+     */
+    @Query("""
+        SELECT new com.devcollab.dto.userTaskDto.ProjectFilterDTO(p.projectId, p.name)
+        FROM Project p
+        JOIN p.members pm
+        WHERE pm.user.userId = :userId AND p.status = 'active'
+        ORDER BY p.name ASC
+    """)
+    List<ProjectFilterDTO> findActiveProjectsByUser(@Param("userId") Long userId);
 }   

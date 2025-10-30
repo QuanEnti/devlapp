@@ -3,6 +3,7 @@ package com.devcollab.service.core;
 import com.devcollab.domain.ProjectMember;
 import com.devcollab.domain.Task;
 import com.devcollab.dto.TaskDTO;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.request.TaskDatesUpdateReq;
 
@@ -44,4 +45,6 @@ public interface TaskService {
     TaskDTO moveTask(Long taskId, MoveTaskRequest req);
     
     TaskDTO getByIdAsDTO(Long id);
+
+    List<TaskCardDTO> getUserTasks(Long userId, Long projectId, String statuses);
 }

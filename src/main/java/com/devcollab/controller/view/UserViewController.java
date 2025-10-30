@@ -108,4 +108,10 @@ public class UserViewController {
 
         return "user/user-profile";
     }
+
+    // ✅ Trang My Tasks (danh sách task của user)
+    @GetMapping("/tasks")
+    public String userTasksPage() {
+        return "user/user-task";
+    }
 }
