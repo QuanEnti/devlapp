@@ -14,4 +14,5 @@ public class NotificationResponseDTO {
     private String status;
     private LocalDateTime createdAt;
     private Long referenceId;
+    private String redirectUrl;
 }

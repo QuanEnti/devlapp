@@ -55,7 +55,7 @@ public class    SecurityConfig {
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
                 http
-                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**")
+                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**","/user/**")
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(
                                                 sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))

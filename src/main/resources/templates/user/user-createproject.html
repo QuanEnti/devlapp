@@ -64,6 +64,19 @@
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
       }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fadeIn {
+        animation: fadeIn 0.2s ease-in-out;
+      }
     </style>
   </head>
 
@@ -82,7 +95,7 @@
         </h1>
 
         <div
-          class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200 max-w-4xl mx-auto"
+          class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200 max-w-4xl mx-auto relative"
         >
           <form id="createProjectForm">
             <!-- Name -->
@@ -193,35 +206,188 @@
         </div>
       </main>
     </div>
-
+    <!-- ✅ CHATBOX FRAGMENT -->
+    <div th:replace="fragments/chatbox :: chatbox"></div>
+    <!-- Gọi script riêng -->
+    <script th:src="@{/js/chatbox.js}"></script>
     <script>
-      document
-        .getElementById("createProjectForm")
-        .addEventListener("submit", async function (e) {
-          e.preventDefault();
+      // đảm bảo DOM đã load (script của bạn nằm cuối body nên không bắt buộc, nhưng an toàn)
+      (function () {
+        const descInput = document.getElementById("project-description");
+        let typingTimer;
+        let currentSuggestion = "";
+        const TYPING_DELAY = 1500; // 1.5 giây
 
-          const data = {
-            name: document.getElementById("project-name").value,
-            description: document.getElementById("project-description").value,
-            priority: document.getElementById("priority").value,
-            startDate: document.getElementById("startDate").value,
-            endDate: document.getElementById("endDate").value,
-          };
-
-          const response = await fetch("/api/projects/create", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
+        // AI suggestion (giữ nguyên logic cũ)
+        if (descInput) {
+          descInput.addEventListener("input", () => {
+            clearTimeout(typingTimer);
+            const text = descInput.value.trim();
+            if (text.length < 5) return;
+            typingTimer = setTimeout(() => getAISuggestion(text), TYPING_DELAY);
           });
 
-          const result = await response.json();
-          if (result.status === "success") {
-            alert("✅ Tạo project thành công!");
-            window.location.href = "/user/view/view-all-projects";
-          } else {
-            alert("❌ Lỗi: " + result.message);
+          descInput.addEventListener("keydown", (e) => {
+            if (e.key === "/") {
+              e.preventDefault();
+              if (currentSuggestion) {
+                descInput.value = currentSuggestion;
+                removePopup();
+              }
+            } else if (e.key === "Escape") {
+              removePopup();
+            }
+          });
+        }
+
+        async function getAISuggestion(text) {
+          try {
+            const response = await fetch("/api/ai/suggest-description", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ input: text }),
+            });
+            const result = await response.json();
+            currentSuggestion = result.suggestion || "";
+            showSuggestionPopup(currentSuggestion);
+          } catch (err) {
+            console.error("Lỗi gọi API AI:", err);
           }
-        });
+        }
+
+        function showSuggestionPopup(suggestion) {
+          removePopup();
+          if (!suggestion) return;
+          const popup = document.createElement("div");
+          popup.id = "ai-suggestion-popup";
+          popup.innerHTML = `
+        <div class="p-3">
+          <strong class="text-blue-600">💡 AI Suggestion:</strong>
+          <p class="mt-2 text-gray-700">${suggestion}</p>
+          <small class="text-gray-400 block mt-2">(Nhấn / để chèn, Esc để hủy)</small>
+        </div>
+      `;
+          popup.className =
+            "absolute bg-white border border-gray-300 rounded-lg shadow-md w-96 animate-fadeIn";
+          popup.style.left = (descInput ? descInput.offsetLeft : 0) + "px";
+          popup.style.top =
+            (descInput ? descInput.offsetTop + descInput.offsetHeight : 0) +
+            "px";
+          popup.style.zIndex = "1000";
+          if (descInput && descInput.parentElement)
+            descInput.parentElement.appendChild(popup);
+        }
+
+        function removePopup() {
+          const popup = document.getElementById("ai-suggestion-popup");
+          if (popup) popup.remove();
+        }
+
+        // ---- Dates: hạn chế chọn (start >= today, end >= start) + validation on submit ----
+        const startInput = document.getElementById("startDate");
+        const endInput = document.getElementById("endDate");
+
+        // format yyyy-mm-dd from Date
+        const today = new Date();
+        // Tạo string yyyy-mm-dd (local) để tránh lệch vì timezone
+        const pad = (n) => String(n).padStart(2, "0");
+        const todayStr = `${today.getFullYear()}-${pad(
+          today.getMonth() + 1
+        )}-${pad(today.getDate())}`;
+
+        if (startInput) {
+          // set min start = today
+          startInput.setAttribute("min", todayStr);
+
+          // khi change start -> set min cho end
+          startInput.addEventListener("change", function () {
+            if (!this.value) {
+              // reset end min về today nếu start bị clear
+              if (endInput) endInput.setAttribute("min", todayStr);
+              return;
+            }
+            if (endInput) {
+              endInput.setAttribute("min", this.value);
+              // nếu end < start thì clear end để user chọn lại
+              if (endInput.value && endInput.value < this.value) {
+                endInput.value = "";
+              }
+            }
+          });
+        }
+
+        if (endInput) {
+          // set min end = today initially
+          endInput.setAttribute("min", todayStr);
+        }
+
+        // Submit handler: đảm bảo kiểm tra lại trước khi gửi
+        const form = document.getElementById("createProjectForm");
+        if (form) {
+          form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const name = document.getElementById("project-name").value.trim();
+            const description = document
+              .getElementById("project-description")
+              .value.trim();
+            const priority = document.getElementById("priority").value;
+            const startDate = startInput ? startInput.value : "";
+            const endDate = endInput ? endInput.value : "";
+
+            // validation phía client
+            if (!name) {
+              alert("Vui lòng nhập tên dự án.");
+              return;
+            }
+
+            if (startDate) {
+              if (startDate < todayStr) {
+                alert("Start Date phải lớn hơn hoặc bằng ngày hôm nay.");
+                return;
+              }
+            }
+
+            if (endDate) {
+              const minEnd = startDate || todayStr;
+              if (endDate < minEnd) {
+                alert(
+                  "End Date phải lớn hơn hoặc bằng Start Date (hoặc ngày hôm nay nếu chưa chọn Start Date)."
+                );
+                return;
+              }
+            }
+
+            const data = {
+              name,
+              description,
+              priority,
+              startDate: startDate || null,
+              endDate: endDate || null,
+            };
+
+            try {
+              const response = await fetch("/api/projects/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+              const result = await response.json();
+              if (result.status === "success" || result.success) {
+                alert("✅ Tạo project thành công!");
+                window.location.href = "/user/view/view-all-projects";
+              } else {
+                alert("❌ Lỗi: " + (result.message || JSON.stringify(result)));
+              }
+            } catch (err) {
+              console.error(err);
+              alert(
+                "🚨 Lỗi khi tạo project. Kiểm tra console để biết chi tiết."
+              );
+            }
+          });
+        }
+      })();
     </script>
   </body>
 </html>

@@ -138,5 +138,9 @@
         </div>
       </main>
     </div>
+    <!-- ✅ CHATBOX FRAGMENT -->
+    <div th:replace="fragments/chatbox :: chatbox"></div>
+    <!-- Gọi script riêng -->
+    <script th:src="@{/js/chatbox.js}"></script>
   </body>
 </html>

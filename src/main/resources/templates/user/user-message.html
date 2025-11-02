@@ -127,12 +127,12 @@
 
     <!-- ✅ JavaScript -->
     <script th:inline="javascript">
-      // --- nguyên đoạn JS gốc bạn đã có, không thay đổi ---
       const chatBox = document.getElementById("chatBox");
       const sendBtn = document.getElementById("sendBtn");
       const input = document.getElementById("messageInput");
       const chatProjectName = document.getElementById("chatProjectName");
       let currentProjectId = null;
+
       const username = /*[[${#strings.escapeJavaScript(username)}]]*/ "";
       const userEmail = /*[[${#strings.escapeJavaScript(user.email)}]]*/ "";
 
@@ -144,20 +144,24 @@
       function sendMessage() {
         const text = input.value.trim();
         if (!text || !currentProjectId) return;
+
         fetch("/api/messages/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ projectId: currentProjectId, content: text }),
         })
-          .then((res) => {
-            if (!res.ok) throw new Error("Lỗi khi gửi tin nhắn");
-            return res.json();
-          })
+          .then((res) => res.json())
           .then((data) => {
-            appendMessage(data.senderName, data.content, data.senderEmail);
+            // ✅ Truyền thêm avatar từ backend
+            appendMessage(
+              data.senderName,
+              data.content,
+              data.senderEmail,
+              data.senderAvatar
+            );
             input.value = "";
           })
-          .catch((err) => console.error("⚠️ Lỗi gửi tin nhắn:", err));
+          .catch(console.error);
       }
 
       function loadMessages(projectId, element) {
@@ -170,50 +174,53 @@
           .forEach((el) => el.classList.remove("chat-list-item-active"));
         element.classList.add("chat-list-item-active");
 
-        const selectedName =
+        chatProjectName.textContent =
           element.querySelector("p.font-semibold").textContent;
-        chatProjectName.textContent = selectedName;
-
         chatBox.innerHTML =
           "<p class='text-center text-gray-500'>Đang tải tin nhắn...</p>";
 
         fetch(`/api/messages/${projectId}`)
-          .then((res) => {
-            if (!res.ok) throw new Error("Lỗi khi tải tin nhắn");
-            return res.json();
-          })
+          .then((res) => res.json())
           .then((messages) => {
             chatBox.innerHTML = "";
             messages.forEach((msg) =>
-              appendMessage(msg.senderName, msg.content, msg.senderEmail)
+              // ✅ Truyền thêm avatar
+              appendMessage(
+                msg.senderName,
+                msg.content,
+                msg.senderEmail,
+                msg.senderAvatar
+              )
             );
             chatBox.scrollTop = chatBox.scrollHeight;
           })
-          .catch((err) => console.error("⚠️ Lỗi tải tin nhắn:", err));
+          .catch(console.error);
       }
       window.loadMessages = loadMessages;
 
-      function appendMessage(senderName, content, senderEmail) {
+      function appendMessage(senderName, content, senderEmail, avatarUrl) {
         const msgDiv = document.createElement("div");
-        const currentUserEmail = userEmail?.trim().toLowerCase();
         const isCurrentUser =
-          senderEmail?.trim().toLowerCase() === currentUserEmail;
+          senderEmail?.trim().toLowerCase() === userEmail?.trim().toLowerCase();
+
+        // ✅ Ưu tiên avatar backend trả về – nếu null sẽ fallback theo email
+        const avatar = avatarUrl
+          ? avatarUrl
+          : `https://i.pravatar.cc/40?u=${senderEmail}`;
 
         if (isCurrentUser) {
-          // 👉 Tin nhắn của người dùng hiện tại
           msgDiv.className = "flex justify-end mb-3";
           msgDiv.innerHTML = `
         <div class="flex flex-col items-end max-w-[70%]">
-          <div class="bg-blue-600 text-white px-4 py-2 rounded-2xl shadow text-sm break-words text-right">
+          <div class="bg-blue-600 text-white px-4 py-2 rounded-2xl shadow text-sm text-right break-words">
             ${content}
           </div>
         </div>`;
         } else {
-          // 👉 Tin nhắn của người khác
           msgDiv.className = "flex justify-start mb-3";
           msgDiv.innerHTML = `
         <div class="flex items-start space-x-2 max-w-[70%]">
-          <img src="https://i.pravatar.cc/40?u=${senderEmail}" class="w-8 h-8 rounded-full" alt="${senderName}">
+          <img src="${avatar}" class="w-8 h-8 rounded-full border" alt="${senderName}">
           <div>
             <p class="text-xs text-gray-500 mb-1 font-medium">${senderName}</p>
             <div class="bg-gray-200 text-gray-800 px-4 py-2 rounded-2xl shadow text-sm break-words">

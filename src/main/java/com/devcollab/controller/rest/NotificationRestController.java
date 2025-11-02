@@ -33,6 +33,7 @@ public class NotificationRestController {
                     .map(Project::getName)
                     .orElse("Không xác định");
 
+            // Generate title & message
             switch (n.getType()) {
                 case "PROJECT_CREATED":
                     title = "Dự án mới được tạo";
@@ -42,21 +43,23 @@ public class NotificationRestController {
                     title = "Bạn đã được thêm vào dự án";
                     message = "Bạn đã được thêm vào dự án: " + projectName;
                     break;
-                case "PROJECT_ARCHIVED":
-                    title = "Dự án đã được lưu trữ";
-                    message = "Dự án \"" + projectName + "\" đã được lưu trữ.";
-                    break;
                 case "TASK_ASSIGNED":
                     title = "Task mới được giao";
-                    message = "Bạn vừa được giao task trong dự án: " + projectName;
-                    break;
-                case "TASK_CLOSED":
-                    title = "Task đã đóng";
-                    message = "Một task trong dự án \"" + projectName + "\" đã được đóng.";
+                    message = "Bạn được giao một task trong dự án: " + projectName;
                     break;
                 default:
                     title = "Thông báo mới";
                     message = "Bạn có thông báo mới.";
+            }
+
+            // ✅ Build redirect URL
+            String redirectUrl = null;
+            if (n.getReferenceId() != null) {
+                if (n.getType().startsWith("PROJECT")) {
+                    redirectUrl = "/view/project/" + n.getReferenceId() + "/tasks";
+                } else if (n.getType().startsWith("TASK")) {
+                    redirectUrl = "/view/task/" + n.getReferenceId();
+                }
             }
 
             return new NotificationResponseDTO(
@@ -65,7 +68,8 @@ public class NotificationRestController {
                     message,
                     n.getStatus(),
                     n.getCreatedAt(),
-                    n.getReferenceId() // ✅ Thêm dòng này
+                    n.getReferenceId(),
+                    redirectUrl // ✅ Thêm vào đây
             );
         }).collect(Collectors.toList());
     }
