@@ -217,6 +217,41 @@
             return priority;
         }
 
+        // Helper functions to calculate missing fields from TaskCardDTO
+        function calculateOpenedDaysAgo(createdAt) {
+            if (!createdAt) return 0;
+            const created = new Date(createdAt);
+            const now = new Date();
+            const diffTime = Math.abs(now - created);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
+        function calculateTimeRemaining(deadline) {
+            if (!deadline) return null;
+            const due = new Date(deadline);
+            const now = new Date();
+            const diffTime = due - now;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            if (diffTime < 0) {
+                const overdueDays = Math.abs(diffDays);
+                return overdueDays === 0 ? 'Overdue today' : `${overdueDays} day${overdueDays > 1 ? 's' : ''} overdue`;
+            }
+            if (diffDays === 0) {
+                return diffHours > 0 ? `${diffHours}h remaining` : 'Due today';
+            }
+            return `${diffDays} day${diffDays > 1 ? 's' : ''} left`;
+        }
+
+        function calculateIsOverdue(deadline, status) {
+            if (!deadline || status === 'DONE') return false;
+            const due = new Date(deadline);
+            const now = new Date();
+            return due < now;
+        }
+
         async function loadProjects() {
             const projectFilter = document.getElementById('projectFilter');
             try {
@@ -251,14 +286,20 @@
                 const tasks = await response.json();
                 loadingMessage.style.display = 'none';
                 if (!tasks || tasks.length === 0) { container.innerHTML = `<p class="text-center text-gray-400 py-8">Bạn chưa có task nào${projectId ? ' trong project này' : ''}.</p>`; return; }
-                container.innerHTML = tasks.map(task => `
+                container.innerHTML = tasks.map(task => {
+                    // Calculate missing fields from backend data
+                    const openedDaysAgo = calculateOpenedDaysAgo(task.createdAt);
+                    const timeRemaining = calculateTimeRemaining(task.deadline);
+                    const isOverdue = calculateIsOverdue(task.deadline, task.status);
+                    
+                    return `
                     <div class="bg-white border border-gray-200 rounded-lg p-4 flex items-center space-x-4 task-card cursor-pointer" onclick="openTaskDetail(${task.id})">
                         <div class="flex-1 flex items-center space-x-4">
                             <div class="task-main">
                                 <p class="font-semibold text-gray-800">${task.title || 'N/A'}</p>
                                 <div class="text-xs text-gray-500 flex items-center space-x-3">
                                     <span>#${task.id}</span>
-                                    <span>Opened ${task.openedDaysAgo} days ago by ${task.creatorName || 'N/A'}</span>
+                                    <span>Opened ${openedDaysAgo} days ago by ${task.creatorName || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
@@ -267,11 +308,11 @@
                             <span class="badge ${getPriorityClass(task.priority)}">${formatPriority(task.priority)}</span>
                         </div>
                         <div class="flex items-center space-x-4">
-                            <div class="flex items-center text-sm ${task.isOverdue ? 'text-red-600' : 'text-gray-600'}">
+                            <div class="flex items-center text-sm ${isOverdue ? 'text-red-600' : 'text-gray-600'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>
-                                <span>${task.timeRemaining || 'N/A'}</span>
+                                <span>${timeRemaining || 'N/A'}</span>
                             </div>
-                            ${task.assignee && task.assignee.avatarUrl ? `<img class="w-8 h-8 rounded-full border-2 border-white shadow" src="${task.assignee.avatarUrl}" alt="Assignee" />` : '<div class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white"></div>'}
+                            ${task.assigneeAvatarUrl ? `<img class="w-8 h-8 rounded-full border-2 border-white shadow" src="${task.assigneeAvatarUrl}" alt="Assignee" />` : '<div class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white"></div>'}
                             <div class="flex items-center space-x-3 text-sm text-gray-500">
                                 <div class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg><span>${task.checklistCount || 0}</span></div>
                                 <div class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" /><path d="M15 11a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg><span>${task.commentCount || 0}</span></div>
@@ -279,7 +320,8 @@
                             <button class="text-gray-400 hover:text-gray-600"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg></button>
                         </div>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
             } catch (error) {
                 console.error('Lỗi khi tải tasks:', error);
                 container.innerHTML = '<p class="text-center text-red-500 py-8">❌ Không thể tải tasks. Vui lòng thử lại sau.</p>';

@@ -153,104 +153,6 @@
                 />
             </div>
 
-<<<<<<< HEAD
-      <!-- Dropdown user -->
-      <div
-        id="userDropdown"
-        class="hidden absolute right-0 mt-3 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30"
-      >
-        <a
-          href="/user/view/profile"
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-xl"
-        >
-          👤 Profile
-        </a>
-        <a
-          href="#"
-          id="logoutBtn"
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-xl"
-        >
-          🚪 Logout
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✅ JS -->
-  <script th:inline="javascript">
-    // ---------------- NOTIFICATION ----------------
-    const bell = document.getElementById("notificationBell");
-    const dropdown = document.getElementById("notificationDropdown");
-    const listContainer = document.getElementById("notificationList");
-
-    if (bell && dropdown && listContainer) {
-      bell.addEventListener("click", (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle("hidden");
-        if (!dropdown.classList.contains("hidden")) loadNotifications();
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!dropdown.contains(e.target) && !bell.contains(e.target))
-          dropdown.classList.add("hidden");
-      });
-
-      function loadNotifications() {
-        fetch("/api/notifications")
-          .then((res) => res.json())
-          .then((notifications) => {
-            if (!notifications || notifications.length === 0) {
-              listContainer.innerHTML =
-                "<p class='p-4 text-gray-500 text-sm text-center'>Không có thông báo</p>";
-              return;
-            }
-
-            listContainer.innerHTML = "";
-            notifications.forEach((n) => {
-              const item = document.createElement("div");
-              item.className =
-                "px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition";
-              item.innerHTML = `
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-800">${
-                  n.title || "Thông báo mới"
-                }</p>
-                <p class="text-xs text-gray-500 mt-0.5">${n.message}</p>
-              </div>
-              ${
-                n.status === "unread"
-                  ? `<span class="bg-blue-500 w-2 h-2 rounded-full mt-1"></span>`
-                  : ""
-              }
-            </div>
-          `;
-
-              // ✅ Xử lý khi click vào thông báo
-              item.addEventListener("click", () => {
-                // 1. Gọi PUT API để đánh dấu là đã đọc
-                fetch(`/api/notifications/${n.id}/read`, { method: "PUT" })
-                  .then(() => {
-                    // 2. Giảm badge thông báo chưa đọc
-                    const badge = document.querySelector(
-                      "#notificationBell + span"
-                    );
-                    if (badge) {
-                      let count = parseInt(badge.innerText);
-                      badge.innerText = count > 1 ? count - 1 : "";
-                    }
-
-                    // 3. Nếu có referenceId -> chuyển trang project tương ứng
-                    if (n.referenceId) {
-                      window.location.href = `/view/project/${n.referenceId}/tasks`;
-                    } else {
-                      // Nếu không -> chỉ đóng dropdown
-                      dropdown.classList.add("hidden");
-                    }
-                  })
-                  .catch((err) => console.error("Mark as read error:", err));
-              });
-=======
             <!-- Dropdown -->
             <div
                     id="userDropdown"
@@ -279,7 +181,6 @@
         const bell = document.getElementById("notificationBell");
         const dropdown = document.getElementById("notificationDropdown");
         const listContainer = document.getElementById("notificationList");
->>>>>>> doan
 
         if (bell && dropdown && listContainer) {
             bell.addEventListener("click", (e) => {
