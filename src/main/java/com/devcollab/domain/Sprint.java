@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 @Entity
-@Table(name = "Sprint")
+@Table(name = "[Sprint]")
 public class Sprint {
 
     @Id

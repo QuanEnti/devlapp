@@ -48,13 +48,7 @@ public class AppEventService {
         notificationService.notifyProjectArchived(project);
     }
 
-   
-    public void publishTaskCreated(Task task) {
-        activityService.log("TASK", task.getTaskId(), "CREATE", task.getTitle());
-        if (task.getAssignee() != null) {
-            notificationService.notifyTaskAssigned(task);
-        }
-    }
+
 
     public void publishTaskUpdated(Task task) {
         activityService.log("TASK", task.getTaskId(), "UPDATE", task.getTitle());
@@ -62,11 +56,6 @@ public class AppEventService {
 
     public void publishTaskMoved(Task task, String fromCol, String toCol) {
         activityService.log("TASK", task.getTaskId(), "MOVE", fromCol + " → " + toCol);
-    }
-
-    public void publishTaskClosed(Task task) {
-        activityService.log("TASK", task.getTaskId(), "CLOSE", task.getTitle());
-        notificationService.notifyTaskClosed(task);
     }
 
     public void publishTaskReopened(Task task) {

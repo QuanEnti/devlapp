@@ -79,4 +79,36 @@ public class ProjectRestController {
             return ApiResponse.error("Lỗi khi tìm kiếm: " + e.getMessage());
         }
     }
+
+    @GetMapping("/{projectId}/role")
+    public ApiResponse<?> getUserRoleInProject(@PathVariable Long projectId, Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ApiResponse.error("Bạn chưa đăng nhập", 401);
+            }
+
+            String email;
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof DefaultOAuth2User oauthUser) {
+                email = oauthUser.getAttribute("email");
+            } else {
+                email = authentication.getName();
+            }
+
+            if (email == null) {
+                return ApiResponse.error("Không xác định được người dùng", 400);
+            }
+
+            // ✅ Gọi hàm trong service để lấy role
+            String role = projectService.getUserRoleInProjectByEmail(projectId, email);
+
+            return ApiResponse.success("Lấy vai trò thành công",
+                    java.util.Map.of("projectId", projectId, "role", role));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.error("Không thể lấy vai trò: " + e.getMessage());
+        }
+    }
+
 }

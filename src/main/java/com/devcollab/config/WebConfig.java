@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -35,5 +36,13 @@ public class WebConfig implements WebMvcConfigurer {
                         "/view/forgot-password",
                         "/view/password-reset-success")
                 .order(1);
+    }
+    
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String uploadPath = System.getProperty("user.dir") + "/uploads/attachments/";
+        registry.addResourceHandler("/attachments/**")
+                .addResourceLocations("file:" + uploadPath)
+                .setCachePeriod(0);
     }
 }

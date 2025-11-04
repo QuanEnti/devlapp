@@ -57,5 +57,23 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             ORDER BY MONTH(closed_at)
         """, nativeQuery = true)
     List<Object[]> countCompletedTasksPerMonth(@Param("projectId") Long projectId);
+    
+    List<Task> findByProject_ProjectIdAndArchivedFalse(Long projectId);
+    
+    @Query("SELECT t FROM Task t WHERE t.deadline IS NOT NULL AND t.status <> 'DONE' AND t.deadline > :now")
+    List<Task> findTasksWithUpcomingDeadlines(@Param("now") LocalDateTime now);
+    
+    @Query("""
+            SELECT DISTINCT t FROM Task t
+            LEFT JOIN FETCH t.assignee
+            LEFT JOIN FETCH t.createdBy
+            LEFT JOIN FETCH t.followers f
+            LEFT JOIN FETCH f.user
+            WHERE t.deadline IS NOT NULL
+              AND t.status <> 'DONE'
+              AND t.deadline BETWEEN :from AND :to
+        """)
+    List<Task> findTasksDueBetween(@Param("from") LocalDateTime from,
+        @Param("to") LocalDateTime to);
 
 }

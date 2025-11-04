@@ -2,11 +2,13 @@ package com.devcollab.domain;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "Task")
+@Table(name = "[Task]")
 public class Task {
 
     @Id
@@ -70,9 +72,20 @@ public class Task {
     @Column(length = 50)
     private String reminder = "Never"; 
 
+    @Column(nullable = false)
+    private boolean archived = false; 
+    @Column(name = "last_remind_at")
+    private LocalDateTime lastRemindAt;
+
+    @Column(name = "last_reminder_stage")
+    private String lastReminderStage;
+
     @ManyToMany
     @JoinTable(name = "TaskLabel", joinColumns = @JoinColumn(name = "task_id", nullable = false), inverseJoinColumns = @JoinColumn(name = "label_id", nullable = false))
     private Set<Label> labels = new HashSet<>();
+    
+     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<TaskFollower> followers = new ArrayList<>();
 
     public Task() {
     }
@@ -222,5 +235,38 @@ public class Task {
     public void setReminder(String reminder) {
         this.reminder = reminder;
     }
+    
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public void setArchived(boolean archived) {
+        this.archived = archived;
+    }
+
+    public List<TaskFollower> getFollowers() {
+        return followers;
+    }
+
+    public void setFollowers(List<TaskFollower> followers) {
+        this.followers = followers;
+    }
+
+    public LocalDateTime getLastRemindAt() {
+        return lastRemindAt;
+    }
+
+    public String getLastReminderStage() {
+        return lastReminderStage;
+    }
+
+    public void setLastRemindAt(LocalDateTime lastRemindAt) {
+        this.lastRemindAt = lastRemindAt;
+    }
+
+    public void setLastReminderStage(String lastReminderStage) {
+        this.lastReminderStage = lastReminderStage;
+    }
+    
     
 }

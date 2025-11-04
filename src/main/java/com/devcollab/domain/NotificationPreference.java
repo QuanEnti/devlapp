@@ -3,7 +3,7 @@ package com.devcollab.domain;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "NotificationPreference")
+@Table(name = "[NotificationPreference]")
 public class NotificationPreference {
 
     @Id

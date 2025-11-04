@@ -1,9 +1,11 @@
 package com.devcollab.dto;
 
+import com.devcollab.domain.Role;
 import com.devcollab.domain.User;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO dùng để truyền dữ liệu người dùng ra bên ngoài (REST API / View)
@@ -23,6 +25,7 @@ public class UserDTO {
     private String name;
     private String avatarUrl;
     private String provider; // 🔹 "local" | "google" | "github" | etc.
+    private List<String> roles;
 
     // 🔸 Thông tin mở rộng (chỉ dùng cho entity trong DB)
     private String skills;
@@ -54,9 +57,23 @@ public class UserDTO {
         }
     }
 
-    // 🔹 Hàm tiện ích: chuyển từ entity sang DTO
+   
+    
     public static UserDTO fromEntity(User user) {
-        return user == null ? null : new UserDTO(user);
+        if (user == null)
+            return null;
+
+        return UserDTO.builder()
+                .userId(user.getUserId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
+                .provider(user.getProvider())
+                .roles(
+                        user.getRoles().stream()
+                                .map(Role::getName)
+                                .toList())
+                .build();
     }
 
     // 🔹 Hàm tiện ích: tạo DTO từ dữ liệu Google OAuth2 (email, name, avatar)

@@ -21,8 +21,6 @@ public interface TaskService {
 
     Task assignTask(Long taskId, Long assigneeId);
 
-    Task moveTask(Long taskId, Long columnId);
-
     Task closeTask(Long taskId);
 
     Task reopenTask(Long taskId);
@@ -37,11 +35,18 @@ public interface TaskService {
     
     Task getById(Long id);
 
-    Task updateTaskDescription(Long id, String description);
+    TaskDTO updateTaskDescription(Long id, String description);
 
     TaskDTO updateDates(Long taskId, TaskDTO dto);
 
     TaskDTO moveTask(Long taskId, MoveTaskRequest req);
     
     TaskDTO getByIdAsDTO(Long id);
+
+    boolean archiveTask(Long taskId);
+    
+    boolean restoreTask(Long taskId);
+    
+    TaskDTO markComplete(Long taskId, Long userId);
+
 }

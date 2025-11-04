@@ -201,14 +201,29 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        // 🔍 Dùng query có JOIN FETCH để load roles cùng lúc
+        User user = userRepository.findByEmailFetchRoles(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + email));
 
+        // ✅ Convert roles trong DB sang GrantedAuthority
+        var authorities = user.getRoles().stream()
+                .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(role.getName()))
+                .toList();
+
+        // 🧠 Logging để kiểm tra roles thực tế
+        System.out.println("🎯 Loaded user: " + email + " | Roles: " + authorities);
+
+        // ✅ Tạo UserDetails với roles thật từ DB
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
-                .password(user.getPasswordHash())
-                .roles("USER")
+                .password(user.getPasswordHash() != null ? user.getPasswordHash() : "")
+                .authorities(authorities)
+                .accountExpired(false)
+                .accountLocked(false)
+                .credentialsExpired(false)
+                .disabled(!"active".equalsIgnoreCase(user.getStatus()))
                 .build();
     }
 

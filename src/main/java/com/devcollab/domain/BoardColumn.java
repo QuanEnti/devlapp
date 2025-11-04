@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.util.*;
 
 @Entity
-@Table(name = "BoardColumn")
+@Table(name = "[BoardColumn]")
 public class BoardColumn {
 
     @Id

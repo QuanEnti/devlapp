@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Attachment")
+@Table(name = "[Attachment]")
 public class Attachment {
 
     @Id
@@ -12,12 +12,12 @@ public class Attachment {
     @Column(name = "attachment_id")
     private Long attachmentId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
     private Task task;
 
     @Column(name = "file_url", nullable = false, length = 700)
-    private String fileUrl;
+    private String fileUrl; // Có thể là URL file hoặc link ngoài
 
     @Column(name = "file_name", length = 300)
     private String fileName;
@@ -31,7 +31,7 @@ public class Attachment {
     @Column(nullable = false)
     private Integer version = 1;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by", nullable = false)
     private User uploadedBy;
 
@@ -41,9 +41,14 @@ public class Attachment {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "is_link", nullable = false)
+    private boolean isLink = false; 
+
+    @Column(name = "display_text", length = 300)
+    private String displayText; 
+
     public Attachment() {
     }
-
 
     public Long getAttachmentId() {
         return attachmentId;
@@ -123,5 +128,21 @@ public class Attachment {
 
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public boolean isLink() {
+        return isLink;
+    }
+
+    public void setLink(boolean link) {
+        isLink = link;
+    }
+
+    public String getDisplayText() {
+        return displayText;
+    }
+
+    public void setDisplayText(String displayText) {
+        this.displayText = displayText;
     }
 }

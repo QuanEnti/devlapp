@@ -10,4 +10,6 @@ public interface AuthService {
     Optional<User> getUserByEmail(String email);
 
     UserDTO getCurrentUser(Authentication auth);
+
+    User getCurrentUserEntity(Authentication auth);
 }

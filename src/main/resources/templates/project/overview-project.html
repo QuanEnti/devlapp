@@ -188,7 +188,12 @@
   async function loadOverview() {
     try {
       const range = document.getElementById("rangeSelect")?.value || "6months";
-      const resSummary = await fetch(`/api/pm/dashboard/summary?range=${range}`, { credentials: "include" });
+      const token = localStorage.getItem("token");
+      const resSummary = await fetch(`/api/pm/dashboard/summary?range=${range}`, {
+        headers: { "Authorization": "Bearer " + token },
+        credentials: "include"
+      });
+
       const summaryData = await resSummary.json();
       const s = summaryData.data ?? summaryData;
 
@@ -238,7 +243,11 @@
         <li><span style="background:${pieChart.data.datasets[0].backgroundColor[i]}"></span>${label}</li>
       `).join("");
 
-      const resPerf = await fetch(`/api/pm/dashboard/performance?range=${range}`, { credentials: "include" });
+     const resPerf = await fetch(`/api/pm/dashboard/performance?range=${range}`, {
+        headers: { "Authorization": "Bearer " + token },
+        credentials: "include"
+      });
+
       const perfData = await resPerf.json();
       const perf = perfData.data ?? perfData;
 
@@ -275,9 +284,12 @@ let searchKeyword = "";
 
 async function loadMembers(page = 0) {
   try {
-    const res = await fetch(`/api/pm/members/all?page=${page}&size=20&keyword=${encodeURIComponent(searchKeyword)}`, {
-      credentials: "include"
-    });
+    const token = localStorage.getItem("token");
+      const res = await fetch(`/api/pm/members/all?page=${page}&size=20&keyword=${encodeURIComponent(searchKeyword)}`, {
+        headers: { "Authorization": "Bearer " + token },
+        credentials: "include"
+      });
+
     const data = await res.json();
 
     const members = data.content || [];
@@ -358,12 +370,17 @@ async function loadMembers(page = 0) {
     }
 
     try {
+      const token = localStorage.getItem("token");
       const res = await fetch("/api/pm/targets/set", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
         body: JSON.stringify({ month, year, targetCount }),
         credentials: "include"
       });
+
 
       if (res.ok) {
         alert(" Đã lưu target thành công!");
@@ -380,7 +397,12 @@ async function loadMembers(page = 0) {
 
 async function loadProjects() {
   try {
-    const res = await fetch("/api/pm/project/top?limit=6", { credentials: "include" });
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/pm/project/top?limit=6", {
+      headers: { "Authorization": "Bearer " + token },
+      credentials: "include"
+    });
+
     const data = await res.json();
     const projects = data.data ?? [];
 
@@ -390,59 +412,83 @@ async function loadProjects() {
       return;
     }
 
-grid.innerHTML = projects.map(p => {
-  const statusColors = {
-    "Active": "bg-green-100 text-green-700 border-green-200",
-    "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-    "On Hold": "bg-yellow-100 text-yellow-700 border-yellow-200",
-    "Completed": "bg-gray-100 text-gray-600 border-gray-200",
-    "Pending": "bg-orange-100 text-orange-700 border-orange-200"
-  };
-  const badgeClass = statusColors[p.status] || "bg-slate-100 text-slate-600 border-slate-200";
+    const statusColors = {
+      "Active": "bg-green-100 text-green-700 border-green-200",
+      "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
+      "On Hold": "bg-yellow-100 text-yellow-700 border-yellow-200",
+      "Completed": "bg-gray-100 text-gray-600 border-gray-200",
+      "Pending": "bg-orange-100 text-orange-700 border-orange-200"
+    };
 
-  const updatedAt = p.updatedAt
-    ? new Date(p.updatedAt).toLocaleDateString("vi-VN")
-    : "Chưa cập nhật";
+    grid.innerHTML = projects.map((p, i) => {
+      const badgeClass = statusColors[p.status] || "bg-slate-100 text-slate-600 border-slate-200";
+      const img = p.coverImage?.trim() || `https://picsum.photos/300/180?random=${i + 1}`;
 
-  const desc = p.description
-    ? p.description.length > 60 ? p.description.slice(0, 60) + "..." : p.description
-    : "Không có mô tả";
+      return `
+        <div 
+          class="relative cursor-pointer border border-slate-100 rounded-lg overflow-hidden shadow-sm bg-white hover:shadow-md hover:scale-[1.02] transition-transform"
+          onclick="window.location.href='/view/pm/project/board?projectId=${p.projectId}'"
+          title="${p.name}"
+        >
+          <!-- Ảnh nền -->
+          <img src="${img}" alt="${p.name}" class="w-full h-24 object-cover">
 
-  return `
-    <div 
-      class="relative group cursor-pointer hover:scale-105 transition-transform border border-slate-100 rounded-lg overflow-hidden shadow-sm bg-white"
-      title="${p.name}"
-      onclick="window.location.href='/view/pm/project?id=${p.projectId}'"
-    >
-      <img src="${p.coverImage || 'https://picsum.photos/200/120'}" 
-           alt="${p.name}" 
-           class="w-full h-24 object-cover">
+          <!-- Badge trạng thái -->
+          <div class="absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full border ${badgeClass}">
+            ${p.status || 'Unknown'}
+          </div>
 
-      <div class="absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full border ${badgeClass}">
-        ${p.status || 'Unknown'}
-      </div>
-
-      <p class="text-sm mt-2 text-center text-slate-700 font-medium truncate group-hover:text-blue-600">${p.name}</p>
-
-      <!-- 🟢 Hover Card -->
-      <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity p-3 text-white text-left flex flex-col justify-end">
-        <p class="text-sm font-semibold mb-1">${p.name}</p>
-        <p class="text-xs text-gray-200">${desc}</p>
-        <p class="text-xs text-gray-300 mt-1">🕓 Cập nhật: ${updatedAt}</p>
-      </div>
-    </div>
-  `;
-}).join("");
+          <!-- Tên dự án -->
+          <div class="absolute bottom-2 left-0 right-0 text-center">
+            <p class="font-medium text-white text-sm bg-black/60 mx-2 rounded-md py-0.5 truncate">${p.name}</p>
+          </div>
+        </div>
+      `;
+    }).join("");
   } catch (err) {
     console.error("⚠️ Lỗi tải danh sách dự án:", err);
   }
 }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    loadOverview();
-    loadMembers(0);
-    loadProjects(); 
-  });
+
+async function ensureCurrentUser() {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/auth/me", {
+      headers: { "Authorization": "Bearer " + token },
+      credentials: "include"
+    });
+    if (!res.ok) throw new Error("Unauthorized");
+
+    const result = await res.json();
+    const user = result.user || result;
+    const roles = user.roles || [];
+
+    // ⚠️ Nếu không phải PM → redirect
+    if (!roles.includes("ROLE_PM")) {
+      alert("⚠️ Bạn không có quyền truy cập trang này!");
+      window.location.href = "/view/member/overview";
+      return false;
+    }
+
+    document.querySelector("header .text-sm.font-medium").textContent = user.name;
+    document.querySelector("header img[alt='avatar']").src = user.avatarUrl || "https://i.pravatar.cc/60?img=68";
+    return true;
+  } catch (err) {
+    console.error("❌ Lỗi xác thực:", err);
+    window.location.href = "/view/signin?redirect=/view/pm/dashboard";
+    return false;
+  }
+}
+
+ document.addEventListener("DOMContentLoaded", async () => {
+  const ok = await ensureCurrentUser();
+  if (!ok) return;
+  loadOverview();
+  loadMembers(0);
+  loadProjects();
+});
+
 </script>
 
 </body>

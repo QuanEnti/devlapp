@@ -4,7 +4,7 @@
     import java.time.LocalDateTime;
 
     @Entity
-    @Table(name = "ProjectMember", schema = "dbo")
+    @Table(name = "[ProjectMember]", schema = "dbo")
     @IdClass(ProjectMemberId.class)
     public class ProjectMember {
 

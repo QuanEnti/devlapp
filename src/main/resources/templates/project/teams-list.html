@@ -184,27 +184,34 @@
     }
 
     async function confirmDelete() {
-      const btn = document.getElementById("confirmDeleteBtn");
-      btn.disabled = true;
-      btn.innerHTML = `<i class='fa-solid fa-spinner fa-spin'></i> Removing...`;
-      try {
-        const res = await fetch(`/api/pm/members/remove-user/${selectedUserId}`, {
-          method: "DELETE", credentials: "include"
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Failed to remove member");
-        closeDeleteModal();
-        showToast(data.message || "Member removed successfully!");
-        loadMembers(currentPage);
-      } catch (err) {
-        document.getElementById("deleteErrorMsg").textContent = err.message;
-        document.getElementById("deleteErrorMsg").classList.remove("hidden");
-        showToast("Failed to remove member", "error");
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Remove`;
-      }
+    const btn = document.getElementById("confirmDeleteBtn"); // 🔹 KHÔNG ĐƯỢC THIẾU
+    btn.disabled = true;
+    btn.innerHTML = `<i class='fa-solid fa-spinner fa-spin'></i> Removing...`;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/pm/members/remove-user/${selectedUserId}`, {
+        method: "DELETE",
+        headers: token ? { "Authorization": "Bearer " + token } : {},
+        credentials: "include"
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to remove member");
+
+      closeDeleteModal();
+      showToast(data.message || "Member removed successfully!");
+      loadMembers(currentPage);
+    } catch (err) {
+      document.getElementById("deleteErrorMsg").textContent = err.message;
+      document.getElementById("deleteErrorMsg").classList.remove("hidden");
+      showToast("Failed to remove member", "error");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Remove`;
     }
+  }
+
 
     async function loadMembers(page = 0) {
       try {
@@ -213,7 +220,12 @@
           <i class="fa-solid fa-spinner fa-spin"></i> Loading members...
         </td></tr>`;
 
-        const res = await fetch(`/api/pm/members/all?page=${page}&size=10&keyword=${encodeURIComponent(keyword)}`, { credentials: "include" });
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/pm/members/all?page=${page}&size=10&keyword=${encodeURIComponent(keyword)}`, {
+          headers: token ? { "Authorization": "Bearer " + token } : {},
+          credentials: "include"
+        });
+
         if (!res.ok) throw new Error("Failed to load members");
         const data = await res.json();
 
@@ -237,12 +249,15 @@
             </td>
             <td class="py-3 px-4 text-slate-600">${m.email || '-'}</td>
             <td class="py-3 px-4 text-center">
-              ${
-                currentUser && m.userId === currentUser.userId
-                  ? `<button disabled class="text-gray-300 cursor-not-allowed" title="You cannot remove yourself"><i class="fa-solid fa-trash-can"></i></button>`
-                  : `<button class="text-red-500 hover:text-red-700 transition" onclick="openDeleteModalById(${m.userId})" title="Remove member"><i class="fa-solid fa-trash-can"></i></button>`
-              }
-            </td>
+  ${
+    currentUser?.isPM
+    ? (m.userId === currentUser.userId
+        ? `<button disabled class="text-gray-300 cursor-not-allowed" title="You cannot remove yourself"><i class="fa-solid fa-trash-can"></i></button>`
+        : `<button class="text-red-500 hover:text-red-700 transition" onclick="openDeleteModalById(${m.userId})" title="Remove member"><i class="fa-solid fa-trash-can"></i></button>`)
+    : `<span class="text-gray-400" title="Only Project Manager can remove members">—</span>`
+  }
+</td>
+
           </tr>`).join('');
         renderPagination();
       } catch (err) {
@@ -260,24 +275,45 @@
     }
 
     async function loadCurrentUser() {
-      try {
-        const res = await fetch('/api/auth/me', { credentials: 'include' });
-        if (!res.ok) throw new Error('Unauthorized');
-        const data = await res.json();
-        document.getElementById('userName').textContent = data.name || 'Guest';
-        document.getElementById('userEmail').textContent = data.email || '';
-        document.getElementById('userAvatar').src =
-          data.avatarUrl && data.avatarUrl.trim() !== ''
-            ? data.avatarUrl
-            : `https://i.pravatar.cc/100?u=${encodeURIComponent(data.email || 'guest')}`;
-        currentUser = data;
-      } catch (err) {
-        document.getElementById('userName').textContent = 'Guest';
-        document.getElementById('userEmail').textContent = '';
-        document.getElementById('userAvatar').src = 'https://i.pravatar.cc/100?u=guest';
-        console.warn("⚠️ Không thể tải thông tin người dùng:", err.message);
-      }
-    }
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/auth/me", {
+      headers: token ? { "Authorization": "Bearer " + token } : {},
+      credentials: "include"
+    });
+    if (!res.ok) throw new Error("Unauthorized");
+    const raw = await res.json();
+
+    // Hỗ trợ cả 2 dạng: { user, roles } hoặc phẳng
+    const u = raw.user ? raw.user : raw;
+    const roles = Array.isArray(raw.roles) ? raw.roles
+                 : Array.isArray(u.roles) ? u.roles
+                 : [];
+
+    // Chuẩn hoá currentUser để phía dưới chỉ check 1 chỗ
+    currentUser = {
+      userId: u.userId ?? u.id ?? u.userID ?? null,
+      name: u.name ?? u.fullName ?? "Guest",
+      email: u.email ?? "",
+      avatarUrl: (u.avatarUrl && u.avatarUrl.trim() !== "") ? u.avatarUrl
+                : `https://i.pravatar.cc/100?u=${encodeURIComponent(u.email || "guest")}`,
+      roles,                                // ví dụ: ["ROLE_PM", "ROLE_MEMBER"]
+      isPM: roles.includes("ROLE_PM"),      // flag tiện dùng
+    };
+
+    // Cập nhật UI
+    document.getElementById("userName").textContent = currentUser.name;
+    document.getElementById("userEmail").textContent = currentUser.email;
+    document.getElementById("userAvatar").src = currentUser.avatarUrl;
+  } catch (err) {
+    console.warn("⚠️ loadCurrentUser failed:", err.message);
+    currentUser = { userId: null, name: "Guest", email: "", avatarUrl: "https://i.pravatar.cc/100?u=guest", roles: [], isPM: false };
+    document.getElementById("userName").textContent = "Guest";
+    document.getElementById("userEmail").textContent = "";
+    document.getElementById("userAvatar").src = currentUser.avatarUrl;
+  }
+}
+
 
     let searchTimeout;
     document.getElementById("searchBox").addEventListener("input", e => {

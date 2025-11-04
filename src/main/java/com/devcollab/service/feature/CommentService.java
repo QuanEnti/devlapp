@@ -1,15 +1,30 @@
 package com.devcollab.service.feature;
 
-import com.devcollab.domain.Comment;
+import com.devcollab.dto.CommentDTO;
 import java.util.List;
 
 public interface CommentService {
 
-    List<Comment> getCommentsByTask(Long taskId);
+    /**
+     * 🟩 Thêm comment gốc (root comment) cho task
+     */
+    CommentDTO addComment(Long taskId, Long userId, String content, String mentionsJson);
 
-    Comment createComment(Long taskId, Long userId, String content);
+    /**
+     * 🔁 Trả lời (reply) tới 1 comment cha
+     */
+    CommentDTO replyToComment(Long parentId, Long userId, String content);
 
-    Comment updateComment(Long commentId, String content);
+    /**
+     * 🧾 Lấy toàn bộ comment (bao gồm replies) của 1 task
+     */
+    List<CommentDTO> getCommentsByTask(Long taskId);
 
-    void deleteComment(Long commentId);
+    /**
+     * 🗑️ Xóa comment (chỉ chủ sở hữu mới được phép)
+     */
+    void deleteComment(Long commentId, Long userId);
+
+    CommentDTO updateComment(Long commentId, Long userId, String newContent);
+
 }

@@ -1,6 +1,8 @@
 package com.devcollab.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -57,11 +59,14 @@ public class User {
 
     @Column(name = "provider_id", length = 255)
     private String providerId; 
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "UserRole",
-            joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-    @JsonIgnore
+    
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_role",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @JsonIgnoreProperties("users") 
     private Set<Role> roles = new HashSet<>();
 
 

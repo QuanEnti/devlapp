@@ -1,5 +1,6 @@
 package com.devcollab.controller.rest;
 
+import com.devcollab.domain.Role;
 import com.devcollab.domain.User;
 import com.devcollab.dto.UserDTO;
 import com.devcollab.dto.request.*;
@@ -23,11 +24,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Map;
@@ -391,19 +395,36 @@ public class AuthController {
 
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
+    
+    @Transactional(readOnly = true)
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication auth) {
         try {
+            log.info("🔎 Checking current user authentication: {}", auth != null ? auth.getName() : "null");
+
             UserDTO currentUser = authService.getCurrentUser(auth);
             if (currentUser == null) {
                 log.warn("⚠️ No authenticated user found.");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "No authenticated user"));
             }
-            return ResponseEntity.ok(currentUser);
+
+            // ✅ Lấy roles riêng, không chạm UserDTO
+            Optional<User> userOpt = userRepository.findByEmailFetchRoles(currentUser.getEmail());
+            List<String> roles = userOpt.isPresent()
+                    ? userOpt.get().getRoles().stream().map(Role::getName).toList()
+                    : List.of("ROLE_MEMBER");
+
+            // ✅ Gói vào 1 JSON object
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("user", currentUser);
+            response.put("roles", roles);
+
+            log.info("✅ Current user fetched successfully: {} with roles {}", currentUser.getEmail(), roles);
+            return ResponseEntity.ok(response);
 
         } catch (SecurityException e) {
-            log.warn("⚠️ Unauthorized access attempt.");
+            log.warn("⚠️ Unauthorized access attempt: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Unauthorized"));
 
@@ -413,9 +434,9 @@ public class AuthController {
                     .body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
-            log.error("💥 Unexpected error in /api/auth/me", e);
+            log.error("💥 Unexpected error in /api/auth/me: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Internal Server Error", "message", e.getMessage()));
+                    .body(Map.of("error", "Internal Server Error", "details", e.getMessage()));
         }
     }
 
