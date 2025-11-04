@@ -181,9 +181,16 @@
 
     <script>
         function getStatusClass(status) {
-            if (status === 'Completed' || status === 'DONE' || status === 'CLOSED') return 'badge-completed';
-            if (status === 'In Progress' || status === 'PROGRESS') return 'badge-in-progress';
-            if (status === 'Overdue') return 'badge-overdue';
+            // Chỉ kiểm tra các giá trị có trong CONSTRAINT
+            if (status === 'DONE') return 'badge-completed';
+            if (status === 'IN_PROGRESS') return 'badge-in-progress';
+            if (status === 'REVIEW') return 'badge-medium'; // (Ví dụ: dùng màu vàng cho 'Review')
+            if (status === 'OPEN') return 'badge-open';
+
+            // Xử lý riêng cho trạng thái suy ra (isOverdue)
+            // Bạn nên truyền 'task.isOverdue' vào đây nếu có
+//if (status === 'Overdue') return 'badge-overdue';
+
             return 'badge-open';
         }
         function getPriorityClass(priority) {
@@ -194,10 +201,13 @@
             return 'badge-medium';
         }
         function formatStatus(status) {
-            if (status === 'DONE' || status === 'CLOSED') return 'Completed';
-            if (status === 'PROGRESS') return 'In Progress';
+            // Khớp 1-1 với CONSTRAINT
+            if (status === 'DONE') return 'Completed';
+            if (status === 'IN_PROGRESS') return 'In Progress';
+            if (status === 'REVIEW') return 'In Review'; // Làm cho nó đẹp hơn
             if (status === 'OPEN') return 'Open';
-            return status;
+
+            return status; // Trả về nguyên bản nếu có lỗi
         }
         function formatPriority(priority) {
             if (priority === 'LOW') return 'Low';
