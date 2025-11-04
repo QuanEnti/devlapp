@@ -35,11 +35,11 @@ public class SecurityConfig {
                                                                 "/api/auth/**",
                                                                 "/api/users/**",
                                                                 "/api/admin/**",
-                                                                "/api/pm/public/**",
+                                                                // "/api/pm/public/**",
                                                                 "/user/**")
                                                 .permitAll()
                                                 // 🔹 Cho phép truy cập dashboard public nếu có
-                                                .requestMatchers("/api/pm/project/*/dashboard").permitAll()
+                                                // .requestMatchers("/api/pm/project/*/dashboard").permitAll()
                                                 // 🔹 API join cần đăng nhập (Bearer hoặc cookie JWT)
                                                 .requestMatchers("/api/pm/invite/join/**").authenticated()
                                                 .anyRequest().authenticated())
