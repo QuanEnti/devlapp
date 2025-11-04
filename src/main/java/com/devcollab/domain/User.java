@@ -1,7 +1,11 @@
 package com.devcollab.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -57,17 +61,40 @@ public class User {
 
     @Column(name = "provider_id", length = 255)
     private String providerId; 
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "UserRole",
-            joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-    @JsonIgnore
+    
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_role",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @JsonIgnoreProperties("users") 
     private Set<Role> roles = new HashSet<>();
 
+    @Column(name = "is_premium", nullable = false)
+    private boolean isPremium = false;
+
+    @Column(name = "premium_expiry")
+    private Instant premiumExpiry;
 
     public User() {
     }
 
+    public Instant getPremiumExpiry() {
+        return premiumExpiry;
+    }
+
+    public void setPremiumExpiry(Instant premiumExpiry) {
+        this.premiumExpiry = premiumExpiry;
+    }
+
+    public boolean isPremium() {
+        return isPremium;
+    }
+
+    public void setPremium(boolean premium) {
+        isPremium = premium;
+    }
 
     public Long getUserId() {
         return userId;

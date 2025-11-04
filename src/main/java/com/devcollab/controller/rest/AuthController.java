@@ -1,5 +1,6 @@
 package com.devcollab.controller.rest;
 
+import com.devcollab.domain.Role;
 import com.devcollab.domain.User;
 import com.devcollab.dto.UserDTO;
 import com.devcollab.dto.request.*;
@@ -23,13 +24,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import java.util.Map;
 
 @RestController
@@ -124,10 +129,10 @@ public class AuthController {
                 context);
 
         // ✅ Truyền redirect để quay lại trang mời sau khi login
-        return issueTokensAndRedirect(email, user.getProvider(), "Đăng nhập thành công", redirect);
+        return issueTokensAndRedirectWithRoles(email, user.getProvider(), "Đăng nhập thành công", redirect);
     }
 
-    private ResponseEntity<?> issueTokensAndRedirect(String email, String provider, String message, String redirect) {
+    private ResponseEntity<?> issueTokensAndRedirectWithRoles(String email, String provider, String message, String redirect) {
         String accessToken = jwtService.generateAccessToken(email);
         String refreshToken = jwtService.generateRefreshToken(email);
 
@@ -137,12 +142,38 @@ public class AuthController {
         ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", refreshToken)
                 .httpOnly(true).secure(false).path("/").maxAge(7 * 24 * 60 * 60).sameSite("Lax").build();
 
-        String redirectPath = (redirect != null && !redirect.isEmpty()) ? redirect : "/view/home";
+//        String redirectPath = (redirect != null && !redirect.isEmpty()) ? redirect : "/view/home";
+        User user = userRepository.findByEmailWithRoles(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        List<String> roles = user.getRoles().stream()
+                .map(Role::getName)
+                .toList();
 
+        System.out.println("✅ [DEBUG] Logged in user roles for " + email + ": " + roles);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("user", Map.of(
+                "roles", roles,
+                "name", user.getName(),
+                "email", user.getEmail()
+        ));
+        res.put("status", "SUCCESS");
+        res.put("message", message);
+        res.put("provider", provider);
+        res.put("token", accessToken);
+
+        // Set redirect based on roles
+        String redirectPath;
+        if (roles.contains("ADMIN")) {
+            redirectPath = "/admin/dashboard";
+        } else {
+            redirectPath = (redirect != null && !redirect.isEmpty()) ? redirect : "/user/view/dashboard";
+        }
+        res.put("redirect", redirectPath);
         return ResponseEntity.ok()
                 .header(org.springframework.http.HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(org.springframework.http.HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .body(new AuthResponseDTO(message, "SUCCESS", provider, accessToken, email, redirectPath));
+                .body(res);
     }
 
     @PostMapping("/verify-otp")
@@ -391,19 +422,36 @@ public class AuthController {
 
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
+    
+    @Transactional(readOnly = true)
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication auth) {
         try {
+            log.info("🔎 Checking current user authentication: {}", auth != null ? auth.getName() : "null");
+
             UserDTO currentUser = authService.getCurrentUser(auth);
             if (currentUser == null) {
                 log.warn("⚠️ No authenticated user found.");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "No authenticated user"));
             }
-            return ResponseEntity.ok(currentUser);
+
+            // ✅ Lấy roles riêng, không chạm UserDTO
+            Optional<User> userOpt = userRepository.findByEmailFetchRoles(currentUser.getEmail());
+            List<String> roles = userOpt.isPresent()
+                    ? userOpt.get().getRoles().stream().map(Role::getName).toList()
+                    : List.of("ROLE_MEMBER");
+
+            // ✅ Gói vào 1 JSON object
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("user", currentUser);
+            response.put("roles", roles);
+
+            log.info("✅ Current user fetched successfully: {} with roles {}", currentUser.getEmail(), roles);
+            return ResponseEntity.ok(response);
 
         } catch (SecurityException e) {
-            log.warn("⚠️ Unauthorized access attempt.");
+            log.warn("⚠️ Unauthorized access attempt: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Unauthorized"));
 
@@ -413,9 +461,9 @@ public class AuthController {
                     .body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
-            log.error("💥 Unexpected error in /api/auth/me", e);
+            log.error("💥 Unexpected error in /api/auth/me: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Internal Server Error", "message", e.getMessage()));
+                    .body(Map.of("error", "Internal Server Error", "details", e.getMessage()));
         }
     }
 

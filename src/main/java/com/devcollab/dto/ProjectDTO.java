@@ -44,4 +44,13 @@ public class ProjectDTO {
         this.dueDate = dueDate;
         this.updatedAt = updatedAt;
     }
+    public ProjectDTO(com.devcollab.domain.Project project) {
+        this.projectId = project.getProjectId();
+        this.name = project.getName();
+        this.description = project.getDescription();
+        this.coverImage = project.getCoverImage();
+        this.status = project.getStatus();
+        this.dueDate = project.getDueDate();
+        this.updatedAt = project.getUpdatedAt();
+    }
 }

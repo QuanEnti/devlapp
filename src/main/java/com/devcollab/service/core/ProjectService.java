@@ -39,9 +39,9 @@ public interface ProjectService {
 
     ProjectPerformanceDTO getPerformanceData(Long projectId, String pmEmail);
 
-    List<ProjectDTO> getTopProjects(int limit);
+    List<ProjectDTO> getTopProjectsByPm(String email, int limit);
     
-    Page<ProjectDTO> getAllProjects(int page, int size, String keyword);
+    Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, String keyword);
 
     Project enableShareLink(Long projectId, String pmEmail);
 
@@ -53,5 +53,7 @@ public interface ProjectService {
     List<ProjectSearchResponseDTO> searchProjectsByKeyword(String keyword);
 
     List<ProjectFilterDTO> getActiveProjectsForUser(Long userId);
+    String getUserRoleInProject(Long projectId, Long userId);
 
+    String getUserRoleInProjectByEmail(Long projectId, String email);
 }

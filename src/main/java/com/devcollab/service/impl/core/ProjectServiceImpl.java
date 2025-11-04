@@ -19,6 +19,7 @@ import com.devcollab.service.system.ProjectAuthorizationService;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import org.springframework.data.domain.Pageable;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -287,41 +289,49 @@ public class ProjectServiceImpl implements ProjectService {
     return new ProjectPerformanceDTO(labels, achieved, target);
 
 }
-    @Override
-    public List<ProjectDTO> getTopProjects(int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
-        return projectRepository.findTop9Projects(pageable);
-    }
-    
-  
-    
-    @Override
-    public Page<ProjectDTO> getAllProjects(int page, int size, String keyword) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
-        Page<ProjectDTO> projects = projectRepository.findAllProjects(keyword, pageable);
 
-        return projects.map(dto -> {
-            List<MemberDTO> allMembers = projectMemberRepository.findMembersByProject(dto.getProjectId());
-            int totalMembers = allMembers.size();
+@Override
+public List<ProjectDTO> getTopProjectsByPm(String email, int limit) {
+    Pageable pageable = PageRequest.of(0, limit);
+    return projectRepository.findTopProjectsByPm(email, pageable);
+}
 
-            List<MemberDTO> topMembers = allMembers.stream()
-                    .filter(m -> m.getAvatarUrl() != null)
-                    .limit(4)
-                    .toList();
+@Override
+public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, String keyword) {
+    if (keyword == null || keyword.isBlank())
+        keyword = "";
 
-            dto.setMemberCount(totalMembers); 
-            dto.setMemberAvatars(
-                    topMembers.stream()
-                            .map(MemberDTO::getAvatarUrl)
-                            .toList());
-            dto.setMemberNames(
-                    topMembers.stream()
-                            .map(MemberDTO::getName)
-                            .toList());
+    Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+    Page<ProjectDTO> projects = projectRepository.findAllProjectsByPm(email, keyword, pageable);
 
+    if (projects == null)
+        return Page.empty(pageable);
+
+    return projects.map(dto -> {
+        Long projectId = dto.getProjectId();
+        if (projectId == null) {
+            log.warn("⚠️ ProjectDTO missing projectId for {}", dto.getName());
             return dto;
-        });
-    }
+        }
+
+        List<MemberDTO> allMembers = Optional.ofNullable(
+                projectMemberRepository.findMembersByProject(projectId)).orElse(Collections.emptyList());
+
+        int totalMembers = allMembers.size();
+
+        List<MemberDTO> topMembers = allMembers.stream()
+                .filter(m -> m.getAvatarUrl() != null)
+                .limit(4)
+                .toList();
+
+        dto.setMemberCount(totalMembers);
+        dto.setMemberAvatars(topMembers.stream().map(MemberDTO::getAvatarUrl).toList());
+        dto.setMemberNames(topMembers.stream().map(MemberDTO::getName).toList());
+
+        return dto;
+    });
+}
+
     @Override
     public Project enableShareLink(Long projectId, String pmEmail) {
         Project project = projectRepository.findById(projectId)
@@ -412,5 +422,19 @@ public class ProjectServiceImpl implements ProjectService {
     public List<ProjectFilterDTO> getActiveProjectsForUser(Long userId) {
         return projectRepository.findActiveProjectsByUser(userId);
     }
+
+    @Transactional(readOnly = true)
+    public String getUserRoleInProject(Long projectId, Long userId) {
+        return projectMemberRepository.findRoleInProject(projectId, userId)
+                .orElse("Member");
+    }
+
+    @Transactional(readOnly = true)
+    public String getUserRoleInProjectByEmail(Long projectId, String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User không tồn tại"));
+        return getUserRoleInProject(projectId, user.getUserId());
+    }
+
 }
 

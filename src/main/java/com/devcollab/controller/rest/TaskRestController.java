@@ -7,6 +7,7 @@ import com.devcollab.dto.UserDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.request.TaskDatesUpdateReq;
 import com.devcollab.dto.request.TaskQuickCreateReq;
+import com.devcollab.exception.NotFoundException;
 import com.devcollab.service.core.TaskService;
 import com.devcollab.service.core.TaskFollowerService; // ✅ Thêm service cho member
 import com.devcollab.service.system.AuthService;
@@ -14,6 +15,7 @@ import com.devcollab.service.core.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,6 +59,7 @@ public class TaskRestController {
         return ResponseEntity.ok(taskService.getTasksByProject(projectId));
     }
 
+
     @PostMapping("/quick")
     public ResponseEntity<TaskDTO> quickCreate(
             @RequestBody TaskQuickCreateReq req,
@@ -98,9 +101,8 @@ public class TaskRestController {
         String desc = (String) payload.get("description_md");
         if (desc == null)
             desc = "";
-
-        Task updated = taskService.updateTaskDescription(taskId, desc);
-        return ResponseEntity.ok(TaskDTO.fromEntity(updated));
+        TaskDTO updated = taskService.updateTaskDescription(taskId, desc);
+        return ResponseEntity.ok(updated);
     }
 
     @GetMapping("/{taskId}/members")
@@ -151,6 +153,25 @@ public class TaskRestController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(Map.of("error", e.getMessage()));
             }
+        }
+
+        @PutMapping("/{taskId}/archive")
+        public ResponseEntity<Map<String, String>> archiveTask(@PathVariable Long taskId) {
+            boolean archived = taskService.archiveTask(taskId);
+            if (archived) {
+                return ResponseEntity.ok(Map.of("message", "🗃️ Task archived successfully"));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "❌ Task not found"));
+            }
+        }
+
+        @PutMapping("/{taskId}/restore")
+        public ResponseEntity<Map<String, String>> restoreTask(@PathVariable Long taskId) {
+            boolean restored = taskService.restoreTask(taskId);
+            return restored
+                    ? ResponseEntity.ok(Map.of("message", "♻️ Task restored successfully"))
+                    : ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "❌ Task not found"));
         }
 
     // ====================== MODAL-SPECIFIC ENDPOINTS ======================
@@ -219,5 +240,31 @@ public class TaskRestController {
         return ResponseEntity.ok(projects);
     }
 
+        @PutMapping("/{taskId}/complete")
+        public ResponseEntity<?> markComplete(
+                @PathVariable Long taskId,
+                Authentication auth) {
+
+            UserDTO current = authService.getCurrentUser(auth);
+            if (current == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "❌ Bạn chưa đăng nhập"));
+            }
+
+            try {
+                TaskDTO dto = taskService.markComplete(taskId, current.getUserId());
+                return ResponseEntity.ok(dto);
+            } catch (SecurityException e) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", e.getMessage()));
+            } catch (NotFoundException e) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", e.getMessage()));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("message", "❌ Đã xảy ra lỗi khi đánh dấu hoàn thành"));
+            }
+        }
 
 }

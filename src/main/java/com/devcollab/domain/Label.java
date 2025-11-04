@@ -6,7 +6,7 @@ import java.util.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
-@Table(name = "Label", uniqueConstraints = @UniqueConstraint(columnNames = { "project_id", "name" }))
+@Table(name = "[Label]", uniqueConstraints = @UniqueConstraint(columnNames = { "project_id", "name" }))
 public class Label {
 
     @Id

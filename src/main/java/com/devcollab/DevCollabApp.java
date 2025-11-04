@@ -2,11 +2,13 @@ package com.devcollab;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.awt.Desktop;
 import java.net.URI;
 
 @SpringBootApplication
+@EnableScheduling
 public class DevCollabApp {
 
     public static void main(String[] args) {

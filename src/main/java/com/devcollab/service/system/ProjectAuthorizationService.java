@@ -16,6 +16,9 @@ public class ProjectAuthorizationService {
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
 
+    /**
+     * ✅ Kiểm tra user có quyền PM / ADMIN của project hay không
+     */
     public Long ensurePmOfProject(String email, Long projectId) {
         Long uid = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AccessDeniedException("User không tồn tại"))
@@ -28,5 +31,28 @@ public class ProjectAuthorizationService {
             throw new AccessDeniedException("Bạn không có quyền PM hoặc ADMIN của dự án này");
 
         return uid;
+    }
+
+    /**
+     * ✅ Lấy vai trò của user trong project (PM / Member)
+     */
+    public String getRoleInProject(String email, Long projectId) {
+        Long uid = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AccessDeniedException("User không tồn tại"))
+                .getUserId();
+
+        return projectMemberRepository.findRoleInProject(projectId, uid)
+                .orElse("Member");
+    }
+
+    /**
+     * ✅ Kiểm tra xem user có nằm trong project hay không
+     */
+    public boolean isMemberOfProject(String email, Long projectId) {
+        Long uid = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AccessDeniedException("User không tồn tại"))
+                .getUserId();
+
+        return projectMemberRepository.existsByProject_ProjectIdAndUser_UserId(projectId, uid);
     }
 }

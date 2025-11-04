@@ -2,7 +2,7 @@ package com.devcollab.domain;
 
 import jakarta.persistence.*;
 @Entity
-@Table(name = "TaskLabel")
+@Table(name = "[TaskLabel]")
 @IdClass(TaskLabelId.class)
 public class TaskLabel {
 

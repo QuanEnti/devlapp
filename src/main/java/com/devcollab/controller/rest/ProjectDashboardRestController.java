@@ -52,19 +52,26 @@ public class ProjectDashboardRestController {
     @PreAuthorize("hasAnyRole('PM','ADMIN')")
     @GetMapping("/top")
     public ApiResponse<List<ProjectDTO>> getTopProjects(
-            @RequestParam(defaultValue = "9") int limit) {
+            @RequestParam(defaultValue = "9") int limit,
+            Authentication auth) {
 
-        List<ProjectDTO> projects = projectService.getTopProjects(limit);
+        String email = extractEmail(auth);
+        List<ProjectDTO> projects = projectService.getTopProjectsByPm(email, limit);
         return ApiResponse.success(projects);
     }
-    
-    @GetMapping("/all")
+
     @PreAuthorize("hasAnyRole('PM','ADMIN')")
+    @GetMapping("/all")
     public ApiResponse<Page<ProjectDTO>> getAllProjects(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size,
-            @RequestParam(required = false) String keyword) {
-        Page<ProjectDTO> projects = projectService.getAllProjects(page, size, keyword);
+            @RequestParam(required = false) String keyword,
+            Authentication auth) {
+
+        String email = extractEmail(auth);
+        Page<ProjectDTO> projects = projectService.getAllProjectsByPm(email, page, size, keyword);
         return ApiResponse.success(projects);
     }
+    
+
 }

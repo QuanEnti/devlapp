@@ -22,8 +22,6 @@ public interface TaskService {
 
     Task assignTask(Long taskId, Long assigneeId);
 
-    Task moveTask(Long taskId, Long columnId);
-
     Task closeTask(Long taskId);
 
     Task reopenTask(Long taskId);
@@ -38,7 +36,7 @@ public interface TaskService {
     
     Task getById(Long id);
 
-    Task updateTaskDescription(Long id, String description);
+    TaskDTO updateTaskDescription(Long id, String description);
 
     TaskDTO updateDates(Long taskId, TaskDTO dto);
 
@@ -47,4 +45,11 @@ public interface TaskService {
     TaskDTO getByIdAsDTO(Long id);
 
     List<TaskCardDTO> getUserTasks(Long userId, Long projectId, String statuses);
+
+    boolean archiveTask(Long taskId);
+
+    boolean restoreTask(Long taskId);
+
+    TaskDTO markComplete(Long taskId, Long userId);
+
 }

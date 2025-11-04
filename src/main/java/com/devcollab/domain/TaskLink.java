@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "TaskLink")
+@Table(name = "[TaskLink]")
 public class TaskLink {
 
     @Id

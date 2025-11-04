@@ -126,4 +126,42 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         ORDER BY p.name ASC
     """)
     List<ProjectFilterDTO> findActiveProjectsByUser(@Param("userId") Long userId);
-}   
+
+  // 🟢 Lấy top N project của 1 PM (theo userId hoặc email)
+  @Query("""
+              SELECT new com.devcollab.dto.ProjectDTO(
+                  p.projectId,
+                  p.name,
+                  p.coverImage,
+                  p.status
+              )
+              FROM Project p
+              WHERE p.createdBy.email = :email
+                AND p.status IS NOT NULL
+                AND p.status <> 'Archived'
+              ORDER BY p.updatedAt DESC
+          """)
+  List<ProjectDTO> findTopProjectsByPm(@Param("email") String email, Pageable pageable);
+
+  @Query("""
+            SELECT new com.devcollab.dto.ProjectDTO(
+                p.projectId,
+                p.name,
+                p.description,
+                p.coverImage,
+                p.status,
+                p.dueDate,
+                p.updatedAt
+            )
+            FROM Project p
+            WHERE p.createdBy IS NOT NULL
+              AND p.createdBy.email = :email
+              AND (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND p.status IS NOT NULL
+              AND p.status <> 'Archived'
+          """)
+  Page<ProjectDTO> findAllProjectsByPm(@Param("email") String email,
+          @Param("keyword") String keyword,
+          Pageable pageable);
+
+}

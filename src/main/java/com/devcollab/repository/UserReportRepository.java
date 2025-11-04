@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import org.springframework.data.domain.Pageable;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserReportRepository extends JpaRepository<UserReport, Long> {
@@ -22,5 +23,9 @@ public interface UserReportRepository extends JpaRepository<UserReport, Long> {
             "JOIN FETCH r.reported " +
             "WHERE r.id = :id")
     UserReport findByIdWithUsers(@Param("id") Long id);
+
+    Optional<UserReport> findById(Long id);
+
+
 
 }

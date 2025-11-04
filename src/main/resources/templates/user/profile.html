@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile – DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50">
+
+<!-- Left sidebar -->
+<aside class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm">
+    <div class="flex items-center px-6 mb-8">
+        <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
+            <i class="fa-solid fa-layer-group text-blue-600 text-lg"></i>
+        </div>
+        <h1 class="text-lg font-semibold text-slate-700">DevCollab</h1>
+    </div>
+    <nav class="flex-1 space-y-2 text-slate-600">
+        <a href="/view/pm/dashboard" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+            <i class="fa-regular fa-chart-bar"></i> Overview
+        </a>
+        <a href="/view/pm/projects" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+            <i class="fa-regular fa-clipboard"></i> Projects
+        </a>
+        <a href="/view/pm/teams" class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium">
+            <i class="fa-regular fa-user"></i> Members
+        </a>
+    </nav>
+</aside>
+
+<!-- Main -->
+<main class="ml-60 p-10 flex gap-6">
+    <!-- Left user card -->
+    <div class="w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center">
+        <button id="reportBtn"
+                class="absolute top-4 right-4 text-red-600 hover:text-red-700 transition"
+                title="Report this user">
+            <i class="fa-solid fa-flag text-lg"></i>
+        </button>
+
+        <img id="avatar" src="https://i.pravatar.cc/150" alt="avatar"
+             class="w-28 h-28 rounded-full mx-auto border mb-4 object-cover">
+        <h2 id="name" class="text-lg font-semibold text-slate-800 mb-1">User Name</h2>
+        <p id="skills" class="text-slate-600 mt-3 text-sm">Code</p>
+        <p id="role" class="text-slate-600 mt-3 text-sm">UI Intern</p>
+        <p id="email" class="text-blue-600 text-sm mt-2">user@example.com</p>
+        <hr class="my-4 border-slate-200">
+        <div class="text-left">
+            <h3 class="text-slate-700 font-semibold mb-2 text-sm flex items-center gap-2">
+                <i class="fa-regular fa-address-card text-blue-500"></i>
+                About
+            </h3>
+            <p id="bio" class="text-slate-600 text-sm leading-relaxed text-justify">
+                No bio provided yet.
+            </p>
+        </div>
+    </div>
+
+
+
+    <!-- Right section -->
+    <div class="flex-1 flex flex-col gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="text-lg font-semibold text-slate-700 mb-3">Worked with</h3>
+            <div id="worked-with" class="flex flex-wrap gap-4"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-slate-700">Projects</h3>
+                <a href="#" class="text-blue-600 text-sm">View all</a>
+            </div>
+            <div id="projects" class="grid grid-cols-4 gap-4"></div>
+        </div>
+    </div>
+</main>
+<!-- Report User Modal -->
+<div id="reportModal"
+     class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-2xl w-[420px] shadow-xl border border-slate-200">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-flag text-red-500"></i> Report User
+            </h2>
+            <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form id="reportForm" class="space-y-4">
+            <div>
+                <label class="text-sm font-medium text-slate-600">Reason</label>
+                <input id="reportReason" type="text"
+                       placeholder="Enter reason (e.g., spam, abuse)"
+                       class="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:ring-2 focus:ring-blue-400 outline-none" required>
+            </div>
+
+            <div>
+                <label class="text-sm font-medium text-slate-600">Details</label>
+                <textarea id="reportDetails" rows="3"
+                          placeholder="Describe the issue..."
+                          class="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:ring-2 focus:ring-blue-400 outline-none resize-none"></textarea>
+            </div>
+
+            <div>
+                <label class="text-sm font-medium text-slate-600">Upload Proof (optional)</label>
+                <input id="reportFile" type="file"
+                       accept="image/*,.pdf,.docx"
+                       class="w-full mt-2 text-sm border rounded-lg px-2 py-2 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="closeReportModal()"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">
+                    Submit Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    const userId = window.location.pathname.split("/").pop();
+
+    async function loadProfile() {
+        try {
+            const res = await fetch(`/api/users/${userId}`, { credentials: "include" });
+            if (!res.ok) throw new Error("Failed to load user profile");
+            const data = await res.json();
+
+            document.getElementById("avatar").src = data.avatarUrl || `https://i.pravatar.cc/150?u=${userId}`;
+            document.getElementById("name").textContent = data.name || "Unnamed";
+            document.getElementById("email").textContent = data.email || "-";
+            document.getElementById("role").textContent = data.status || "Member";
+            document.getElementById("bio").textContent = data.bio || "No bio provided yet.";
+            document.getElementById("skills").textContent = data.skills || "No skills listed";
+        } catch (err) {
+            console.error("❌ loadProfile:", err.message);
+        }
+    }
+
+    async function loadWorkedWith() {
+        try {
+            const res = await fetch(`/api/users/${userId}/worked-with`, { credentials: "include" });
+            if (!res.ok) throw new Error("Failed to load collaborators");
+            const data = await res.json();
+
+            const container = document.getElementById("worked-with");
+            if (!data.length) {
+                container.innerHTML = `<p class="text-slate-500 text-sm italic">No collaborators found.</p>`;
+                return;
+            }
+
+            container.innerHTML = data.map(u => `
+        <a href="/view/user/${u.userId}"
+           class="flex items-center gap-2 p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+          <img src="${u.avatarUrl || `https://i.pravatar.cc/100?u=${u.userId}`}"
+               class="w-8 h-8 rounded-full object-cover">
+          <span class="text-slate-700 text-sm">${u.name}</span>
+        </a>`).join("");
+        } catch (err) {
+            console.error("❌ loadWorkedWith:", err.message);
+        }
+    }
+
+    async function loadProjects() {
+        try {
+            const res = await fetch(`/api/users/${userId}/projects`, { credentials: "include" });
+            if (!res.ok) throw new Error("Failed to load projects");
+            const data = await res.json();
+
+            const container = document.getElementById("projects");
+            if (!data.length) {
+                container.innerHTML = `<p class="text-slate-500 text-sm italic">No projects found.</p>`;
+                return;
+            }
+
+            container.innerHTML = data.map(p => `
+        <div class="p-3 border border-slate-200 rounded-xl bg-white hover:shadow-md transition">
+          <h4 class="font-medium text-slate-700 truncate">${p.name}</h4>
+          <p class="text-xs text-slate-500">${p.status || "Active"} • ${p.priority || "Normal"}</p>
+        </div>`).join("");
+        } catch (err) {
+            console.error("❌ loadProjects:", err.message);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        await loadProfile();
+        await loadWorkedWith();
+        await loadProjects();
+    });
+    // --- Report User Logic ---
+    const reportBtn = document.getElementById("reportBtn");
+    const reportModal = document.getElementById("reportModal");
+    const reportForm = document.getElementById("reportForm");
+
+    reportBtn.addEventListener("click", () => {
+        reportModal.classList.remove("hidden");
+    });
+
+    function closeReportModal() {
+        reportModal.classList.add("hidden");
+    }
+
+    reportForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const reason = document.getElementById("reportReason").value.trim();
+        const details = document.getElementById("reportDetails").value.trim();
+        const fileInput = document.getElementById("reportFile");
+        let proofUrl = null;
+
+        try {
+            // ✅ Upload proof file to Cloudinary if selected
+            if (fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+                const uploadRes = await fetch("/api/upload/avatar", {
+                    method: "POST",
+                    body: formData
+                });
+                if (!uploadRes.ok) throw new Error("File upload failed");
+                proofUrl = await uploadRes.text();
+            }
+
+            // ✅ Send report info to backend
+            const res = await fetch(`/api/reports`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    type: "user",
+                    reportedId: userId,
+                    reason,
+                    details,
+                    proofUrl
+                })
+            });
+
+            if (!res.ok) throw new Error("Failed to submit report");
+            alert("✅ Report submitted successfully!");
+            closeReportModal();
+            reportForm.reset();
+
+        } catch (err) {
+            console.error("❌ Report failed:", err.message);
+            alert("⚠️ " + err.message);
+        }
+    });
+
+</script>
+
+</body>
+</html>

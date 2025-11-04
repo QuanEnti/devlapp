@@ -3,7 +3,7 @@ package com.devcollab.domain;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "CheckList")
+@Table(name = "[CheckList]")
 public class CheckList {
 
     @Id

@@ -21,7 +21,8 @@ public interface ProjectMemberService {
     boolean updateMemberRole(Long projectId, Long userId, String role);
     boolean removeUserFromAllProjectsOfPm(String pmEmail, Long userId);
     
+    boolean removeMemberFromProject(Long projectId, Long userId, String requesterEmail);
     void updateMemberRole(Long projectId, Long userId, String role, String pmEmail);
-
+    List<MemberDTO> getMembersByProject(Long projectId, int limit, String keyword);
 }
 

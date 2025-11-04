@@ -1,0 +1,35 @@
+<!-- ✅ fragments/chatbox.html -->
+<div th:fragment="chatbox">
+
+  <!-- Nút tròn mở chat -->
+  <button id="chatbox-button"
+          class="fixed bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl hover:bg-blue-700 z-50 transition-transform transform hover:scale-110">
+    💬
+  </button>
+
+  <!-- Hộp chat ẩn -->
+  <div id="chatbox-container"
+       class="hidden fixed bottom-20 right-6 bg-white shadow-2xl rounded-2xl w-96 border border-gray-300 z-50 flex flex-col overflow-hidden animate__animated animate__fadeInUp">
+
+    <!-- Header -->
+    <div class="bg-blue-600 text-white px-4 py-3 flex justify-between items-center rounded-t-2xl">
+      <h3 class="font-semibold text-base">AI Assistant 🤖</h3>
+      <button id="chatbox-close" class="text-white text-lg focus:outline-none hover:text-gray-300">×</button>
+    </div>
+
+    <!-- Body -->
+    <div id="chatbox-body" class="p-4 h-80 overflow-y-auto text-sm space-y-3 bg-gray-50">
+      <div class="text-gray-500 text-center text-xs">💡 Hãy hỏi AI về ý tưởng dự án của bạn...</div>
+    </div>
+
+    <!-- Input -->
+    <div class="flex border-t bg-white">
+      <input id="chatbox-input" type="text"
+             class="flex-1 px-3 py-2 text-sm focus:outline-none"
+             placeholder="Nhập tin nhắn..." />
+      <button id="chatbox-send"
+              class="bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700">Gửi</button>
+    </div>
+  </div>
+
+</div>

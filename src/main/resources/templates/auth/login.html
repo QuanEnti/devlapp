@@ -150,7 +150,12 @@
         if (res.ok && data.status === 'SUCCESS') {
           msg.style.color = 'green';
           msg.textContent = 'Đăng nhập thành công!';
-          setTimeout(() => window.location.href = '/user/view/dashboard', 800);
+          const roles = data.user?.roles || data.roles || [];
+            if (roles.includes('ADMIN')) {
+                setTimeout(() => window.location.href = '/admin/dashboard', 800);
+            }  else {
+                setTimeout(() => window.location.href = '/user/view/dashboard', 800);
+            }
         } 
         else if (data.status === 'VERIFY_REQUIRED') {
           msg.style.color = 'orange';

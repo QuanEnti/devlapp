@@ -4,17 +4,19 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "TaskFollower")
-@IdClass(TaskFollowerId.class)
+@Table(name = "[TaskFollower]")
 public class TaskFollower {
 
-    @Id
-    @ManyToOne
+    @EmbeddedId
+    private TaskFollowerId id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("taskId")
     @JoinColumn(name = "task_id", nullable = false)
     private Task task;
 
-    @Id
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("userId")
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -24,33 +26,42 @@ public class TaskFollower {
     public TaskFollower() {
     }
 
-    public Task getTask() {
-        return task;
+    public TaskFollower(Task task, User user) {
+        this.task = task;
+        this.user = user;
+        this.id = new TaskFollowerId(task.getTaskId(), user.getUserId());
+        this.followedAt = LocalDateTime.now();
     }
 
-    public void setTask(Task task) {
-        this.task = task;
+    public TaskFollowerId getId() {
+        return id;
+    }
+
+    public Task getTask() {
+        return task;
     }
 
     public User getUser() {
         return user;
     }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-
     public LocalDateTime getFollowedAt() {
         return followedAt;
     }
 
+    public void setId(TaskFollowerId id) {
+        this.id = id;
+    }
+
+    public void setTask(Task task) {
+        this.task = task;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     public void setFollowedAt(LocalDateTime followedAt) {
         this.followedAt = followedAt;
-    }
-    
-    public TaskFollower(Task task, User user) {
-        this.task = task;
-        this.user = user;
-        this.followedAt = LocalDateTime.now();
     }
 }
