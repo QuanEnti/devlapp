@@ -146,5 +146,4 @@ public class AuthServiceImpl implements AuthService {
                 log.info("🆕 Created new user from OAuth2 login: {}", saved.getEmail());
                 return saved;
         }
-        
 }

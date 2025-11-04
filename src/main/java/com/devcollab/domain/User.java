@@ -74,7 +74,7 @@ public class User {
     @Column(name = "is_premium", nullable = false)
     private boolean isPremium = false;
 
-    @Column(name = "premium_expiry")
+    @Column(name = "premium_expiry", columnDefinition = "datetimeoffset(6)")
     private Instant premiumExpiry;
 
     public User() {

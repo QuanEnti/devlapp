@@ -17,7 +17,7 @@ public class Notification {
     private User user;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id")
-    private User sender; 
+    private User sender;
 
     @Column(nullable = false, length = 40)
     private String type;
@@ -26,9 +26,6 @@ public class Notification {
     // cần)
     @Column(name = "reference_id")
     private Long referenceId;
-
-    @Column(name = "content", length = 1000)
-    private String content;
 
     @Column(nullable = false, length = 16)
     private String status; // unread | read

@@ -1,3 +1,4 @@
+
 package com.devcollab.security;
 
 import com.devcollab.domain.User;
@@ -76,7 +77,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         ResponseCookie accessCookie = ResponseCookie.from("AUTH_TOKEN", accessToken)
                 .httpOnly(true)
-                .secure(false) 
+                .secure(false)
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(15 * 60)
@@ -86,7 +87,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Lax")
-                .path("/") 
+                .path("/")
                 .maxAge(7 * 24 * 60 * 60)
                 .build();
 

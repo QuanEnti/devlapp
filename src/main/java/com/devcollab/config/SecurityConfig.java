@@ -15,7 +15,7 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 
 @Configuration
 @RequiredArgsConstructor
-public class    SecurityConfig {
+public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtFilter;
         private final OAuth2SuccessHandler oAuth2SuccessHandler;
@@ -36,7 +36,7 @@ public class    SecurityConfig {
                                                                 "/api/users/**",
                                                                 "/api/admin/**",
                                                                 "/api/pm/public/**",
-                                                                "/user/**","/api/payment/webhook")
+                                                                "/user/**")
                                                 .permitAll()
                                                 // 🔹 Cho phép truy cập dashboard public nếu có
                                                 .requestMatchers("/api/pm/project/*/dashboard").permitAll()
@@ -55,7 +55,7 @@ public class    SecurityConfig {
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
                 http
-                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**","/user/**")
+                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**")
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(
                                                 sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -69,7 +69,7 @@ public class    SecurityConfig {
                                                                 "/view/forgot-password",
                                                                 "/view/reset-password",
                                                                 "/view/password-reset-success",
-                                                                "/view/verify-otp",     
+                                                                "/view/verify-otp",
                                                                 "/join/**",
                                                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                                                 "/favicon.ico", "/webjars/**",

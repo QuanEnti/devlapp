@@ -223,7 +223,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)
-                .disabled(!"active".equalsIgnoreCase(user.getStatus()))
+                .disabled(!("active".equalsIgnoreCase(user.getStatus())
+                        || "verified".equalsIgnoreCase(user.getStatus())))
+
                 .build();
     }
 
