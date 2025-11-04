@@ -8,7 +8,7 @@ import com.devcollab.service.core.UserService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,79 +27,89 @@ public class UserViewController {
     private final UserService userService;
 
     /**
-     * ✅ Phương thức dùng chung cho toàn bộ controller:
-     * Tự động thêm username + unreadNotifications vào model cho mọi view.
+     * ✅ Thêm user + unreadNotifications cho MỌI VIEW
      */
     @ModelAttribute
     public void addGlobalAttributes(Model model, Authentication auth) {
-        if (auth != null && auth.isAuthenticated()) {
-            String email = auth.getName();
-            User user = userService.getByEmail(email).orElse(null);
-            model.addAttribute("user", user);
+        if (auth == null || !auth.isAuthenticated())
+            return;
 
-            int unreadCount = notificationService.countUnread(email);
-            model.addAttribute("unreadNotifications", unreadCount);
-        }
+        // ✅ Lấy đúng email theo từng trường hợp (Local hoặc Google OAuth2)
+        String email = getEmailFromAuthentication(auth);
+        if (email == null)
+            return;
+
+        final String userEmail = email; // phải là final nếu dùng trong lambda
+
+        userService.getByEmail(userEmail).ifPresent(user -> {
+            model.addAttribute("user", user);
+            model.addAttribute("unreadNotifications", notificationService.countUnread(userEmail));
+        });
     }
 
-    // 🏠 Trang Dashboard
+    // 📌 Hàm dùng lại để lấy email từ Authentication
+    private String getEmailFromAuthentication(Authentication auth) {
+        if (auth instanceof OAuth2AuthenticationToken oauthToken) {
+            var attributes = oauthToken.getPrincipal().getAttributes();
+            return (String) attributes.get("email");
+        }
+        return auth.getName(); // Local login
+    }
+
+    // 🏠 Dashboard
     @GetMapping("/dashboard")
     public String userDashboardPage() {
         return "user/user-dashboard";
     }
 
-    // ➕ Trang tạo Project mới
+    // ➕ Create Project Page
     @GetMapping("/create-project")
     public String createProjectPage() {
         return "user/user-createproject";
     }
 
-    // 📋 Trang xem tất cả Project của user
+    // 📋 Xem toàn bộ project của user
     @GetMapping("/view-all-projects")
     public String viewAllProjects(Model model, Authentication auth) {
-        String username = auth.getName();
-        model.addAttribute("projects", projectService.getProjectsByUsername(username));
+        String email = getEmailFromAuthentication(auth);
+        model.addAttribute("projects", projectService.getProjectsByUsername(email));
         return "user/user-viewallprojects";
     }
 
-    // ✉️ Trang xem danh sách lời mời
+    // ✉️ Danh sách lời mời
     @GetMapping("/view-invitation")
     public String userViewInvitationPage() {
         return "user/user-viewinvitation";
     }
 
-    // 📧 Trang xem tin nhắn
+    // 📧 Tin nhắn theo từng project
     @GetMapping("/message")
     public String userMessagePage(
             @RequestParam(value = "projectId", required = false) Long projectId,
             Model model,
             Authentication auth) {
 
-        String username = auth.getName();
-        var projects = projectService.getProjectsByUsername(username);
+        String email = getEmailFromAuthentication(auth);
+        var projects = projectService.getProjectsByUsername(email);
         model.addAttribute("projects", projects);
 
         if (projectId != null) {
-            var messages = messageService.getMessagesByProjectId(projectId);
-            model.addAttribute("messages", messages);
+            model.addAttribute("messages", messageService.getMessagesByProjectId(projectId));
             model.addAttribute("projectId", projectId);
         }
 
         return "user/user-message";
     }
 
-    // 🧑‍💼 ✅ Trang hồ sơ người dùng
+    // 🧑‍💼 Hồ sơ người dùng
     @GetMapping("/profile")
     public String userProfilePage(Model model, Authentication auth) {
-        String email = auth.getName();
+        String email = getEmailFromAuthentication(auth);
 
-        // ✅ Lấy User entity đầy đủ từ DB
         User user = userService.getByEmail(email).orElse(null);
-
         if (user != null) {
             model.addAttribute("user", user);
         } else {
-            // fallback: user không tồn tại (hiếm khi xảy ra)
             User tempUser = new User();
             tempUser.setEmail(email);
             tempUser.setName("Unknown User");
@@ -108,5 +118,4 @@ public class UserViewController {
 
         return "user/user-profile";
     }
-
 }

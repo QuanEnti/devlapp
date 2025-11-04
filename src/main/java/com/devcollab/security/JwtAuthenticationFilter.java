@@ -38,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
+        System.out.println("🔍 JWT Filter checking path: " + request.getRequestURI());
 
         if (isExcludedPath(path)) {
             filterChain.doFilter(request, response);
@@ -71,7 +72,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     session.setAttribute("roles", userDetails.getAuthorities());
                 }
             }
-
 
             if (SecurityContextHolder.getContext().getAuthentication() != null && isPublicAuthPage(path)) {
                 response.sendRedirect("/view/home");
@@ -131,8 +131,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/favicon")
                 || path.startsWith("/webjars/")
                 || path.startsWith("/login/oauth2/")
-                || path.startsWith("/oauth2/")
-                || path.startsWith("/view/");
+                || path.startsWith("/oauth2/");
+                //|| path.startsWith("/view/");
     }
 
     private boolean isPublicAuthPage(String path) {

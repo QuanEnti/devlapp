@@ -13,6 +13,7 @@ public class MessageResponseDTO {
     private Long messageId;
     private String senderName;
     private String senderEmail;
+    private String senderAvatar;
     private String content;
     private LocalDateTime createdAt;
 }

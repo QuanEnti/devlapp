@@ -34,6 +34,7 @@ public class MessageServiceImpl implements MessageService {
                 msg.getMessageId(),
                 msg.getSender().getName(),
                 msg.getSender().getEmail(),
+                msg.getSender().getAvatarUrl(),
                 msg.getContent(),
                 msg.getCreatedAt()
         )).collect(Collectors.toList());
