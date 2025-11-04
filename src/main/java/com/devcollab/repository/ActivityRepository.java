@@ -11,4 +11,9 @@
         List<Activity> findAllByOrderByCreatedAtDesc();
         Page<Activity> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
+        boolean existsByActor_UserIdAndEntityTypeAndEntityIdAndAction(
+                Long actorId, String entityType, Long entityId, String action
+        );
+
+
     }

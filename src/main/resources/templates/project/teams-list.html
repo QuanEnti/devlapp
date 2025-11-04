@@ -1,134 +1,150 @@
-<!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Team Management – DevCollab</title>
+    <!DOCTYPE html>
+    <html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Team Management – DevCollab</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
-    .animate-fadeIn { animation: fadeIn 0.25s ease-in-out; }
-    .animate-fadeOut { animation: fadeOut 0.25s ease-in-out forwards; }
+      <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
+        .animate-fadeIn { animation: fadeIn 0.25s ease-in-out; }
+        .animate-fadeOut { animation: fadeOut 0.25s ease-in-out forwards; }
 
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      color: white;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      opacity: 0;
-      animation: toastIn 0.3s ease-in-out forwards;
-    }
-    @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }
-  </style>
-</head>
+        .toast {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          color: white;
+          padding: 10px 16px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          opacity: 0;
+          animation: toastIn 0.3s ease-in-out forwards;
+        }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }
+      </style>
+    </head>
 
-<body class="bg-slate-50">
+    <body class="bg-slate-50">
 
-  <aside class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm">
-    <div class="flex items-center px-6 mb-8">
-      <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-        <i class="fa-solid fa-layer-group text-blue-600 text-lg"></i>
-      </div>
-      <h1 class="text-lg font-semibold text-slate-700">DevCollab</h1>
-    </div>
+      <aside class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm">
+        <div class="flex items-center px-6 mb-8">
+          <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
+            <i class="fa-solid fa-layer-group text-blue-600 text-lg"></i>
+          </div>
+          <h1 class="text-lg font-semibold text-slate-700">DevCollab</h1>
+        </div>
 
-    <nav class="flex-1 space-y-2 text-slate-600">
-      <a href="/view/pm/dashboard" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-regular fa-chart-bar"></i> Overview
-      </a>
-      <a href="/view/pm/projects" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-regular fa-clipboard"></i> Projects
-      </a>
-      <a href="/view/pm/teams" class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium">
-        <i class="fa-regular fa-users"></i> Members
-      </a>
-      <a href="/view/pm/settings" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-solid fa-gear"></i> Settings
-      </a>
-    </nav>
-  </aside>
+        <nav class="flex-1 space-y-2 text-slate-600">
+          <a href="/view/pm/dashboard" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+            <i class="fa-regular fa-chart-bar"></i> Overview
+          </a>
+          <a href="/view/pm/projects" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+            <i class="fa-regular fa-clipboard"></i> Projects
+          </a>
+          <a href="/view/pm/teams" class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium">
+            <i class="fa-regular fa-users"></i> Members
+          </a>
+          <a href="/view/pm/settings" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
+            <i class="fa-solid fa-gear"></i> Settings
+          </a>
+        </nav>
+      </aside>
 
-  <header class="ml-60 bg-white h-16 flex items-center justify-between px-8 shadow-sm border-b border-slate-200 sticky top-0 z-30">
-    <h1 class="text-xl font-semibold text-slate-700">Team Management</h1>
+      <header class="ml-60 bg-white h-16 flex items-center justify-between px-8 shadow-sm border-b border-slate-200 sticky top-0 z-30">
+        <h1 class="text-xl font-semibold text-slate-700">Team Management</h1>
 
-    <div class="flex items-center gap-5">
-      <div class="relative">
-        <input id="searchBox" type="text" placeholder="Search by name or email..."
-               class="pl-9 pr-3 py-2 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-400 outline-none w-64 transition" />
-        <svg xmlns="http://www.w3.org/2000/svg"
-             class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"
-             fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
-        </svg>
-      </div>
+        <div class="flex items-center gap-5">
+          <div class="relative">
+            <input id="searchBox" type="text" placeholder="Search by name or email..."
+                   class="pl-9 pr-3 py-2 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-400 outline-none w-64 transition" />
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+            </svg>
+          </div>
 
-      <div class="flex items-center gap-3">
-        <img id="userAvatar" class="w-10 h-10 rounded-full border" src="https://i.pravatar.cc/100" alt="avatar" />
-        <div>
-          <p id="userName" class="font-medium text-slate-800">Loading...</p>
-          <p id="userEmail" class="text-sm text-slate-500"></p>
+          <div class="flex items-center gap-3">
+            <img id="userAvatar" class="w-10 h-10 rounded-full border" src="https://i.pravatar.cc/100" alt="avatar" />
+            <div>
+              <p id="userName" class="font-medium text-slate-800">Loading...</p>
+              <p id="userEmail" class="text-sm text-slate-500"></p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="ml-60 p-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 fade-in">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-slate-700">Member List (<span id="member-count">0</span>)</h2>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-separate border-spacing-y-1">
+              <thead>
+                <tr class="text-slate-500 bg-slate-50 border-b border-slate-200">
+                  <th class="text-left py-3 px-4 font-medium">Member</th>
+                  <th class="text-left py-3 px-4 font-medium">Email</th>
+                  <th class="text-center py-3 px-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="member-table"></tbody>
+            </table>
+          </div>
+
+          <div id="pagination" class="flex justify-center items-center gap-2 mt-6 text-sm"></div>
+        </div>
+      </main>
+
+      <div id="deleteModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-[420px] p-6 animate-fadeIn border border-slate-200">
+          <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>
+            Remove Member
+          </h2>
+
+          <div class="flex items-center gap-3 mb-5">
+            <img id="deleteMemberAvatar" src="" alt="avatar" class="w-12 h-12 rounded-full border shadow-sm object-cover">
+            <div>
+              <p id="deleteMemberName" class="font-medium text-slate-800 text-sm"></p>
+              <p id="deleteMemberEmail" class="text-sm text-slate-500"></p>
+            </div>
+          </div>
+
+          <p class="text-slate-600 text-sm leading-relaxed mb-4">
+            Are you sure you want to remove this member from
+            <span class="font-semibold text-slate-700">all projects you manage</span>?
+            <span class="block text-red-500 font-medium mt-1">This action cannot be undone.</span>
+          </p>
+
+          <div id="deleteErrorMsg" class="hidden text-red-600 text-sm mb-3"></div>
+
+          <div class="flex justify-end gap-3 mt-6">
+            <button onclick="closeDeleteModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium transition">Cancel</button>
+            <button id="confirmDeleteBtn" onclick="confirmDelete()" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition flex items-center gap-2">
+              <i class="fa-solid fa-trash-can"></i> <span>Remove</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  </header>
 
-  <main class="ml-60 p-8">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 fade-in">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold text-slate-700">Member List (<span id="member-count">0</span>)</h2>
-      </div>
+      <script>
+        let currentPage = 0, totalPages = 1, keyword = "";
+        let currentUser = null, selectedUserId = null, currentMembers = [];
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm border-separate border-spacing-y-1">
-          <thead>
-            <tr class="text-slate-500 bg-slate-50 border-b border-slate-200">
-              <th class="text-left py-3 px-4 font-medium">Member</th>
-              <th class="text-left py-3 px-4 font-medium">Email</th>
-              <th class="text-center py-3 px-4 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="member-table"></tbody>
-        </table>
-      </div>
-
-      <div id="pagination" class="flex justify-center items-center gap-2 mt-6 text-sm"></div>
-    </div>
-  </main>
-
-  <div id="deleteModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center transition-opacity duration-300">
-    <div class="bg-white rounded-2xl shadow-2xl w-[420px] p-6 animate-fadeIn border border-slate-200">
-      <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-        <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>
-        Remove Member
-      </h2>
-
-      <div class="flex items-center gap-3 mb-5">
-        <img id="deleteMemberAvatar" src="" alt="avatar" class="w-12 h-12 rounded-full border shadow-sm object-cover">
-        <div>
-          <p id="deleteMemberName" class="font-medium text-slate-800 text-sm"></p>
-          <p id="deleteMemberEmail" class="text-sm text-slate-500"></p>
-        </div>
-      </div>
-
-      <p class="text-slate-600 text-sm leading-relaxed mb-4">
-        Are you sure you want to remove this member from 
-        <span class="font-semibold text-slate-700">all projects you manage</span>?
-        <span class="block text-red-500 font-medium mt-1">This action cannot be undone.</span>
-      </p>
-
+<<<<<<< HEAD
       <div id="deleteErrorMsg" class="hidden text-red-600 text-sm mb-3"></div>
 
       <div class="flex justify-end gap-3 mt-6">
@@ -264,15 +280,36 @@
         showToast(err.message, "error");
       }
     }
+=======
+        function showToast(message, type = "success") {
+          const toast = document.createElement("div");
+          toast.className = "toast";
+          toast.style.background = type === "error" ? "#dc2626" : (type === "warning" ? "#ca8a04" : "#16a34a");
+          toast.textContent = message;
+          document.body.appendChild(toast);
+          setTimeout(() => {
+            toast.style.animation = "toastOut 0.3s ease-in-out forwards";
+            setTimeout(() => toast.remove(), 300);
+          }, 3000);
+        }
 
-    function renderPagination() {
-      const container = document.getElementById("pagination");
-      let html = `<button ${currentPage===0?'disabled':''} class="px-3 py-1 border rounded-md ${currentPage===0?'text-gray-400 bg-gray-100':'hover:bg-slate-100'}" onclick="loadMembers(${currentPage-1})">Prev</button>`;
-      for (let i = 0; i < totalPages; i++)
-        html += `<button class="px-3 py-1 border rounded-md ${i===currentPage?'bg-blue-600 text-white':'hover:bg-blue-50'}" onclick="loadMembers(${i})">${i+1}</button>`;
-      html += `<button ${currentPage===totalPages-1?'disabled':''} class="px-3 py-1 border rounded-md ${currentPage===totalPages-1?'text-gray-400 bg-gray-100':'hover:bg-slate-100'}" onclick="loadMembers(${currentPage+1})">Next</button>`;
-      container.innerHTML = html;
-    }
+        function openDeleteModalById(userId) {
+          const member = currentMembers.find(m => m.userId === userId);
+          if (member) openDeleteModal(member);
+        }
+>>>>>>> doan
+
+        function openDeleteModal(member) {
+          selectedUserId = member.userId;
+          document.getElementById("deleteMemberAvatar").src = member.avatarUrl || `https://i.pravatar.cc/100?u=${member.userId}`;
+          document.getElementById("deleteMemberName").textContent = member.name || "Unnamed";
+          document.getElementById("deleteMemberEmail").textContent = member.email || "-";
+          const modal = document.getElementById("deleteModal");
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+          modal.addEventListener("click", e => { if (e.target.id === "deleteModal") closeDeleteModal(); });
+        }
+
 
     async function loadCurrentUser() {
   try {
@@ -314,17 +351,136 @@
   }
 }
 
+        function closeDeleteModal() {
+          const modal = document.getElementById("deleteModal");
+          const box = modal.querySelector("div.bg-white");
+          box.classList.add("animate-fadeOut");
+          setTimeout(() => {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+            box.classList.remove("animate-fadeOut");
+          }, 250);
+        }
 
-    let searchTimeout;
-    document.getElementById("searchBox").addEventListener("input", e => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => { keyword = e.target.value.trim(); loadMembers(0); }, 300);
-    });
+        async function confirmDelete() {
+          const btn = document.getElementById("confirmDeleteBtn");
+          btn.disabled = true;
+          btn.innerHTML = `<i class='fa-solid fa-spinner fa-spin'></i> Removing...`;
+          try {
+            const res = await fetch(`/api/pm/members/remove-user/${selectedUserId}`, {
+              method: "DELETE", credentials: "include"
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed to remove member");
+            closeDeleteModal();
+            showToast(data.message || "Member removed successfully!");
+            loadMembers(currentPage);
+          } catch (err) {
+            document.getElementById("deleteErrorMsg").textContent = err.message;
+            document.getElementById("deleteErrorMsg").classList.remove("hidden");
+            showToast("Failed to remove member", "error");
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Remove`;
+          }
+        }
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      await loadCurrentUser();
-      await loadMembers();
-    });
-  </script>
-</body>
-</html>
+        async function loadMembers(page = 0) {
+          try {
+            const tbody = document.getElementById("member-table");
+            tbody.innerHTML = `<tr><td colspan="3" class="py-6 text-center text-slate-400 italic">
+              <i class="fa-solid fa-spinner fa-spin"></i> Loading members...
+            </td></tr>`;
+
+            const res = await fetch(`/api/pm/members/all?page=${page}&size=10&keyword=${encodeURIComponent(keyword)}`, { credentials: "include" });
+            if (!res.ok) throw new Error("Failed to load members");
+            const data = await res.json();
+
+            const members = data.content || [];
+            currentMembers = members;
+            totalPages = data.totalPages || 1;
+            currentPage = data.currentPage || 0;
+            document.getElementById("member-count").textContent = data.totalElements || 0;
+
+            if (!members.length) {
+              tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-500 italic">No members found.</td></tr>`;
+              document.getElementById("pagination").innerHTML = "";
+              return;
+            }
+
+              tbody.innerHTML = members.map(m => {
+                  const isCurrentUser = currentUser && m.userId === currentUser.userId;
+                  const profileLink = isCurrentUser ? '/user/view/dashboard' : `/view/user/${m.userId}`;
+
+                  return `
+                <tr class="bg-white hover:bg-blue-50 transition border border-slate-100 rounded-lg">
+                  <td class="py-3 px-4 flex items-center gap-3">
+                    <a href="${profileLink}">
+                      <img src="${m.avatarUrl || 'https://i.pravatar.cc/100?u=' + m.userId}"
+                           class="w-10 h-10 rounded-full object-cover shadow-sm hover:scale-105 transition-transform">
+                    </a>
+                    <div>
+                      <a href="${profileLink}"
+                         class="font-medium text-slate-700 hover:text-blue-600 transition">
+                        ${m.name || 'Unnamed'}
+                      </a>
+                      <p class="text-sm text-slate-500">${m.email || '-'}</p>
+                    </div>
+                  </td>
+                  <td class="text-center py-3 px-4">
+                    ${
+                      isCurrentUser
+                          ? `<button disabled class="text-gray-300 cursor-not-allowed" title="You cannot remove yourself"><i class="fa-solid fa-trash-can"></i></button>`
+                          : `<button class="text-red-500 hover:text-red-700" onclick="openDeleteModalById(${m.userId})"><i class="fa-solid fa-trash-can"></i></button>`
+                  }
+                  </td>
+                </tr>`;
+              }).join('');
+            renderPagination();
+          } catch (err) {
+            showToast(err.message, "error");
+          }
+        }
+
+        function renderPagination() {
+          const container = document.getElementById("pagination");
+          let html = `<button ${currentPage===0?'disabled':''} class="px-3 py-1 border rounded-md ${currentPage===0?'text-gray-400 bg-gray-100':'hover:bg-slate-100'}" onclick="loadMembers(${currentPage-1})">Prev</button>`;
+          for (let i = 0; i < totalPages; i++)
+            html += `<button class="px-3 py-1 border rounded-md ${i===currentPage?'bg-blue-600 text-white':'hover:bg-blue-50'}" onclick="loadMembers(${i})">${i+1}</button>`;
+          html += `<button ${currentPage===totalPages-1?'disabled':''} class="px-3 py-1 border rounded-md ${currentPage===totalPages-1?'text-gray-400 bg-gray-100':'hover:bg-slate-100'}" onclick="loadMembers(${currentPage+1})">Next</button>`;
+          container.innerHTML = html;
+        }
+
+        async function loadCurrentUser() {
+          try {
+            const res = await fetch('/api/auth/me', { credentials: 'include' });
+            if (!res.ok) throw new Error('Unauthorized');
+            const data = await res.json();
+            document.getElementById('userName').textContent = data.name || 'Guest';
+            document.getElementById('userEmail').textContent = data.email || '';
+            document.getElementById('userAvatar').src =
+              data.avatarUrl && data.avatarUrl.trim() !== ''
+                ? data.avatarUrl
+                : `https://i.pravatar.cc/100?u=${encodeURIComponent(data.email || 'guest')}`;
+            currentUser = data;
+          } catch (err) {
+            document.getElementById('userName').textContent = 'Guest';
+            document.getElementById('userEmail').textContent = '';
+            document.getElementById('userAvatar').src = 'https://i.pravatar.cc/100?u=guest';
+            console.warn("⚠️ Không thể tải thông tin người dùng:", err.message);
+          }
+        }
+
+        let searchTimeout;
+        document.getElementById("searchBox").addEventListener("input", e => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => { keyword = e.target.value.trim(); loadMembers(0); }, 300);
+        });
+
+        document.addEventListener("DOMContentLoaded", async () => {
+          await loadCurrentUser();
+          await loadMembers();
+        });
+      </script>
+    </body>
+    </html>

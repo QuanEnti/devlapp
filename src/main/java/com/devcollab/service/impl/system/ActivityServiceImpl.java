@@ -7,16 +7,19 @@ import com.devcollab.repository.ActivityRepository;
 import com.devcollab.repository.UserRepository;
 import com.devcollab.service.system.ActivityService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
 import java.util.stream.Collectors;
+
 
 @Slf4j
 @Service
@@ -90,5 +93,44 @@ public class ActivityServiceImpl implements ActivityService {
                         a.getDataJson(),
                         a.getCreatedAt()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Activity> getAllActivities() {
+        try {
+            return activityRepo.findAllByOrderByCreatedAtDesc();
+        } catch (Exception e) {
+            System.err.println("[ActivityService] Error fetching logs: " + e.getMessage());
+            return List.of();
+        }
+    }
+    @Override
+    public Page<Activity> getPaginatedActivities(Pageable pageable) {
+        return activityRepo.findAllByOrderByCreatedAtDesc(pageable);
+    }
+    
+    public void logWithActor(Long actorId, String entityType, Long entityId, String action, String data) {
+        try {
+            if (actorId == null) {
+                System.out.println("⚠️ [ActivityService] Skip log (actorId=null) for action: " + action);
+                return;
+            }
+
+            Activity log = new Activity();
+            log.setEntityType(entityType);
+            log.setEntityId(entityId);
+            log.setAction(action);
+            log.setDataJson(data);
+            log.setCreatedAt(LocalDateTime.now());
+
+            User user = new User();
+            user.setUserId(actorId);
+            log.setActor(user);
+
+            activityRepo.save(log);
+
+        } catch (Exception e) {
+            System.err.println("[ActivityService] Error logging with actor: " + e.getMessage());
+        }
     }
 }

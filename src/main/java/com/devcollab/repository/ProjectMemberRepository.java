@@ -253,4 +253,18 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Pr
                         @Param("keyword") String keyword,
                         Pageable pageable);
 
+        @Query("SELECT DISTINCT pm.project.projectId FROM ProjectMember pm WHERE pm.user.userId = :userId")
+        List<Long> findProjectIdsByUserId(@Param("userId") Long userId);
+
+        @Query("""
+                    SELECT DISTINCT u FROM User u
+                    WHERE u.userId <> :userId
+                    AND u.userId IN (
+                        SELECT pm2.user.userId
+                        FROM ProjectMember pm2
+                        WHERE pm2.project.projectId IN :projectIds
+                    )
+                """)
+        List<User> findUsersByProjectIds(@Param("projectIds") List<Long> projectIds, @Param("userId") Long userId);
+
 }

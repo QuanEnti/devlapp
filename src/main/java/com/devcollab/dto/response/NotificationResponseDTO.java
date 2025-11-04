@@ -19,9 +19,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class NotificationResponseDTO {
-
-    private Long id; // 🔹 ID thông báo
-    private String type; // 🔹 Loại thông báo (PROJECT_CREATED, TASK_DUE_SOON,...)
+    private Long id; 
+    private String type; 
     private String title; // 🔹 Tiêu đề ngắn (VD: "Công việc sắp đến hạn")
     private String message; // 🔹 Nội dung chi tiết (VD: "Công việc 'Thiết kế UI' sắp đến hạn vào 05/11")
     private String status; // 🔹 "read" | "unread"

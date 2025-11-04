@@ -9,17 +9,7 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <aside class="col-2 bg-dark text-white vh-100 p-3">
-            <h3>DevCollab</h3>
-            <ul class="nav flex-column mt-4">
-                <li class="nav-item"><a class="nav-link text-white" href="/admin/dashboard">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link text-white active" href="/admin/manage">User Management</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="/admin/user-reports">Reported User</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="/admin/project-reports">Reported Project</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="/admin/user-logs">System Log</a></li>
-                <li class="nav-item"><a class="nav-link text-white" href="#">Settings</a></li>
-            </ul>
-        </aside>
+        <div th:replace="fragments/admin-sidebar :: adminSidebar"></div>
 
         <!-- Main Content -->
         <main class="col-10 p-4">
@@ -176,5 +166,6 @@
 
     loadUsers();
 </script>
+<script src="/js/logout.js"></script>
 </body>
 </html>

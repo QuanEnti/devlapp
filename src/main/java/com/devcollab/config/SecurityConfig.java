@@ -36,7 +36,7 @@ public class    SecurityConfig {
                                                                 "/api/users/**",
                                                                 "/api/admin/**",
                                                                 "/api/pm/public/**",
-                                                                "/user/**")
+                                                                "/user/**","/api/payment/webhook")
                                                 .permitAll()
                                                 // 🔹 Cho phép truy cập dashboard public nếu có
                                                 .requestMatchers("/api/pm/project/*/dashboard").permitAll()
