@@ -2,7 +2,6 @@ package com.devcollab.controller.rest;
 
 import com.devcollab.domain.Role;
 import com.devcollab.domain.User;
-import com.devcollab.domain.UserRole;
 import com.devcollab.dto.UserDTO;
 import com.devcollab.dto.request.*;
 import com.devcollab.dto.response.AuthResponseDTO;
@@ -27,10 +26,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
