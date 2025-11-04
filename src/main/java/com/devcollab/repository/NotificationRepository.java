@@ -15,4 +15,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     @Query("SELECT n FROM Notification n WHERE n.user.email = :email ORDER BY n.createdAt DESC")
     List<Notification> findNotificationsByUserEmail(@Param("email") String email);
+
+//    boolean existsByUser_UserIdAndTypeAndReferenceId(Long userId, String type, Long referenceId);
+
 }

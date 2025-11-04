@@ -28,7 +28,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public UserDTO getCurrentUser(Authentication auth) {
         if (auth == null || !auth.isAuthenticated()) {
-            log.warn("⚠️ Attempted to access current user without authentication");
+            System.out.println("⚠️ Attempted to access current user without authentication");
             throw new SecurityException("Unauthorized");
         }
 
@@ -62,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
                     .build();
         }
 
-  
+
         if (principal instanceof UserDetails userDetails) {
             String email = userDetails.getUsername();
             var userOpt = userRepository.findByEmail(email);
@@ -91,4 +91,5 @@ public class AuthServiceImpl implements AuthService {
         log.error("❌ Unsupported authentication principal type: {}", type);
         throw new IllegalArgumentException("Unsupported authentication type: " + type);
     }
+
 }

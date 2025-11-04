@@ -2,7 +2,10 @@ package com.devcollab.controller.rest;
 
 import com.devcollab.domain.User;
 import com.devcollab.dto.UserDTO;
+import com.devcollab.exception.NotFoundException;
 import com.devcollab.service.core.UserService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -186,6 +189,14 @@ public class UserRestController {
         user.setUpdatedAt(LocalDateTime.now());
         userService.updatePassword(user.getEmail(), newPassword);
         return Map.of("message", "Đổi mật khẩu thành công", "status", "success");
+    }
+
+    @GetMapping("/{userId}/profile")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getUserProfile(@PathVariable Long userId) {
+        var user = userService.getById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        return ResponseEntity.ok(new UserDTO(user));
     }
 
 }

@@ -1,9 +1,7 @@
 package com.devcollab.service.system;
 
-import com.devcollab.domain.Project;
-import com.devcollab.domain.Task;
-import com.devcollab.domain.User;
-import com.devcollab.domain.Notification;
+import com.devcollab.domain.*;
+
 import java.util.List;
 
 public interface NotificationService {
@@ -32,5 +30,7 @@ public interface NotificationService {
 
     // 🔹 Xóa thông báo
     void deleteNotification(Long notificationId);
+
+    void notifyPaymentSuccess(User user, PaymentOrder order);
 
 }

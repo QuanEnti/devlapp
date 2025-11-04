@@ -54,6 +54,24 @@ public class NotificationRestController {
                     title = "Task đã đóng";
                     message = "Một task trong dự án \"" + projectName + "\" đã được đóng.";
                     break;
+
+                case "PAYMENT_SUCCESS":
+                    title = "Thanh toán thành công 🎉";
+                    message = "Bạn đã thanh toán thành công và tài khoản của bạn đã được nâng cấp lên DevCollab Premium.";
+                    break;
+                case "ban":
+                    title = "⚠️ Tài khoản bị khóa tạm thời";
+                    // dùng nội dung tùy chỉnh từ cột content
+                    message = n.getContent() != null
+                            ? n.getContent()
+                            : "Tài khoản của bạn đã bị khóa do vi phạm chính sách. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.";
+                    break;
+                case "warning":
+                    title = "⚠️ Cảnh báo hoạt động";
+                    message = n.getContent() != null
+                            ? n.getContent()
+                            : "Hệ thống phát hiện hoạt động bất thường trong tài khoản của bạn. Hãy kiểm tra lại thông tin.";
+                    break;
                 default:
                     title = "Thông báo mới";
                     message = "Bạn có thông báo mới.";
@@ -61,11 +79,13 @@ public class NotificationRestController {
 
             return new NotificationResponseDTO(
                     n.getNotificationId(),
+                    n.getType(),
                     title,
                     message,
                     n.getStatus(),
                     n.getCreatedAt(),
-                    n.getReferenceId() // ✅ Thêm dòng này
+                    n.getReferenceId(),// ✅ Thêm dòng này
+                    n.getContent()
             );
         }).collect(Collectors.toList());
     }

@@ -1,11 +1,15 @@
 package com.devcollab.service.core;
 
-import com.devcollab.dto.ProjectReportDto;
-import com.devcollab.domain.ProjectReport;
-
-import java.util.List;
+import java.util.Map;
 
 public interface ProjectReportService {
-    List<ProjectReportDto> getAll();
-    ProjectReportDto create(ProjectReport report);
+
+    /** Lấy tất cả các report của project (phân trang) */
+    Map<String, Object> getAllReports(int page, int size);
+
+    /** Gửi cảnh báo (warning) cho chủ dự án */
+    void warnOwner(Long reportId, Map<String, String> body);
+
+    /** Xóa / ban dự án */
+    void removeProject(Long reportId);
 }

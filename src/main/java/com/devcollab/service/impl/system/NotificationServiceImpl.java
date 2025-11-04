@@ -1,9 +1,6 @@
 package com.devcollab.service.impl.system;
 
-import com.devcollab.domain.Notification;
-import com.devcollab.domain.Project;
-import com.devcollab.domain.Task;
-import com.devcollab.domain.User;
+import com.devcollab.domain.*;
 import com.devcollab.repository.NotificationRepository;
 import com.devcollab.service.system.ActivityService;
 import com.devcollab.service.system.NotificationService;
@@ -124,6 +121,25 @@ public class NotificationServiceImpl implements NotificationService {
 
         activityService.log("USER", user.getUserId(), "NOTIFY_CHANGE_PASSWORD",
                 "Người dùng đã đổi mật khẩu: " + user.getEmail());
+    }
+
+    @Override
+    public void notifyPaymentSuccess(User user, PaymentOrder order) {
+        if (user == null || order == null) return;
+
+        Notification n = new Notification();
+        n.setUser(user);
+        n.setType("PAYMENT_SUCCESS");
+        n.setReferenceId(order.getId());
+        n.setStatus("unread");
+        n.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(n);
+
+        // 🧾 Ghi log hoạt động
+        activityService.log("PAYMENT", order.getId(), "NOTIFY_PAYMENT_SUCCESS",
+                "Thanh toán thành công cho đơn hàng: " + order.getName());
+
+        System.out.println("📢 Đã tạo thông báo thanh toán thành công cho " + user.getEmail());
     }
 
     @Override

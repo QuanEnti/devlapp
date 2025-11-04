@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
@@ -131,8 +132,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/favicon")
                 || path.startsWith("/webjars/")
                 || path.startsWith("/login/oauth2/")
-                || path.startsWith("/oauth2/")
-                || path.startsWith("/view/");
+                || path.startsWith("/oauth2/");
+//                || path.startsWith("/view/");
     }
 
     private boolean isPublicAuthPage(String path) {
