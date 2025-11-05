@@ -66,10 +66,28 @@ public class UserViewController {
 
     // ➕ Create Project Page
     @GetMapping("/create-project")
-    public String createProjectPage() {
+    public String createProjectPage(Model model, Authentication auth) {
+        boolean isPremium = false;
+        System.out.println("=== DEBUG CREATE PROJECT ===");
+
+        if (auth != null && auth.isAuthenticated()) {
+            String email = auth.getName();
+            System.out.println("Authenticated user: " + email);
+
+            User user = userService.getByEmail(email).orElse(null);
+            System.out.println("User found: " + (user != null));
+
+            if (user != null) {
+                isPremium = user.isPremium( );
+            } else {
+                System.out.println("❌ User not found in database");
+            }
+        } else {
+            System.out.println("❌ User not authenticated");
+        }
+        model.addAttribute("isPremium", isPremium);
         return "user/user-createproject";
     }
-
     // 📋 Xem toàn bộ project của user
     @GetMapping("/view-all-projects")
     public String viewAllProjects(Model model, Authentication auth) {
