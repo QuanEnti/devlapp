@@ -76,6 +76,83 @@
   z-index: 9999 !important;
 }
 
+/* Style cho @mention chip */
+.mention-chip {
+  display: inline-block;
+  background-color: #1d4ed8; /* Tailwind: blue-700 */
+  color: white;
+  border-radius: 9999px; /* pill shape */
+  padding: 2px 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mention-chip:hover {
+  background-color: #2563eb; /* Tailwind: blue-600 */
+}
+/* Popup profile */
+.mention-popup {
+  position: absolute;
+  z-index: 100;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 220px;
+  padding: 12px;
+  animation: fadeIn 0.15s ease;
+}
+.mention-popup img {
+  width: 50px;
+  height: 50px;
+  border-radius: 9999px;
+}
+.mention-popup .name {
+  font-weight: 600;
+  color: #111827;
+  margin-top: 6px;
+}
+.mention-popup .handle {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+.mention-popup .action {
+  display: block;
+  color: #2563eb;
+  font-size: 0.875rem;
+  margin-top: 8px;
+  cursor: pointer;
+}
+#mention-suggestions {
+  width: 280px;
+  font-size: 0.875rem;
+  background-color: white;
+}
+
+#mention-suggestions div:hover {
+  background-color: #eff6ff;
+}
+
+.mention-chip {
+  display: inline-block;
+  background-color: #2563eb; /* xanh dương đậm */
+  color: white;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mention-chip:hover {
+  background-color: #1d4ed8; /* hover xanh đậm hơn */
+}
+
+
+
 
 
     </style>
@@ -253,10 +330,42 @@
             </div>
           </div>
 
-        <!-- 💬 COMMENTS & ACTIVITY SECTION -->
-  <div id="activity-section" class="w-full md:w-1/3 space-y-4">
-    <!-- JS sẽ tự render phần textarea, nút Post, comments và activity -->
-  </div>
+       <!-- 💬 COMMENTS & ACTIVITY SECTION -->
+          <div id="activity-section" class="w-full md:w-1/3 space-y-4">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+              💬 Comments & Activity
+            </h3>
+
+            <!-- Comment input + mention dropdown -->
+            <div class="relative">
+              <textarea id="comment-input"
+                        rows="2"
+                        placeholder="Write a comment... (type @ to mention)"
+                        class="w-full border border-gray-300 rounded-md p-2 text-sm resize-none focus:ring-2 focus:ring-blue-400"></textarea>
+
+              <!-- Mention dropdown -->
+              <div id="mention-dropdown"
+                  class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-md max-h-40 overflow-y-auto"></div>
+            </div>
+
+            <div class="flex justify-end">
+              <button id="post-comment-btn"
+                      class="hidden bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-md transition">
+                Post
+              </button>
+            </div>
+
+            <!-- Comment list -->
+            <div id="comments-list" class="space-y-3 text-sm text-gray-800"></div>
+
+            <!-- Activity section -->
+            <hr class="my-3">
+            <h4 class="font-semibold text-gray-700 flex items-center gap-2">
+              <span class="text-gray-600">📜</span> Activity
+            </h4>
+            <div id="activity-feed" class="space-y-2 text-sm text-gray-700"></div>
+          </div>
+
 
         </div>
       </div>
@@ -681,16 +790,21 @@
     openSharePopup(); // mở popup có sẵn
   });
   // ✅ Giúp xử lý mọi loại event an toàn (Event hoặc object thường)
-function safeStop(e) {
-  if (e && typeof e.stopPropagation === "function") {
-    e.stopPropagation();
+  function safeStop(e) {
+    if (e && typeof e.stopPropagation === "function") {
+      e.stopPropagation();
+    }
   }
-}
 
 
     // ================== GLOBAL ==================
     const params = new URLSearchParams(window.location.search);
-    const PROJECT_ID = params.get("projectId") || 1;
+    const PROJECT_ID =
+      window.PROJECT_ID ||
+      new URLSearchParams(window.location.search).get("projectId") ||
+      1;
+    window.PROJECT_ID = PROJECT_ID; // ✅ đảm bảo toàn cục
+
     const modal = document.getElementById('task-detail-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
 
@@ -1547,53 +1661,199 @@ function safeStop(e) {
     `;
   }
 
-  // ========== 💬 COMMENTS ==========
-  function renderComments(taskId, comments) {
-    const currentUserId = Number(localStorage.getItem("currentUserId"));
-    const currentUserName = localStorage.getItem("currentUserName") || "Unknown";
+// ========== 💬 COMMENTS ==========
+function renderComments(taskId, comments) {
+  const currentUserId = Number(localStorage.getItem("currentUserId"));
+  const currentUserEmail = localStorage.getItem("currentUserEmail");
+  const currentUserName = localStorage.getItem("currentUserName") || "Unknown";
 
-    return comments.map(c => `
-      <div class="border border-gray-200 rounded-md p-3 bg-white hover:bg-gray-50 transition">
-        <div class="flex items-center gap-2 mb-1">
-          <img src="${c.userAvatar || "https://i.pravatar.cc/30"}" class="w-6 h-6 rounded-full">
-          <b class="text-sm">${c.userName}</b>
-          <span class="text-xs text-gray-500">${formatTime(c.createdAt)}</span>
-        </div>
-
-        <p class="text-sm text-gray-800 ml-8 whitespace-pre-line">${escapeHtml(c.content)}</p>
-
-        <div class="ml-8 mt-1 flex gap-3 text-xs text-blue-500">
-        ${Number(c.userId) === currentUserId || (c.userEmail && c.userEmail === localStorage.getItem("currentUserEmail"))
-          ? `<button onclick="editComment(${taskId}, ${c.commentId})">Edit</button>
-              <button onclick="deleteComment(${taskId}, ${c.commentId})">Delete</button>`
-          : `<button onclick="toggleReplyBox(${c.commentId})">Reply</button>`}
-
-        </div>
-
-        <div id="reply-box-${c.commentId}" class="hidden ml-8 mt-2 space-y-1">
-          <textarea id="reply-input-${c.commentId}" class="w-full border border-gray-300 rounded-md p-1 text-xs h-12 focus:ring-2 focus:ring-blue-400" placeholder="Write a reply..."></textarea>
-          <button onclick="postReply(${taskId}, ${c.commentId})" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-xs">Reply</button>
-        </div>
-
-        ${renderReplies(taskId, c.replies || [])}
+  return comments.map(c => `
+    <div class="border border-gray-200 rounded-md p-3 bg-white hover:bg-gray-50 transition">
+      <div class="flex items-center gap-2 mb-1">
+        <img src="${c.userAvatar || "https://i.pravatar.cc/30"}" class="w-6 h-6 rounded-full">
+        <b class="text-sm">${c.userName}</b>
+        <span class="text-xs text-gray-500">${formatTime(c.createdAt)}</span>
       </div>
-    `).join('');
+
+      <p class="text-sm text-gray-800 ml-8 whitespace-pre-line">
+        ${highlightMentions(escapeHtml(c.content), c.mentionsJson)}
+      </p>
+
+      <div class="ml-8 mt-1 flex gap-3 text-xs text-blue-500">
+        ${
+          Number(c.userId) === currentUserId || (c.userEmail && c.userEmail === currentUserEmail)
+            ? `<button onclick="editComment(${taskId}, ${c.commentId})">Edit</button>
+               <button onclick="deleteComment(${taskId}, ${c.commentId})">Delete</button>`
+            : `<button onclick="toggleReplyBox(${c.commentId})">Reply</button>`
+        }
+      </div>
+
+      <div id="reply-box-${c.commentId}" class="hidden ml-8 mt-2 space-y-1">
+        <textarea id="reply-input-${c.commentId}" class="w-full border border-gray-300 rounded-md p-1 text-xs h-12 focus:ring-2 focus:ring-blue-400" placeholder="Write a reply..."></textarea>
+        <button onclick="postReply(${taskId}, ${c.commentId})" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md text-xs">Reply</button>
+      </div>
+
+      ${renderReplies(taskId, c.replies || [])}
+    </div>
+  `).join('');
+}
+
+// ========== 💬 RENDER REPLIES ==========
+function renderReplies(taskId, replies) {
+  return replies.map(r => `
+    <div class="ml-10 mt-2 border-l border-gray-300 pl-3">
+      <div class="flex items-center gap-2 mb-1">
+        <img src="${r.userAvatar || "https://i.pravatar.cc/25"}" class="w-5 h-5 rounded-full">
+        <b class="text-sm">${r.userName}</b>
+        <span class="text-xs text-gray-500">${formatTime(r.createdAt)}</span>
+      </div>
+      <p class="text-sm text-gray-700 ml-6">
+        ${highlightMentions(escapeHtml(r.content), r.mentionsJson)}
+      </p>
+    </div>
+  `).join('');
+}
+
+// 🔹 Escape regex ký tự đặc biệt (tránh lỗi với tên có ký hiệu)
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// 🎨 Highlight @mentions (hỗ trợ tên có dấu và khoảng trắng)
+function highlightMentions(text, mentionsJson) {
+  if (!text) return "";
+
+  try {
+    const mentions = mentionsJson ? JSON.parse(mentionsJson) : [];
+
+    if (Array.isArray(mentions) && mentions.length > 0) {
+      mentions.forEach(m => {
+        const safeName = escapeRegex(m.name.trim());
+        const regex = new RegExp(`@${safeName}(?=\\b|\\s|$)`, "gu");
+        text = text.replace(
+          regex,
+          `<span class="mention-chip" onclick="openMentionProfile('${m.email}')">@${m.name}</span>`
+        );
+      });
+      return text;
+    }
+  } catch (err) {
+    console.warn("⚠️ Mentions parse failed:", err);
   }
 
+  // Fallback nếu không có mentionsJson
+  return text.replace(
+    /(^|\s)@([A-Za-zÀ-ỹ0-9_.]+(?:\s+[A-Za-zÀ-ỹ0-9_.]+){0,2})/gu,
+    (match, space, name) => {
+      return `${space}<span class="mention-chip" onclick="openMentionProfile('${name}')">@${name}</span>`;
+    }
+  );
+}
 
-  // ========== 💬 RENDER REPLIES ==========
-  function renderReplies(taskId, replies) {
-    return replies.map(r => `
-      <div class="ml-10 mt-2 border-l border-gray-300 pl-3">
-        <div class="flex items-center gap-2 mb-1">
-          <img src="${r.userAvatar || "https://i.pravatar.cc/25"}" class="w-5 h-5 rounded-full">
-          <b class="text-sm">${r.userName}</b>
-          <span class="text-xs text-gray-500">${formatTime(r.createdAt)}</span>
+// ========== 👤 MỞ POPUP THÔNG TIN USER ==========
+async function openMentionProfile(email) {
+  try {
+    const res = await fetch(`/api/users/by-email/${encodeURIComponent(email)}`);
+    if (!res.ok) throw new Error("Không tìm thấy người dùng");
+    const data = await res.json();
+
+    // ✅ Gợi ý mở modal bằng Tailwind
+    const popup = document.createElement("div");
+    popup.className = "fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]";
+    popup.innerHTML = `
+      <div class="bg-white rounded-lg p-5 shadow-lg w-80 relative animate-fadeIn">
+        <button class="absolute top-2 right-3 text-gray-400 hover:text-gray-600 text-lg" onclick="this.closest('.fixed').remove()">×</button>
+        <div class="flex flex-col items-center text-center">
+          <img src="${data.avatarUrl || 'https://i.pravatar.cc/100?u=' + data.email}" class="w-20 h-20 rounded-full object-cover mb-3">
+          <h3 class="text-lg font-semibold text-gray-800">${data.name}</h3>
+          <p class="text-sm text-gray-500 mb-2">${data.email}</p>
+          <p class="text-xs text-gray-400 italic">${data.provider ? `(${data.provider})` : ''}</p>
+          <p class="mt-3 text-sm text-gray-600">${data.bio || 'No bio available.'}</p>
         </div>
-        <p class="text-sm text-gray-700 ml-6">${escapeHtml(r.content)}</p>
       </div>
-    `).join('');
+    `;
+    document.body.appendChild(popup);
+  } catch (err) {
+    console.error("⚠️ openMentionProfile failed:", err);
+    alert("Không thể tải thông tin người dùng này!");
   }
+}
+
+// ===============================
+// 💬 GỢI Ý @MENTION KHI NHẬP COMMENT
+// ===============================
+const commentInput = document.getElementById("comment-input");
+const suggestionBox = document.getElementById("mention-suggestions");
+let isMentioning = false;
+let mentionKeyword = "";
+
+
+if (commentInput) {
+  commentInput.addEventListener("input", async (e) => {
+    const cursorPos = e.target.selectionStart;
+    const text = e.target.value.slice(0, cursorPos);
+    const match = text.match(/@([\wÀ-ỹ\s]*)$/u);
+
+    if (match) {
+      mentionKeyword = match[1].trim();
+      isMentioning = true;
+      await loadMentionSuggestions(mentionKeyword);
+    } else {
+      isMentioning = false;
+      suggestionBox.classList.add("hidden");
+    }
+  });
+}
+
+async function loadMentionSuggestions(keyword) {
+  try {
+    const res = await fetch(`/api/pm/members/project/${PROJECT_ID}/mentions?keyword=${encodeURIComponent(keyword)}`);
+    const data = await res.json();
+    const members = data.members || [];
+
+    if (!members.length) {
+      suggestionBox.classList.add("hidden");
+      return;
+    }
+
+    suggestionBox.innerHTML = members.map(m => `
+      <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2" 
+           onclick="selectMention('${m.name}', '${m.email}')">
+        <img src="${m.avatarUrl || 'https://i.pravatar.cc/30?u=' + m.email}" class="w-6 h-6 rounded-full">
+        <div>
+          <b class="text-sm text-gray-800">${m.name}</b>
+          <p class="text-xs text-gray-500">${m.email}</p>
+        </div>
+      </div>
+    `).join("");
+
+    suggestionBox.classList.remove("hidden");
+  } catch (err) {
+    console.error("⚠️ loadMentionSuggestions failed:", err);
+  }
+}
+
+
+
+// 🧩 Khi chọn mention → chèn vào nội dung
+window.selectMention = function (name, email, avatarUrl) {
+  const cursorPos = commentInput.selectionStart;
+  const text = commentInput.value;
+  const before = text.slice(0, cursorPos).replace(/@[\wÀ-ỹ\s]*$/u, "");
+  const after = text.slice(cursorPos);
+  const mentionText = `@${name} `;
+
+  commentInput.value = before + mentionText + after;
+  suggestionBox.classList.add("hidden");
+
+  // ✅ Có thể lưu metadata mentions vào hidden field để backend xử lý (mentionsJson)
+  const mentions = JSON.parse(localStorage.getItem("currentMentions") || "[]");
+  if (!mentions.some(m => m.email === email)) {
+    mentions.push({ name, email, avatarUrl });
+    localStorage.setItem("currentMentions", JSON.stringify(mentions));
+  }
+};
+
 
   // ========== 📜 ACTIVITY (Trello-style) ==========
   function renderActivities(activities) {
@@ -1706,6 +1966,81 @@ function safeStop(e) {
       alert("❌ Failed to post comment");
     }
   }
+  
+  // ===================== @MENTION SYSTEM ===================== //
+  const mentionDropdown = document.createElement("div");
+  mentionDropdown.id = "mention-dropdown";
+  mentionDropdown.className = "hidden absolute z-50 bg-white border border-gray-300 rounded-md shadow-md w-64 max-h-48 overflow-y-auto text-sm";
+  document.body.appendChild(mentionDropdown);
+
+  let allMembers = [];
+  let mentionActive = false;
+
+  // 🟦 Load toàn bộ members của project khi mở task
+  async function loadMentionsList() {
+    try {
+      const res = await fetch(`/api/pm/members?projectId=${PROJECT_ID}`, {
+        headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+      });
+      if (!res.ok) throw new Error("Failed to load members");
+      const data = await res.json();
+      allMembers = Array.isArray(data.content) ? data.content : data;
+    } catch (err) {
+      console.error("❌ loadMentionsList error:", err);
+    }
+  }
+
+  // 🟦 Theo dõi textarea comment
+  document.addEventListener("input", async (e) => {
+    const input = e.target;
+    if (input.id !== "comment-input") return;
+
+    const cursorPos = input.selectionStart;
+    const textBefore = input.value.slice(0, cursorPos);
+    const match = textBefore.match(/@([\w]*)$/);
+
+    if (match) {
+      mentionActive = true;
+      const keyword = match[1].toLowerCase();
+      if (allMembers.length === 0) await loadMentionsList();
+
+      const filtered = allMembers.filter(m =>
+        m.name.toLowerCase().includes(keyword) ||
+        (m.email && m.email.toLowerCase().includes(keyword))
+      ).slice(0, 5);
+
+      if (filtered.length > 0) {
+        const rect = input.getBoundingClientRect();
+        mentionDropdown.innerHTML = filtered.map(m => `
+          <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2" data-name="${m.name}">
+            <img src="${m.avatarUrl || "https://i.pravatar.cc/30"}" class="w-6 h-6 rounded-full border">
+            <span>${m.name}</span>
+          </div>`).join('');
+        mentionDropdown.style.left = rect.left + "px";
+        mentionDropdown.style.top = rect.bottom + window.scrollY + "px";
+        mentionDropdown.classList.remove("hidden");
+      } else {
+        mentionDropdown.classList.add("hidden");
+      }
+    } else {
+      mentionActive = false;
+      mentionDropdown.classList.add("hidden");
+    }
+  });
+
+  // 🟦 Khi click chọn 1 người
+  mentionDropdown.addEventListener("click", (e) => {
+    const target = e.target.closest("[data-name]");
+    if (!target) return;
+    const name = target.dataset.name;
+    const input = document.getElementById("comment-input");
+    const cursorPos = input.selectionStart;
+    const textBefore = input.value.slice(0, cursorPos);
+    const newText = textBefore.replace(/@[\w]*$/, `@${name} `) + input.value.slice(cursorPos);
+    input.value = newText;
+    input.focus();
+    mentionDropdown.classList.add("hidden");
+  });
 
   // ========== 🗑️ DELETE COMMENT ==========
   async function deleteComment(taskId, commentId) {

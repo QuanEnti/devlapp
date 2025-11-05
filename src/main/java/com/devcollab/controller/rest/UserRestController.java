@@ -199,4 +199,23 @@ public class UserRestController {
         return ResponseEntity.ok(new UserDTO(user));
     }
 
+    // 🧩 Lấy thông tin user theo email (dùng cho popup @mention)
+    @GetMapping("/by-email/{email}")
+    public ResponseEntity<?> getByEmail(@PathVariable String email) {
+        var user = userService.getByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        // Map sang DTO để trả ra gọn gàng, không expose passwordHash
+        var dto = new UserDTO(user);
+
+        return ResponseEntity.ok(Map.of(
+                "userId", dto.getUserId(),
+                "name", dto.getName(),
+                "email", dto.getEmail(),
+                "avatarUrl", dto.getAvatarUrl(),
+                "bio", dto.getBio(),
+                "status", dto.getStatus(),
+                "provider", dto.getProvider()));
+    }
+
 }

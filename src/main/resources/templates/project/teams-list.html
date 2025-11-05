@@ -62,8 +62,7 @@
 
   <header class="ml-60 bg-white h-16 flex items-center justify-between px-8 shadow-sm border-b border-slate-200 sticky top-0 z-30">
     <h1 class="text-xl font-semibold text-slate-700">Team Management</h1>
-
-    <div class="flex items-center gap-5">
+<div class="flex items-center gap-5">
       <div class="relative">
         <input id="searchBox" type="text" placeholder="Search by name or email..."
                class="pl-9 pr-3 py-2 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-400 outline-none w-64 transition" />
@@ -124,20 +123,20 @@
       </div>
 
       <p class="text-slate-600 text-sm leading-relaxed mb-4">
-        Are you sure you want to remove this member from 
-        <span class="font-semibold text-slate-700">all projects you manage</span>?
-        <span class="block text-red-500 font-medium mt-1">This action cannot be undone.</span>
-      </p>
+        Are you sure you want to remove this member from
+    <span class="font-semibold text-slate-700">all projects you manage</span>?
+            <span class="block text-red-500 font-medium mt-1">This action cannot be undone.</span>
+          </p>
 
-      <div id="deleteErrorMsg" class="hidden text-red-600 text-sm mb-3"></div>
+          <div id="deleteErrorMsg" class="hidden text-red-600 text-sm mb-3"></div>
 
-      <div class="flex justify-end gap-3 mt-6">
-        <button onclick="closeDeleteModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium transition">Cancel</button>
-        <button id="confirmDeleteBtn" onclick="confirmDelete()" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition flex items-center gap-2">
-          <i class="fa-solid fa-trash-can"></i> <span>Remove</span>
-        </button>
-      </div>
-    </div>
+          <div class="flex justify-end gap-3 mt-6">
+            <button onclick="closeDeleteModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium transition">Cancel</button>
+            <button id="confirmDeleteBtn" onclick="confirmDelete()" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition flex items-center gap-2">
+              <i class="fa-solid fa-trash-can"></i> <span>Remove</span>
+            </button>
+          </div>
+        </div>
   </div>
 
   <script>
@@ -241,24 +240,37 @@
           return;
         }
 
-        tbody.innerHTML = members.map(m => `
-          <tr class="bg-white hover:bg-blue-50 transition border border-slate-100 rounded-lg">
-            <td class="py-3 px-4 flex items-center gap-3">
-              <img src="${m.avatarUrl || 'https://i.pravatar.cc/100?u=' + m.userId}" class="w-10 h-10 rounded-full object-cover shadow-sm">
-              <span class="font-medium text-slate-700">${m.name || 'Unnamed'}</span>
-            </td>
-            <td class="py-3 px-4 text-slate-600">${m.email || '-'}</td>
-            <td class="py-3 px-4 text-center">
-  ${
-    currentUser?.isPM
-    ? (m.userId === currentUser.userId
-        ? `<button disabled class="text-gray-300 cursor-not-allowed" title="You cannot remove yourself"><i class="fa-solid fa-trash-can"></i></button>`
-        : `<button class="text-red-500 hover:text-red-700 transition" onclick="openDeleteModalById(${m.userId})" title="Remove member"><i class="fa-solid fa-trash-can"></i></button>`)
-    : `<span class="text-gray-400" title="Only Project Manager can remove members">—</span>`
-  }
-</td>
+          tbody.innerHTML = members.map(m => {
+              const isCurrentUser = currentUser && m.userId === currentUser.userId;
+              const profileLink = isCurrentUser ? '/user/view/dashboard' : `/view/user/${m.userId}`;
 
-          </tr>`).join('');
+              return `
+    <tr class="bg-white hover:bg-blue-50 transition border border-slate-100 rounded-lg">
+      <td class="py-3 px-4 flex items-center gap-3">
+        <a href="${profileLink}">
+          <img src="${m.avatarUrl || 'https://i.pravatar.cc/100?u=' + m.userId}"
+               class="w-10 h-10 rounded-full object-cover shadow-sm hover:scale-105 transition-transform">
+        </a>
+        <div>
+          <a href="${profileLink}"
+             class="font-medium text-slate-700 hover:text-blue-600 transition">
+            ${m.name || 'Unnamed'}
+          </a>
+          <p class="text-sm text-slate-500">${m.email || '-'}</p>
+        </div>
+      </td>
+      <td class="py-3 px-4 text-slate-600">${m.email || '-'}</td>
+      <td class="py-3 px-4 text-center">
+        ${
+                  currentUser?.isPM
+? (isCurrentUser
+                          ? `<button disabled class="text-gray-300 cursor-not-allowed" title="You cannot remove yourself"><i class="fa-solid fa-trash-can"></i></button>`
+                          : `<button class="text-red-500 hover:text-red-700 transition" onclick="openDeleteModalById(${m.userId})" title="Remove member"><i class="fa-solid fa-trash-can"></i></button>`)
+                      : `<span class="text-gray-400" title="Only Project Manager can remove members">—</span>`
+              }
+      </td>
+    </tr>`;
+          }).join('');
         renderPagination();
       } catch (err) {
         showToast(err.message, "error");
@@ -284,24 +296,24 @@
         if (!res.ok) throw new Error("Unauthorized");
         const raw = await res.json();
 
-        // Hỗ trợ cả 2 dạng: { user, roles } hoặc phẳng
+    
         const u = raw.user ? raw.user : raw;
         const roles = Array.isArray(raw.roles) ? raw.roles
                     : Array.isArray(u.roles) ? u.roles
                     : [];
 
-    // Chuẩn hoá currentUser để phía dưới chỉ check 1 chỗ
+ 
     currentUser = {
       userId: u.userId ?? u.id ?? u.userID ?? null,
       name: u.name ?? u.fullName ?? "Guest",
       email: u.email ?? "",
       avatarUrl: (u.avatarUrl && u.avatarUrl.trim() !== "") ? u.avatarUrl
                 : `https://i.pravatar.cc/100?u=${encodeURIComponent(u.email || "guest")}`,
-      roles,                                // ví dụ: ["ROLE_PM", "ROLE_MEMBER"]
-      isPM: roles.includes("ROLE_PM"),      // flag tiện dùng
+      roles,                               
+      isPM: roles.includes("ROLE_PM"),    
     };
 
-    // Cập nhật UI
+
     document.getElementById("userName").textContent = currentUser.name;
     document.getElementById("userEmail").textContent = currentUser.email;
     document.getElementById("userAvatar").src = currentUser.avatarUrl;

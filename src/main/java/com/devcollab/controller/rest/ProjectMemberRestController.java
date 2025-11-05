@@ -133,6 +133,32 @@ public class ProjectMemberRestController {
                     "message", "Lỗi hệ thống khi cập nhật vai trò!"));
         }
     }
+    
+    @GetMapping("/project/{projectId}/mentions")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getMentionSuggestions(
+            @PathVariable Long projectId,
+            @RequestParam(required = false, defaultValue = "") String keyword) {
+
+        try {
+            int limit = (keyword == null || keyword.isBlank()) ? 30 : 200;
+            List<MemberDTO> suggestions = projectMemberService.getMembersByProject(projectId, limit, keyword);
+
+            // 🧩 Thêm 2 mention đặc biệt
+            suggestions.add(new MemberDTO(null, "@card", "@card",
+                    "https://cdn-icons-png.flaticon.com/512/4727/4727400.png", "SPECIAL"));
+            suggestions.add(new MemberDTO(null, "@board", "@board",
+                    "https://cdn-icons-png.flaticon.com/512/1055/1055646.png", "SPECIAL"));
+
+            return ResponseEntity.ok(Map.of(
+                    "count", suggestions.size(),
+                    "members", suggestions));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "message", "Lỗi khi lấy danh sách gợi ý mention!"));
+        }
+    }
 
     // 🧠 Helper lấy email từ Auth (hỗ trợ cả OAuth2)
     private String extractEmail(Authentication auth) {
