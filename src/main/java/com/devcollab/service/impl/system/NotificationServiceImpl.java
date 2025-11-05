@@ -333,6 +333,8 @@ public class NotificationServiceImpl implements NotificationService {
         n.setUser(user);
         n.setType("PAYMENT_SUCCESS");
         n.setReferenceId(order.getId());
+        n.setTitle("Payment Success");
+        n.setMessage("Your payment for order " + order.getName() + " was successful.");
         n.setStatus("unread");
         n.setCreatedAt(LocalDateTime.now());
         notificationRepository.save(n);

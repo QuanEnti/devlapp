@@ -2,6 +2,7 @@ package com.devcollab.service.core;
 
 import com.devcollab.domain.ProjectMember;
 import com.devcollab.domain.Task;
+import com.devcollab.domain.User;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.request.TaskDatesUpdateReq;
@@ -51,4 +52,9 @@ public interface TaskService {
     TaskDTO markComplete(Long taskId, Long userId);
 
     List<TaskCardDTO> getUserTasks(Long userId, Long projectId, String statuses);
+
+    List<Task> getTasksByAssignee(User user);
+    List<Task> getTasksFollowedByUser(User user);
+    List<Task> getTasksCreatedBy(User user);
 }
+

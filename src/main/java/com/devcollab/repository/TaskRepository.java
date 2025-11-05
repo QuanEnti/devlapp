@@ -1,6 +1,7 @@
 package com.devcollab.repository;
 
 import com.devcollab.domain.Task;
+import com.devcollab.domain.User;
 import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -120,4 +121,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             @Param("projectId") Long projectId,
             @Param("statuses") String statuses
     );
+    @Query("SELECT t FROM Task t WHERE t.assignee = :user ORDER BY t.deadline ASC")
+    List<Task> findTasksByAssignee(@Param("user") User user);
+
+    // ✅ Tasks followed by the user
+    @Query("SELECT tf.task FROM TaskFollower tf WHERE tf.user = :user")
+    List<Task> findTasksFollowedByUser(@Param("user") User user);
+
+    // ✅ Tasks created by the user (optional)
+    @Query("SELECT t FROM Task t WHERE t.createdBy = :user ORDER BY t.createdAt DESC")
+    List<Task> findTasksCreatedBy(@Param("user") User user);
 }
+

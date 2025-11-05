@@ -165,28 +165,51 @@
                             const item = document.createElement("div");
                             item.className =
                                 "px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition";
+
+                            // 🔹 Xây phần nội dung thông báo
+                            let contentHtml = "";
+                            if (n.type === "WARNING" || n.type === "BAN") {
+                                contentHtml = `
+                                    <p class="text-sm font-medium text-gray-800">
+                                        ${n.title || "Thông báo mới"}
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        ${n.content || "Bạn bị báo cáo vi phạm. Nhấn để xem chi tiết."}
+                                    </p>
+                                `;
+                            } else {
+                                contentHtml = `
+                                    <p class="text-sm font-medium text-gray-800">
+                                        ${n.title || "Thông báo mới"}
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        ${n.message || "Bạn có thông báo mới"}
+                                    </p>
+                                `;
+                            }
+
+                            // 🔹 Gắn nội dung hoàn chỉnh
                             item.innerHTML = `
-                                <div class='flex items-start justify-between'>
-                                    <div>
-                                        <p class='text-sm font-medium text-gray-800'>
-                                            ${n.title || "Thông báo mới"}
-                                        </p>
-                                        <p class='text-xs text-gray-500 mt-0.5'>${n.message}</p>
-                                    </div>
-                                    ${
+                        <div class="flex items-start justify-between">
+                            <div>${contentHtml}</div>
+                            ${
                                 n.status === "unread"
                                     ? "<span class='bg-blue-500 w-2 h-2 rounded-full mt-1'></span>"
                                     : ""
                             }
-                                </div>`;
+                            </div>
+                        `;
+
                             item.addEventListener("click", () => {
                                 fetch(`/api/notifications/${n.notificationId}/read`, { method: "PUT" })
                                     .then(() => {
                                         if (n.referenceId) {
-                                            if (n.type === "warning" || n.type === "ban") {
+                                            if (n.type === "WARNING" || n.type === "BAN") {
                                                 window.location.href = `/view/report/${n.referenceId}`;
+                                            }else if(n.type ==="PROJECT_CREATED"){
+                                                window.location.href = `${n.link}`;
                                             } else {
-                                                window.location.href = `/view/project/${n.referenceId}/tasks`;
+                                                window.location.href = `/view/pm/project/board?projectId=${n.referenceId}`;
                                             }
                                         } else {
                                             notificationDropdown.classList.add("hidden");

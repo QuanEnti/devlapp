@@ -1,6 +1,7 @@
 package com.devcollab.controller.view;
 
 import com.devcollab.service.core.ProjectService;
+import com.devcollab.service.core.TaskService;
 import com.devcollab.service.feature.MessageService;
 import com.devcollab.service.system.NotificationService;
 import com.devcollab.domain.User;
@@ -25,6 +26,7 @@ public class UserViewController {
     private final ProjectService projectService;
     private final NotificationService notificationService;
     private final UserService userService;
+    private final TaskService taskService;
 
     /**
      * ✅ Thêm user + unreadNotifications cho MỌI VIEW
@@ -120,7 +122,23 @@ public class UserViewController {
     }
 
     @GetMapping("/tasks")
-    public String userTasksPage() {
-        return "user/user-task";
+    public String userTasksPage(Model model, Authentication auth) {
+        if (auth == null || !auth.isAuthenticated()) {
+            return "redirect:/view/login";
+        }
+
+        // ✅ Get current user from authentication
+        String email = auth.getName();
+        User user = userService.getByEmail(email).orElse(null);
+        if (user == null) {
+            return "redirect:/view/login";
+        }
+
+        // ✅ Fetch tasks
+        model.addAttribute("assignedTasks", taskService.getTasksByAssignee(user));
+        model.addAttribute("followedTasks", taskService.getTasksFollowedByUser(user));
+        model.addAttribute("createdTasks", taskService.getTasksCreatedBy(user));
+
+        return "user/user-task"; // Thymeleaf page
     }
 }
