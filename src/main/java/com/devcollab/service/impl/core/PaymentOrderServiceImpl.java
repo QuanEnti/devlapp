@@ -89,9 +89,18 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                 user = userRepo.findById(order.getUser().getUserId()).orElse(null);
             }
 
-            if (user != null && !user.isPremium()) {
+            if (user != null) {
                 user.setPremium(true);
-                user.setPremiumExpiry(Instant.now().plusSeconds(30L * 24 * 60 * 60)); // 30 ngày
+                Instant now = Instant.now();
+                Instant currentExpiry = user.getPremiumExpiry();
+
+                if (currentExpiry != null && currentExpiry.isAfter(now)) {
+                    // 🔹 Nếu user vẫn còn hạn, cộng thêm 30 ngày
+                    user.setPremiumExpiry(currentExpiry.plusSeconds(30L * 24 * 60 * 60));
+                } else {
+                    // 🔹 Nếu đã hết hạn hoặc chưa có, bắt đầu lại từ hôm nay
+                    user.setPremiumExpiry(now.plusSeconds(30L * 24 * 60 * 60));
+                }
                 userRepo.save(user);
             }
 

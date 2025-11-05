@@ -130,8 +130,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/favicon")
                 || path.startsWith("/webjars/")
                 || path.startsWith("/login/oauth2/")
-                || path.startsWith("/oauth2/")
-                || path.startsWith("/view/");
+                || path.startsWith("/oauth2/");
+//                || path.startsWith("/view/");
     }
 
     private boolean isPublicAuthPage(String path) {

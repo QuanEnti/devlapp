@@ -1,6 +1,7 @@
 package com.devcollab.repository;
 
 import com.devcollab.domain.Task;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -75,5 +76,48 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
         """)
     List<Task> findTasksDueBetween(@Param("from") LocalDateTime from,
         @Param("to") LocalDateTime to);
+    @Query(value = """
+        SELECT
+            t.task_id AS id,
+            t.title,
+            t.status,
+            t.priority,
+            t.created_at AS createdAt,
+            t.deadline,
+            creator.name AS creatorName,
+            assignee.avatar_url AS assigneeAvatarUrl,
 
+            -- Dùng Correlated Subquery (Hiệu năng cao)
+
+        FROM
+            Task AS t
+        -- JOIN để lọc bảo mật (dựa trên Entity)
+        INNER JOIN
+            Project AS p ON t.project_id = p.project_id
+        INNER JOIN
+            ProjectMember AS pm ON p.project_id = pm.project_id
+        -- JOIN để lấy thông tin
+        LEFT JOIN
+            [User] AS creator ON t.created_by = creator.user_id
+        LEFT JOIN
+            [User] AS assignee ON t.assignee_id = assignee.user_id
+        WHERE
+            t.assignee_id = :userId       -- 1. Gán cho tôi
+            AND p.status = 'active'       -- 2. Project đang 'active'
+            AND pm.user_id = :userId      -- 3. Tôi là thành viên project
+
+            -- 4. Bộ lọc Project (NULL = lấy tất cả)
+            AND (:projectId IS NULL OR p.project_id = :projectId) 
+
+            -- 5. Bộ lọc Status (NULL = lấy tất cả)
+            AND (
+                :statuses IS NULL 
+                OR t.status IN (SELECT value FROM STRING_SPLIT(:statuses, ','))
+            )
+        """, nativeQuery = true)
+    List<TaskCardDTO> findUserTasks(
+            @Param("userId") Long userId,
+            @Param("projectId") Long projectId,
+            @Param("statuses") String statuses
+    );
 }

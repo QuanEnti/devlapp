@@ -3,6 +3,7 @@ package com.devcollab.service.impl.core;
 import com.devcollab.domain.*;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
@@ -553,6 +554,9 @@ public class TaskServiceImpl implements TaskService {
         log.error("❌ sendDeadlineNotification() failed: {}", e.getMessage(), e);
     }
 }
-
+    @Override
+    public List<TaskCardDTO> getUserTasks(Long userId, Long projectId, String statuses) {
+        return taskRepository.findUserTasks(userId, projectId, statuses);
+    }
 
 }

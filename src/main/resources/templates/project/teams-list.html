@@ -241,24 +241,37 @@
           return;
         }
 
-        tbody.innerHTML = members.map(m => `
-          <tr class="bg-white hover:bg-blue-50 transition border border-slate-100 rounded-lg">
-            <td class="py-3 px-4 flex items-center gap-3">
-              <img src="${m.avatarUrl || 'https://i.pravatar.cc/100?u=' + m.userId}" class="w-10 h-10 rounded-full object-cover shadow-sm">
-              <span class="font-medium text-slate-700">${m.name || 'Unnamed'}</span>
-            </td>
-            <td class="py-3 px-4 text-slate-600">${m.email || '-'}</td>
-            <td class="py-3 px-4 text-center">
-  ${
-    currentUser?.isPM
-    ? (m.userId === currentUser.userId
-        ? `<button disabled class="text-gray-300 cursor-not-allowed" title="You cannot remove yourself"><i class="fa-solid fa-trash-can"></i></button>`
-        : `<button class="text-red-500 hover:text-red-700 transition" onclick="openDeleteModalById(${m.userId})" title="Remove member"><i class="fa-solid fa-trash-can"></i></button>`)
-    : `<span class="text-gray-400" title="Only Project Manager can remove members">—</span>`
-  }
-</td>
+          tbody.innerHTML = members.map(m => {
+              const isCurrentUser = currentUser && m.userId === currentUser.userId;
+              const profileLink = isCurrentUser ? '/user/view/dashboard' : `/view/user/${m.userId}`;
 
-          </tr>`).join('');
+              return `
+    <tr class="bg-white hover:bg-blue-50 transition border border-slate-100 rounded-lg">
+      <td class="py-3 px-4 flex items-center gap-3">
+        <a href="${profileLink}">
+          <img src="${m.avatarUrl || 'https://i.pravatar.cc/100?u=' + m.userId}"
+               class="w-10 h-10 rounded-full object-cover shadow-sm hover:scale-105 transition-transform">
+        </a>
+        <div>
+          <a href="${profileLink}"
+             class="font-medium text-slate-700 hover:text-blue-600 transition">
+            ${m.name || 'Unnamed'}
+          </a>
+          <p class="text-sm text-slate-500">${m.email || '-'}</p>
+        </div>
+      </td>
+      <td class="py-3 px-4 text-slate-600">${m.email || '-'}</td>
+      <td class="py-3 px-4 text-center">
+        ${
+                  currentUser?.isPM
+                      ? (isCurrentUser
+                          ? `<button disabled class="text-gray-300 cursor-not-allowed" title="You cannot remove yourself"><i class="fa-solid fa-trash-can"></i></button>`
+                          : `<button class="text-red-500 hover:text-red-700 transition" onclick="openDeleteModalById(${m.userId})" title="Remove member"><i class="fa-solid fa-trash-can"></i></button>`)
+                      : `<span class="text-gray-400" title="Only Project Manager can remove members">—</span>`
+              }
+      </td>
+    </tr>`;
+          }).join('');
         renderPagination();
       } catch (err) {
         showToast(err.message, "error");

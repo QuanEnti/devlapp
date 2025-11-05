@@ -7,7 +7,10 @@ import com.devcollab.dto.UserDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.request.TaskDatesUpdateReq;
 import com.devcollab.dto.request.TaskQuickCreateReq;
+import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import com.devcollab.exception.NotFoundException;
+import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.TaskService;
 import com.devcollab.service.core.TaskFollowerService; // ✅ Thêm service cho member
 import com.devcollab.service.system.AuthService;
@@ -29,6 +32,7 @@ public class TaskRestController {
     private final TaskService taskService;
     private final AuthService authService;
     private final TaskFollowerService taskFollowerService; // ✅ Thêm service cho assign/unassign
+    private final ProjectService projectService;
 
     // ====================== TASK CRUD ======================
 
@@ -48,6 +52,8 @@ public class TaskRestController {
         }
 
         UserDTO current = authService.getCurrentUser(auth);
+        System.out.println(current);
+        System.out.println(current.getUserId());
         if (current == null || current.getUserId() == null) {
             return ResponseEntity.status(401).build();
         }
@@ -178,5 +184,26 @@ public class TaskRestController {
                         .body(Map.of("message", "❌ Đã xảy ra lỗi khi đánh dấu hoàn thành"));
             }
         }
+    @GetMapping("/user/my-tasks")
+    public ResponseEntity<List<TaskCardDTO>> getMyTasks(
+            @RequestParam(value = "projectId", required = false) Long projectId,
+            @RequestParam(value = "statuses", required = false) String statuses,
+            Authentication auth) {
+        UserDTO current = authService.getCurrentUser(auth);
+        if (current == null  && current.getUserId() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<TaskCardDTO> tasks = taskService.getUserTasks(current.getUserId(), projectId, statuses);
+        return ResponseEntity.ok(tasks);
+    }
 
+    @GetMapping("/user/projects")
+    public ResponseEntity<List<ProjectFilterDTO>> getUserProjects(Authentication auth) {
+        UserDTO current = authService.getCurrentUser(auth);
+        if (current == null  && current.getUserId() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<ProjectFilterDTO> projects = projectService.getActiveProjectsForUser(current.getUserId());
+        return ResponseEntity.ok(projects);
+    }
 }

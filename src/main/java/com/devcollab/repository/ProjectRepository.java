@@ -3,6 +3,7 @@ package com.devcollab.repository;
 import com.devcollab.domain.Project;
 import com.devcollab.dto.ProjectDTO;
 
+import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -148,5 +149,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
   Page<ProjectDTO> findAllProjectsByPm(@Param("email") String email,
           @Param("keyword") String keyword,
           Pageable pageable);
-  
+    @Query("""
+        SELECT new com.devcollab.dto.userTaskDto.ProjectFilterDTO(p.projectId, p.name)
+        FROM Project p
+        JOIN p.members pm
+        WHERE pm.user.userId = :userId AND p.status = 'active'
+        ORDER BY p.name ASC
+    """)
+    List<ProjectFilterDTO> findActiveProjectsByUser(@Param("userId") Long userId);
 }   

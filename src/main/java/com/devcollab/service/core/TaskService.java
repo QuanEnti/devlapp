@@ -5,6 +5,7 @@ import com.devcollab.domain.Task;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.request.TaskDatesUpdateReq;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 
 import java.util.List;
 
@@ -49,4 +50,5 @@ public interface TaskService {
     
     TaskDTO markComplete(Long taskId, Long userId);
 
+    List<TaskCardDTO> getUserTasks(Long userId, Long projectId, String statuses);
 }

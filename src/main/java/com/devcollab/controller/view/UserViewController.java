@@ -118,4 +118,9 @@ public class UserViewController {
 
         return "user/user-profile";
     }
+
+    @GetMapping("/tasks")
+    public String userTasksPage() {
+        return "user/user-task";
+    }
 }
