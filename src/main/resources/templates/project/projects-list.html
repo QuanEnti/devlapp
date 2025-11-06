@@ -109,6 +109,7 @@
         const data = await res.json();
         const content = data.content || data.data?.content || [];
         totalPages = data.totalPages || data.data?.totalPages || 1;
+        totalPages = data.totalPages || 1;
         currentPage = page;
 
         const container = document.getElementById("project-list");

@@ -123,66 +123,85 @@
   const btn = document.getElementById('loginBtn');
 
   async function login() {
-    const password = document.getElementById('password').value.trim();
-    msg.textContent = '';
-    msg.style.color = '#444';
+      const password = document.getElementById('password').value.trim();
+      msg.textContent = '';
+      msg.style.color = '#444';
 
-    if (!email || !password) {
-      msg.textContent = 'Vui lòng nhập đầy đủ thông tin.';
-      msg.style.color = 'red';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Đang đăng nhập...';
-
-    try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-          credentials: 'include'
-        });
-
-        const data = await res.json();
-        console.log('Login response:', data);
-
-        if (res.ok && data.status === 'SUCCESS') {
-          msg.style.color = 'green';
-          msg.textContent = 'Đăng nhập thành công!';
-          const roles = data.user?.roles || data.roles || [];
-            if (roles.includes('ADMIN')) {
-                setTimeout(() => window.location.href = '/admin/dashboard', 800);
-            }  else {
-                setTimeout(() => window.location.href = '/user/view/dashboard', 800);
-            }
-        } 
-        else if (data.status === 'VERIFY_REQUIRED') {
-          msg.style.color = 'orange';
-
-          msg.textContent = 'Vui lòng xác minh email của bạn.';
-          localStorage.setItem('verify_mode', 'login');
-          setTimeout(() => window.location.href = '/view/verify-otp', 800);
-        } 
-        else if (data.error) {
+      if (!email || !password) {
+          msg.textContent = 'Vui lòng nhập đầy đủ thông tin.';
           msg.style.color = 'red';
-          msg.textContent = data.error;
-        } 
-        else {
-          msg.style.color = 'orange';
-          msg.textContent = 'Phản hồi không xác định từ máy chủ.';
-        }
+          return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Đang đăng nhập...';
+
+      try {
+          const res = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password }),
+              credentials: 'include' // ✅ Nhận cookie AUTH_TOKEN
+          });
+
+          const data = await res.json();
+          console.log('Login response:', data);
+
+          if (res.ok && data.status === 'SUCCESS') {
+              msg.style.color = 'green';
+              msg.textContent = 'Đăng nhập thành công!';
+
+              // ✅ Lưu token vào localStorage để các trang khác có thể dùng
+              if (data.token) {
+                  localStorage.setItem('token', data.token);
+                  console.log('✅ Token saved to localStorage:', data.token);
+              }
+
+              // ✅ Lưu thông tin user (tùy chọn)
+              if (data.user) {
+                  localStorage.setItem('userEmail', data.user.email);
+                  localStorage.setItem('userName', data.user.name);
+              }
+
+              // ✅ Xác định trang redirect
+              const roles = data.user?.roles || [];
+              if (roles.includes('ADMIN')) {
+                  setTimeout(() => window.location.href = '/admin/dashboard', 800);
+              } else if (roles.includes('PM')) {
+                  setTimeout(() => window.location.href = '/view/pm/dashboard', 800);
+              } else {
+                  setTimeout(() => window.location.href = '/user/view/dashboard', 800);
+              }
+          }
+
+          else if (data.status === 'VERIFY_REQUIRED') {
+              msg.style.color = 'orange';
+              msg.textContent = 'Vui lòng xác minh email của bạn.';
+              localStorage.setItem('verify_mode', 'login');
+              setTimeout(() => window.location.href = '/view/verify-otp', 800);
+          }
+
+          else if (data.error) {
+              msg.style.color = 'red';
+              msg.textContent = data.error;
+          }
+
+          else {
+              msg.style.color = 'orange';
+              msg.textContent = 'Phản hồi không xác định từ máy chủ.';
+          }
 
       } catch (err) {
-        console.error(' Lỗi:', err);
-        msg.textContent = 'Không thể kết nối máy chủ.';
-        msg.style.color = 'red';
+          console.error('❌ Lỗi:', err);
+          msg.textContent = 'Không thể kết nối máy chủ.';
+          msg.style.color = 'red';
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Tiếp tục';
+          btn.disabled = false;
+          btn.textContent = 'Tiếp tục';
       }
   }
-</script>
+
+  </script>
 
 </body>
 </html>

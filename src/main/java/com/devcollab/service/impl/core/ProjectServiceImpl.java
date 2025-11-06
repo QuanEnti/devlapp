@@ -303,7 +303,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
 
     Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
     Page<ProjectDTO> projects = projectRepository.findAllProjectsByPm(email, keyword, pageable);
-
+    System.out.println(projects);
     if (projects == null)
         return Page.empty(pageable);
 
