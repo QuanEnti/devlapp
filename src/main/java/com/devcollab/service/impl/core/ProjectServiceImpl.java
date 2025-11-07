@@ -442,4 +442,29 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.existsByNameAndCreatedBy_UserId(name, createdBy);
     }
 
+    public Map<String, Object> getProgress(Long projectId) {
+        try {
+            return projectRepository.getProjectProgress(projectId);
+        } catch (Exception e) {
+            System.err.println("Error fetching progress for project " + projectId + ": " + e.getMessage());
+            return Map.of(
+                    "percent_done_by_status", 0,
+                    "percent_done_by_checklist", 0);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getMetrics(Long projectId) {
+        try {
+            return projectRepository.getProjectMetrics(projectId);
+        } catch (Exception e) {
+            System.err.println("Error fetching metrics for project " + projectId + ": " + e.getMessage());
+            return Map.of(
+                    "totalTasks", 0,
+                    "completedTasks", 0,
+                    "overdueTasks", 0,
+                    "activeTasks", 0);
+        }
+    }
+
 }

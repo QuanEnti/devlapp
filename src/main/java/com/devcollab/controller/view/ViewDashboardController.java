@@ -36,7 +36,7 @@
         @GetMapping("/project")
         @PreAuthorize("hasAnyRole('PM','ADMIN')")
         public String viewSingleProject() {
-            return "project/project-detail";
+            return "project/project-detail.html";
         }
 
     }

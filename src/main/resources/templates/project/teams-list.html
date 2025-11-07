@@ -243,7 +243,7 @@
 
           tbody.innerHTML = members.map(m => {
               const isCurrentUser = currentUser && m.userId === currentUser.userId;
-              const profileLink = isCurrentUser ? '/user/view/dashboard' : `/view/user/${m.userId}`;
+              const profileLink = isCurrentUser ? '/user/view/profile' : `/view/user/${m.userId}`;
 
               return `
     <tr class="bg-white hover:bg-blue-50 transition border border-slate-100 rounded-lg">

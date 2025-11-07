@@ -10,6 +10,7 @@ import com.devcollab.domain.*;
 
 
 import java.util.List;
+import java.util.Map;
 
 public interface NotificationService {
 
@@ -79,5 +80,7 @@ void createNotification(User receiver, String type, Long refId,
     void notifyMemberRoleUpdated(Project project, User target, User actor, String newRole);
 
     void notifyPaymentSuccess(User user, PaymentOrder order);
+
+    List<Map<String, Object>> findRecentByProject(Long projectId);
 
 }

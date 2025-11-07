@@ -382,5 +382,15 @@ public class NotificationServiceImpl implements NotificationService {
     private String mapIcon(String type) {
         return ICON_MAP.getOrDefault(type, "📢");
     }
+
+    @Override
+    public List<Map<String, Object>> findRecentByProject(Long projectId) {
+        try {
+            return notificationRepository.findRecentByProject(projectId);
+        } catch (Exception e) {
+            System.err.println("Error fetching notifications for project " + projectId + ": " + e.getMessage());
+            return List.of();
+        }
+    }
     
 }

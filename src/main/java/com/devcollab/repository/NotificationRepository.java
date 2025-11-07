@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Map;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -58,4 +59,19 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
          AND n.user.userId = :userId
       """)
   int markAllAsReadByUserId(@Param("userId") Long userId);
+    @Query(value = """
+        SELECT TOP 8 
+            n.notification_id,
+            n.user_id,
+            u.name AS actorName,
+            n.type,
+            n.title,
+            n.message,
+            n.created_at
+        FROM Notification n
+        LEFT JOIN [User] u ON n.user_id = u.user_id
+        WHERE n.reference_id = :projectId
+        ORDER BY n.created_at DESC
+        """, nativeQuery = true)
+    List<Map<String, Object>> findRecentByProject(Long projectId);
 }
