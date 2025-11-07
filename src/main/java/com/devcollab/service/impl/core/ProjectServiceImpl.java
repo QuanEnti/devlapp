@@ -82,7 +82,7 @@ public class ProjectServiceImpl implements ProjectService {
         pm.setJoinedAt(LocalDateTime.now());
         projectMemberRepository.save(pm);
 
-        String[] defaultCols = {"To-do", "In Progress", "Review", "Done"};
+        String[] defaultCols = { "To-do", "In Progress", "Review", "Done" };
         for (int i = 0; i < defaultCols.length; i++) {
             BoardColumn col = new BoardColumn();
             col.setProject(saved);
@@ -135,8 +135,10 @@ public class ProjectServiceImpl implements ProjectService {
         List<ProjectMember> joined = projectMemberRepository.findByUser_UserId(userId);
 
         Map<Long, Project> all = new LinkedHashMap<>();
-        for (Project p : created) all.put(p.getProjectId(), p);
-        for (ProjectMember m : joined) all.put(m.getProject().getProjectId(), m.getProject());
+        for (Project p : created)
+            all.put(p.getProjectId(), p);
+        for (ProjectMember m : joined)
+            all.put(m.getProject().getProjectId(), m.getProject());
         return new ArrayList<>(all.values());
     }
 
@@ -261,76 +263,74 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectPerformanceDTO getPerformanceData(Long projectId, String pmEmail) {
-    authz.ensurePmOfProject(pmEmail, projectId);
+        authz.ensurePmOfProject(pmEmail, projectId);
 
-    LocalDate today = LocalDate.now();
-    LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
-    LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
+        LocalDate today = LocalDate.now();
+        LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
+        LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
 
-    List<Object[]> results = taskRepository.countCompletedTasksPerDay(
-        projectId,
-        startOfWeek.atStartOfDay(),
-        endOfWeek.atTime(23, 59, 59)
-    );
+        List<Object[]> results = taskRepository.countCompletedTasksPerDay(
+                projectId,
+                startOfWeek.atStartOfDay(),
+                endOfWeek.atTime(23, 59, 59));
 
-    Map<String, Long> dayMap = new LinkedHashMap<>();
-    results.forEach(r -> dayMap.put((String) r[0], (Long) r[1]));
-
-    List<String> labels = List.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun");
-    List<Long> achieved = new ArrayList<>();
-    for (String d : labels) {
-        achieved.add(dayMap.getOrDefault(d, 0L));
-    }
-
-    long total = taskRepository.countByProject_ProjectId(projectId);
-    long targetPerDay = Math.max(1, total / 7);
-    List<Long> target = labels.stream().map(d -> targetPerDay).toList();
-
-    return new ProjectPerformanceDTO(labels, achieved, target);
-
-}
-   
-@Override
-public List<ProjectDTO> getTopProjectsByPm(String email, int limit) {
-    Pageable pageable = PageRequest.of(0, limit);
-    return projectRepository.findTopProjectsByPm(email, pageable);
-}
-
-@Override
-public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, String keyword) {
-    if (keyword == null || keyword.isBlank())
-        keyword = "";
-
-    Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
-    Page<ProjectDTO> projects = projectRepository.findAllProjectsByPm(email, keyword, pageable);
-    System.out.println(projects);
-    if (projects == null)
-        return Page.empty(pageable);
-
-    return projects.map(dto -> {
-        Long projectId = dto.getProjectId();
-        if (projectId == null) {
-            log.warn("⚠️ ProjectDTO missing projectId for {}", dto.getName());
-            return dto;
+        Map<String, Long> dayMap = new LinkedHashMap<>();
+        results.forEach(r -> dayMap.put((String) r[0], (Long) r[1]));
+        List<String> labels = List.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun");
+        List<Long> achieved = new ArrayList<>();
+        for (String d : labels) {
+            achieved.add(dayMap.getOrDefault(d, 0L));
         }
 
-        List<MemberDTO> allMembers = Optional.ofNullable(
-                projectMemberRepository.findMembersByProject(projectId)).orElse(Collections.emptyList());
+        long total = taskRepository.countByProject_ProjectId(projectId);
+        long targetPerDay = Math.max(1, total / 7);
+        List<Long> target = labels.stream().map(d -> targetPerDay).toList();
 
-        int totalMembers = allMembers.size();
+        return new ProjectPerformanceDTO(labels, achieved, target);
 
-        List<MemberDTO> topMembers = allMembers.stream()
-                .filter(m -> m.getAvatarUrl() != null)
-                .limit(4)
-                .toList();
+    }
 
-        dto.setMemberCount(totalMembers);
-        dto.setMemberAvatars(topMembers.stream().map(MemberDTO::getAvatarUrl).toList());
-        dto.setMemberNames(topMembers.stream().map(MemberDTO::getName).toList());
+    @Override
+    public List<ProjectDTO> getTopProjectsByPm(String email, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return projectRepository.findTopProjectsByPm(email, pageable);
+    }
 
-        return dto;
-    });
-}
+    @Override
+    public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, String keyword) {
+        if (keyword == null || keyword.isBlank())
+            keyword = "";
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        Page<ProjectDTO> projects = projectRepository.findAllProjectsByPm(email, keyword, pageable);
+
+        if (projects == null)
+            return Page.empty(pageable);
+
+        return projects.map(dto -> {
+            Long projectId = dto.getProjectId();
+            if (projectId == null) {
+                log.warn("⚠️ ProjectDTO missing projectId for {}", dto.getName());
+                return dto;
+            }
+
+            List<MemberDTO> allMembers = Optional.ofNullable(
+                    projectMemberRepository.findMembersByProject(projectId)).orElse(Collections.emptyList());
+
+            int totalMembers = allMembers.size();
+
+            List<MemberDTO> topMembers = allMembers.stream()
+                    .filter(m -> m.getAvatarUrl() != null)
+                    .limit(4)
+                    .toList();
+
+            dto.setMemberCount(totalMembers);
+            dto.setMemberAvatars(topMembers.stream().map(MemberDTO::getAvatarUrl).toList());
+            dto.setMemberNames(topMembers.stream().map(MemberDTO::getName).toList());
+
+            return dto;
+        });
+    }
 
     @Override
     public Project enableShareLink(Long projectId, String pmEmail) {
@@ -338,7 +338,6 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
 
         authz.ensurePmOfProject(pmEmail, projectId);
-        
 
         if (!project.isAllowLinkJoin()) {
             String inviteLink = UUID.randomUUID().toString();
@@ -347,11 +346,13 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
             project.setUpdatedAt(LocalDateTime.now());
             projectRepository.save(project);
 
-            // activityService.log("PROJECT", projectId, "ENABLE_SHARE", "Link: " + inviteLink);
+            // activityService.log("PROJECT", projectId, "ENABLE_SHARE", "Link: " +
+            // inviteLink);
         }
 
         return project;
     }
+
     @Override
     public Project disableShareLink(Long projectId, String pmEmail) {
         Project project = projectRepository.findById(projectId)
@@ -370,7 +371,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
 
         return project;
     }
-   
+
     @Override
     public ProjectMember joinProjectByLink(String inviteLink, Long userId) {
         Project project = projectRepository.findActiveSharedProject(inviteLink)
@@ -397,7 +398,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
 
         return newMember;
     }
-    
+
     public List<Project> getProjectsByUsername(String username) {
         // 1. Tìm User bằng username (email)
         User user = userRepository.findByEmail(username)
@@ -420,7 +421,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
     @Transactional(readOnly = true)
     public String getUserRoleInProject(Long projectId, Long userId) {
         return projectMemberRepository.findRoleInProject(projectId, userId)
-                .orElse("Member"); 
+                .orElse("Member");
     }
 
     @Transactional(readOnly = true)
@@ -436,5 +437,9 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
         return projectRepository.findActiveProjectsByUser(userId);
     }
 
-}
+    @Override
+    public boolean existsByNameAndCreatedBy_UserId(String name, Long createdBy) {
+        return projectRepository.existsByNameAndCreatedBy_UserId(name, createdBy);
+    }
 
+}

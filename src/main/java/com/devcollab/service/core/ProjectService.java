@@ -57,4 +57,6 @@ public interface ProjectService {
     String getUserRoleInProjectByEmail(Long projectId, String email);
 
     List<ProjectFilterDTO> getActiveProjectsForUser(Long userId);
+
+    boolean existsByNameAndCreatedBy_UserId(String name, Long createdById);
 }

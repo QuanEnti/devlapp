@@ -157,4 +157,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         ORDER BY p.name ASC
     """)
     List<ProjectFilterDTO> findActiveProjectsByUser(@Param("userId") Long userId);
+
+    boolean existsByNameAndCreatedBy_UserId(String name, Long userId);
 }   

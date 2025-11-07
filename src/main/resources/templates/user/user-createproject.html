@@ -81,14 +81,11 @@
   </head>
 
   <body class="bg-gray-50 font-sans">
-    <!-- ✅ Header import -->
     <div th:replace="fragments/header :: header"></div>
 
     <div class="flex min-h-[calc(100vh-4rem)]">
-      <!-- ✅ Sidebar import -->
       <div th:replace="fragments/sidebar :: sidebar"></div>
 
-      <!-- ✅ Main content -->
       <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
         <h1 class="text-3xl font-bold text-gray-800 mb-8">
           Create New Project
@@ -97,8 +94,7 @@
         <div
           class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200 max-w-4xl mx-auto relative"
         >
-          <form id="createProjectForm">
-            <!-- Name -->
+          <form id="createProjectForm" novalidate>
             <div class="mb-5">
               <label
                 for="project-name"
@@ -114,9 +110,12 @@
                 class="form-input"
                 required
               />
+              <small
+                id="name-error"
+                class="text-red-500 text-sm hidden"
+              ></small>
             </div>
 
-            <!-- Description -->
             <div class="mb-5">
               <label
                 for="project-description"
@@ -131,9 +130,12 @@
                 placeholder="Briefly describe your project"
                 class="form-input resize-none"
               ></textarea>
+              <small
+                id="desc-error"
+                class="text-red-500 text-sm hidden"
+              ></small>
             </div>
 
-            <!-- Priority -->
             <div class="mb-6">
               <label
                 for="priority"
@@ -148,7 +150,6 @@
               </select>
             </div>
 
-            <!-- Dates -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label
@@ -163,6 +164,10 @@
                   name="startDate"
                   class="form-input bg-white"
                 />
+                <small
+                  id="start-error"
+                  class="text-red-500 text-sm hidden"
+                ></small>
               </div>
 
               <div>
@@ -178,10 +183,13 @@
                   name="endDate"
                   class="form-input bg-white"
                 />
+                <small
+                  id="end-error"
+                  class="text-red-500 text-sm hidden"
+                ></small>
               </div>
             </div>
 
-            <!-- Submit -->
             <div class="flex justify-end pt-4 border-t border-gray-200">
               <button
                 type="submit"
@@ -206,18 +214,125 @@
         </div>
       </main>
     </div>
-    <!-- ✅ CHATBOX FRAGMENT -->
     <div th:replace="fragments/chatbox :: chatbox"></div>
-    <!-- Gọi script riêng -->
     <script th:src="@{/js/chatbox.js}"></script>
     <script th:inline="javascript">
         const isPremium = /*[[${isPremium}]]*/ false;
       (function () {
-          console.log("DOM Ready - isPremium value:", isPremium);
+        console.log("DOM Ready - isPremium value:", isPremium);
+        // ====== 1. DOM Elements ======
+        const form = document.getElementById("createProjectForm");
+        const nameInput = document.getElementById("project-name");
         const descInput = document.getElementById("project-description");
+        const priorityInput = document.getElementById("priority");
+        const startInput = document.getElementById("startDate");
+        const endInput = document.getElementById("endDate");
+
+        // ====== 2. Hàm hiển thị và xóa lỗi ======
+        function showError(id, message) {
+          const el = document.getElementById(id);
+          el.textContent = message;
+          el.classList.remove("hidden");
+        }
+
+        function clearError(id) {
+          const el = document.getElementById(id);
+          el.textContent = "";
+          el.classList.add("hidden");
+        }
+
+        function clearAllErrors() {
+          ["name-error", "desc-error", "start-error", "end-error"].forEach(
+            (id) => {
+              const el = document.getElementById(id);
+              el.textContent = "";
+              el.classList.add("hidden");
+            }
+          );
+        }
+
+        // ====== 3. Xử lý ngày tháng ======
+        const today = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        const todayStr = `${today.getFullYear()}-${pad(
+          today.getMonth() + 1
+        )}-${pad(today.getDate())}`;
+
+        if (startInput) {
+          startInput.setAttribute("min", todayStr);
+          startInput.addEventListener("change", function () {
+            if (endInput) {
+              const minDate = this.value || todayStr;
+              endInput.setAttribute("min", minDate);
+              // Nếu end date đã có giá trị và nhỏ hơn start date mới, thì re-validate nó
+              if (endInput.value) {
+                validateEndDate();
+              }
+            }
+          });
+        }
+
+        if (endInput) endInput.setAttribute("min", todayStr);
+
+        // ====== 4. Các hàm Validation riêng lẻ ======
+        function validateName() {
+          const name = nameInput.value.trim();
+          if (!name) {
+            showError("name-error", "Vui lòng nhập tên dự án.");
+            return false;
+          }
+          if (name.length < 5) {
+            showError("name-error", "Tên dự án phải từ 5 ký tự trở lên.");
+            return false;
+          }
+          clearError("name-error");
+          return true;
+        }
+
+        function validateDescription() {
+          const description = descInput.value.trim();
+          if (!description || description.length < 5) {
+            showError("desc-error", "Mô tả phải từ 5 ký tự trở lên.");
+            return false;
+          }
+          clearError("desc-error");
+          return true;
+        }
+
+        function validateStartDate() {
+          const startDate = startInput.value;
+          if (!startDate) {
+            showError("start-error", "Vui lòng chọn Start Date.");
+            return false;
+          }
+          if (startDate < todayStr) {
+            showError("start-error", "Start Date phải từ hôm nay trở đi.");
+            return false;
+          }
+          clearError("start-error");
+          return true;
+        }
+
+        function validateEndDate() {
+          const startDate = startInput.value;
+          const endDate = endInput.value;
+          if (!endDate) {
+            showError("end-error", "Vui lòng chọn End Date.");
+            return false;
+          }
+          // Chỉ kiểm tra nếu startDate cũng có giá trị
+          if (startDate && endDate < startDate) {
+            showError("end-error", "End Date phải sau Start Date.");
+            return false;
+          }
+          clearError("end-error");
+          return true;
+        }
+
+        // ====== 5. AI Suggestion (giữ nguyên logic cũ) ======
         let typingTimer;
         let currentSuggestion = "";
-        const TYPING_DELAY = 1500; // 1.5 giây
+        const TYPING_DELAY = 1500; // 1.5s
 
         // AI suggestion (giữ nguyên logic cũ)
         if (isPremium && descInput) {
@@ -234,10 +349,9 @@
               if (currentSuggestion) {
                 descInput.value = currentSuggestion;
                 removePopup();
+                validateDescription(); // Validate luôn sau khi chèn
               }
-            } else if (e.key === "Escape") {
-              removePopup();
-            }
+            } else if (e.key === "Escape") removePopup();
           });
         } else if (!isPremium) {
             console.log("⚠️ AI Suggestion disabled: not a premium user");
@@ -245,16 +359,16 @@
 
         async function getAISuggestion(text) {
           try {
-            const response = await fetch("/api/ai/suggest-description", {
+            const res = await fetch("/api/ai/suggest-description", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ input: text }),
             });
-            const result = await response.json();
+            const result = await res.json();
             currentSuggestion = result.suggestion || "";
             showSuggestionPopup(currentSuggestion);
           } catch (err) {
-            console.error("Lỗi gọi API AI:", err);
+            console.error("Lỗi AI:", err);
           }
         }
 
@@ -268,17 +382,13 @@
           <strong class="text-blue-600">💡 AI Suggestion:</strong>
           <p class="mt-2 text-gray-700">${suggestion}</p>
           <small class="text-gray-400 block mt-2">(Nhấn / để chèn, Esc để hủy)</small>
-        </div>
-      `;
+        </div>`;
           popup.className =
             "absolute bg-white border border-gray-300 rounded-lg shadow-md w-96 animate-fadeIn";
-          popup.style.left = (descInput ? descInput.offsetLeft : 0) + "px";
-          popup.style.top =
-            (descInput ? descInput.offsetTop + descInput.offsetHeight : 0) +
-            "px";
+          popup.style.left = descInput.offsetLeft + "px";
+          popup.style.top = descInput.offsetTop + descInput.offsetHeight + "px";
           popup.style.zIndex = "1000";
-          if (descInput && descInput.parentElement)
-            descInput.parentElement.appendChild(popup);
+          descInput.parentElement.appendChild(popup);
         }
 
         function removePopup() {
@@ -286,107 +396,61 @@
           if (popup) popup.remove();
         }
 
-        // ---- Dates: hạn chế chọn (start >= today, end >= start) + validation on submit ----
-        const startInput = document.getElementById("startDate");
-        const endInput = document.getElementById("endDate");
+        // ====== 6. Gắn Event Listener cho Live Validation ======
+        // Sự kiện 'blur' kích hoạt khi người dùng click ra ngoài
+        if (nameInput) nameInput.addEventListener("blur", validateName);
+        if (descInput) descInput.addEventListener("blur", validateDescription);
+        // Sự kiện 'change' kích hoạt khi giá trị ngày thay đổi
+        if (startInput) startInput.addEventListener("change", validateStartDate);
+        if (endInput) endInput.addEventListener("change", validateEndDate);
 
-        // format yyyy-mm-dd from Date
-        const today = new Date();
-        // Tạo string yyyy-mm-dd (local) để tránh lệch vì timezone
-        const pad = (n) => String(n).padStart(2, "0");
-        const todayStr = `${today.getFullYear()}-${pad(
-          today.getMonth() + 1
-        )}-${pad(today.getDate())}`;
-
-        if (startInput) {
-          // set min start = today
-          startInput.setAttribute("min", todayStr);
-
-          // khi change start -> set min cho end
-          startInput.addEventListener("change", function () {
-            if (!this.value) {
-              // reset end min về today nếu start bị clear
-              if (endInput) endInput.setAttribute("min", todayStr);
-              return;
-            }
-            if (endInput) {
-              endInput.setAttribute("min", this.value);
-              // nếu end < start thì clear end để user chọn lại
-              if (endInput.value && endInput.value < this.value) {
-                endInput.value = "";
-              }
-            }
-          });
-        }
-
-        if (endInput) {
-          // set min end = today initially
-          endInput.setAttribute("min", todayStr);
-        }
-
-        // Submit handler: đảm bảo kiểm tra lại trước khi gửi
-        const form = document.getElementById("createProjectForm");
+        // ====== 7. Xử lý Submit Form (đã refactor) ======
         if (form) {
           form.addEventListener("submit", async function (e) {
             e.preventDefault();
+            clearAllErrors(); // Xóa lỗi cũ trước khi validate lại
 
-            const name = document.getElementById("project-name").value.trim();
-            const description = document
-              .getElementById("project-description")
-              .value.trim();
-            const priority = document.getElementById("priority").value;
-            const startDate = startInput ? startInput.value : "";
-            const endDate = endInput ? endInput.value : "";
+            // Chạy tất cả các hàm validate
+            const isNameValid = validateName();
+            const isDescValid = validateDescription();
+            const isStartValid = validateStartDate();
+            const isEndValid = validateEndDate();
 
-            // validation phía client
-            if (!name) {
-              alert("Vui lòng nhập tên dự án.");
+            // Nếu một trong các trường không hợp lệ, dừng lại
+            if (
+              !isNameValid ||
+              !isDescValid ||
+              !isStartValid ||
+              !isEndValid
+            ) {
               return;
             }
 
-            if (startDate) {
-              if (startDate < todayStr) {
-                alert("Start Date phải lớn hơn hoặc bằng ngày hôm nay.");
-                return;
-              }
-            }
-
-            if (endDate) {
-              const minEnd = startDate || todayStr;
-              if (endDate < minEnd) {
-                alert(
-                  "End Date phải lớn hơn hoặc bằng Start Date (hoặc ngày hôm nay nếu chưa chọn Start Date)."
-                );
-                return;
-              }
-            }
-
+            // Gửi dữ liệu khi hợp lệ
             const data = {
-              name,
-              description,
-              priority,
-              startDate: startDate || null,
-              endDate: endDate || null,
+              name: nameInput.value.trim(),
+              description: descInput.value.trim(),
+              priority: priorityInput.value,
+              startDate: startInput.value,
+              endDate: endInput.value,
             };
 
             try {
-              const response = await fetch("/api/projects/create", {
+              const res = await fetch("/api/projects/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
               });
-              const result = await response.json();
+              const result = await res.json();
+
               if (result.status === "success" || result.success) {
-                alert("✅ Tạo project thành công!");
                 window.location.href = "/user/view/view-all-projects";
               } else {
-                alert("❌ Lỗi: " + (result.message || JSON.stringify(result)));
+                showError("name-error", result.message || "Có lỗi xảy ra!");
               }
             } catch (err) {
               console.error(err);
-              alert(
-                "🚨 Lỗi khi tạo project. Kiểm tra console để biết chi tiết."
-              );
+              showError("name-error", "🚨 Không thể kết nối server!");
             }
           });
         }
