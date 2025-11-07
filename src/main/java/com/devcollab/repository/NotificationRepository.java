@@ -58,4 +58,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
          AND n.user.userId = :userId
       """)
   int markAllAsReadByUserId(@Param("userId") Long userId);
+
+  @Query("""
+          SELECT n FROM Notification n
+          WHERE n.priority = 'MEDIUM'
+            AND n.emailed = false
+            AND n.status = 'unread'
+            AND n.user.email IS NOT NULL
+      """)
+  List<Notification> findPendingMediumNotifications();
+
 }

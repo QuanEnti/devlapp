@@ -147,16 +147,22 @@
         const data = await res.json();
         console.log('Login response:', data);
 
-        if (res.ok && data.status === 'SUCCESS') {
+       if (res.ok && data.status === 'SUCCESS') {
           msg.style.color = 'green';
           msg.textContent = 'Đăng nhập thành công!';
+          if (data.token) {
+            localStorage.setItem("token", data.token);
+            console.log("✅ Token saved:", data.token);
+          }
+
           const roles = data.user?.roles || data.roles || [];
-            if (roles.includes('ADMIN')) {
-                setTimeout(() => window.location.href = '/admin/dashboard', 800);
-            }  else {
-                setTimeout(() => window.location.href = '/user/view/dashboard', 800);
-            }
-        } 
+          if (roles.includes('ADMIN')) {
+              setTimeout(() => window.location.href = '/admin/dashboard', 800);
+          }  else {
+              setTimeout(() => window.location.href = '/user/view/dashboard', 800);
+          }
+        }
+
         else if (data.status === 'VERIFY_REQUIRED') {
           msg.style.color = 'orange';
 

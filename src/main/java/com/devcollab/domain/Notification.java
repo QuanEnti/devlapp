@@ -47,6 +47,11 @@ public class Notification {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+    @Column(nullable = false)
+    private String priority = "MEDIUM"; // HIGH, MEDIUM, LOW
+
+    @Column(nullable = false)
+    private boolean emailed = false; // đã gửi email hay chưa
 
     // Constructors
     public Notification() {
@@ -147,6 +152,22 @@ public class Notification {
 
     public void setSender(User sender) {
         this.sender = sender;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public boolean isEmailed() {
+        return emailed;
+    }
+
+    public void setEmailed(boolean emailed) {
+        this.emailed = emailed;
     }
 
 }

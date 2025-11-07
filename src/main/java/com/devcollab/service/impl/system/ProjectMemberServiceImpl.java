@@ -54,15 +54,17 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
                 .stream().limit(limit).toList();
     }
 
-    // 🔍 Lọc theo keyword (cho UI tìm kiếm)
     @Transactional(readOnly = true)
     @Override
     public List<MemberDTO> getMembersByProject(Long projectId, int limit, String keyword) {
         if (projectId == null)
             return List.of();
-        List<MemberDTO> members = (keyword == null || keyword.isBlank())
+        keyword = (keyword == null) ? "" : keyword.trim().toLowerCase();
+
+        List<MemberDTO> members = keyword.isEmpty()
                 ? projectMemberRepo.findMembersByProject(projectId)
-                : projectMemberRepo.searchMembersByProject(projectId, "%" + keyword.toLowerCase() + "%");
+                : projectMemberRepo.searchMembersByProject(projectId, keyword);
+
         return members.stream().limit(limit).toList();
     }
 

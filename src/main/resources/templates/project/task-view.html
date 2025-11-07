@@ -5,157 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kanban Board - Members Popup</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      #activity-feed .border-b {
-    position: relative;
-  }
-  #activity-feed .border-b::before {
-    content: "";
-    position: absolute;
-    left: 18px;
-    top: 36px;
-    bottom: 0;
-    width: 1px;
-    background: #e5e7eb;
-  }
-
-      #activity-feed b {
-    color: #1d4ed8;
-  }
-  #activity-feed .italic {
-    color: #9ca3af;
-  }
-  #activity-feed div:hover {
-    background-color: #f9fafb;
-    border-radius: 0.5rem;
-    transition: background 0.15s ease;
-  }
-      @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.96); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  #attachment-preview-modal { transition: opacity .15s ease; pointer-events: none; }
-  #attachment-preview-modal:not(.hidden) { pointer-events: auto; }
-
-  body { font-family: 'Inter', sans-serif; }
-
-  /* Popup transition */
-  .popup-enter { opacity: 0; transform: scale(0.98); }
-  .popup-enter-active { opacity: 1; transform: scale(1); transition: .12s ease-out; }
-
-  /* Color picker */
-  .color-option {
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-  .color-option:hover {
-    transform: scale(1.15);
-    box-shadow: 0 0 0 2px #3b82f6;
-  }
-  .color-option.selected {
-    outline: 3px solid #3b82f6;
-    transform: scale(1.1);
-    box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
-  }
-
-  /* Fade-in animation for popups */
-  #edit-label-popup-wrapper,
-  #labels-popup,
-  #create-label-popup {
-    animation: fadeIn .15s ease-out;
-  }
-
-  #attach-popup > div {
-    animation: fadeIn 0.15s ease-out;
-  }
-  #members-popup {
-  position: fixed !important;
-  z-index: 9999 !important;
-}
-#date-popup {
-  pointer-events: auto !important;
-  z-index: 9999 !important;
-}
-
-/* Style cho @mention chip */
-.mention-chip {
-  display: inline-block;
-  background-color: #1d4ed8; /* Tailwind: blue-700 */
-  color: white;
-  border-radius: 9999px; /* pill shape */
-  padding: 2px 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.mention-chip:hover {
-  background-color: #2563eb; /* Tailwind: blue-600 */
-}
-/* Popup profile */
-.mention-popup {
-  position: absolute;
-  z-index: 100;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  width: 220px;
-  padding: 12px;
-  animation: fadeIn 0.15s ease;
-}
-.mention-popup img {
-  width: 50px;
-  height: 50px;
-  border-radius: 9999px;
-}
-.mention-popup .name {
-  font-weight: 600;
-  color: #111827;
-  margin-top: 6px;
-}
-.mention-popup .handle {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-.mention-popup .action {
-  display: block;
-  color: #2563eb;
-  font-size: 0.875rem;
-  margin-top: 8px;
-  cursor: pointer;
-}
-#mention-suggestions {
-  width: 280px;
-  font-size: 0.875rem;
-  background-color: white;
-}
-
-#mention-suggestions div:hover {
-  background-color: #eff6ff;
-}
-
-.mention-chip {
-  display: inline-block;
-  background-color: #2563eb; /* xanh dương đậm */
-  color: white;
-  border-radius: 9999px;
-  padding: 2px 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.mention-chip:hover {
-  background-color: #1d4ed8; /* hover xanh đậm hơn */
-}
-
-
-
-
-
-    </style>
+    <link rel="stylesheet" th:href="@{/css/kanban.css}">
   </head>
 
   <body class="min-h-screen bg-gradient-to-br from-indigo-400 to-purple-500 p-6">
@@ -168,12 +18,15 @@
               class="flex items-center gap-1 bg-cyan-800 hover:bg-cyan-700 text-white font-medium px-4 py-2 rounded-md shadow-sm transition">
         <span>👤+</span> Share
       </button>
-      <button id="open-notif-btn"
+     <button id="open-notif-btn"
         class="relative bg-white/90 text-gray-700 hover:bg-white px-3 py-2 rounded-md shadow-sm">
-  🔔
-  <span id="notif-dot"
-        class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"></span>
-</button>
+        🔔
+        <span id="notif-dot"
+              class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"></span>
+        <span id="notif-count-badge"
+              class="hidden absolute -top-1 -right-2 text-[10px] px-1.5 py-0.5 rounded-full bg-red-600 text-white font-semibold min-w-[18px] text-center"></span>
+      </button>
+
 
       <button class="bg-white/90 text-gray-700 hover:bg-white px-3 py-2 rounded-md shadow-sm">
         ⋯
@@ -184,11 +37,12 @@
 <div id="notif-panel"
      class="hidden absolute right-6 top-16 w-[420px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-[150]">
 
-  <!-- Header -->
-  <div class="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
-    <h2 class="font-semibold text-gray-800 text-[15px]">Notifications</h2>
+ <div class="flex items-center justify-between px-4 py-3 border-b bg-gray-50 relative">
+  <h2 class="font-semibold text-gray-800 text-[15px]">Thông báo</h2>
+
+  <div class="flex items-center gap-3">
     <label class="flex items-center text-sm text-gray-600 cursor-pointer select-none">
-      <span class="mr-1">Only unread</span>
+      <span class="mr-1">Chỉ hiển thị chưa đọc</span>
       <input id="toggle-unread" type="checkbox" class="sr-only peer">
       <div class="w-10 h-5 bg-gray-300 rounded-full relative
                   after:content-[''] after:absolute after:top-[2px] after:left-[2px]
@@ -196,11 +50,59 @@
                   peer-checked:bg-blue-600 peer-checked:after:translate-x-5">
       </div>
     </label>
+
     <button id="mark-all-read"
-        class="hidden text-sm text-blue-600 hover:text-blue-800 font-medium transition">
-  Mark all as read
-</button>
+            class="hidden text-sm text-blue-600 hover:text-blue-800 font-medium transition">
+      Đánh dấu tất cả đã đọc
+    </button>
+
+    <!-- ⋯ Menu Button -->
+    <div class="relative">
+      <button id="notif-options-btn"
+              class="text-gray-500 hover:text-gray-800 text-xl px-2 py-1 rounded transition">⋯</button>
+
+     <!-- Dropdown menu -->
+<div id="notif-options-menu"
+     class="hidden absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-[999] animate-[fadeIn_0.15s_ease-out]">
+
+  <ul class="divide-y divide-gray-100">
+
+    <!-- 📧 Toggle Email Notification -->
+    <li>
+      <button id="toggle-email-btn" type="button"
+              class="w-full text-left px-4 py-2.5 text-sm flex items-center justify-between hover:bg-gray-50 transition">
+        <div class="flex items-center gap-2 text-gray-700">
+          <span class="text-[16px]">📧</span>
+          <span id="email-toggle-text" class="font-medium">Tắt thông báo qua Gmail</span>
+        </div>
+        <!-- 🔘 Switch -->
+        <div id="email-toggle-icon"
+             class="w-9 h-5 flex items-center bg-gray-300 rounded-full p-0.5 transition-all duration-300">
+          <div class="dot bg-white w-4 h-4 rounded-full transform translate-x-0 transition-all duration-300"></div>
+        </div>
+      </button>
+    </li>
+
+   <li>
+      <a id="open-settings-link"
+        href="/settings/notifications"
+        class="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition">
+        <span class="text-[16px]">⚙️</span>
+        <span class="font-medium">Tất cả cài đặt thông báo</span>
+      </a>
+    </li>
+
+
+
+
+  </ul>
+</div>
+
+
+    </div>
   </div>
+</div>
+
 
   <!-- Empty State -->
   <div id="notif-empty" class="hidden flex flex-col items-center justify-center py-16">
@@ -344,9 +246,8 @@
                         class="w-full border border-gray-300 rounded-md p-2 text-sm resize-none focus:ring-2 focus:ring-blue-400"></textarea>
 
               <!-- Mention dropdown -->
-              <div id="mention-dropdown"
-                  class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-md max-h-40 overflow-y-auto"></div>
-            </div>
+            
+             </div>
 
             <div class="flex justify-end">
               <button id="post-comment-btn"
@@ -782,8 +683,12 @@
 
   </div>
 
+ <div id="mention-suggestions"
+                   class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-md max-h-40 overflow-y-auto"></div>
+                   <div id="toast-stack"></div>
 
   </body> 
+  
   <script>
     // 🟦 SHARE BUTTON EVENT
   document.getElementById("share-board-btn").addEventListener("click", () => {
@@ -810,10 +715,21 @@
 
     // ================== BOARD ==================
     async function loadColumns(projectId) {
-      const res = await fetch(`/api/columns/project/${projectId}`);
+      const res = await fetch(`/api/columns/project/${projectId}`, {
+        headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+      });
       if (!res.ok) throw new Error("Không thể tải danh sách cột");
       return await res.json();
     }
+
+  async function loadTasks(projectId) {
+    const res = await fetch(`/api/tasks/project/${projectId}`, {
+      headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+    });
+    if (!res.ok) throw new Error("Không thể tải danh sách task");
+    return await res.json();
+  }
+
 
     async function loadTasks(projectId) {
       const res = await fetch(`/api/tasks/project/${projectId}`);
@@ -1713,13 +1629,11 @@ function renderReplies(taskId, replies) {
     </div>
   `).join('');
 }
-
-// 🔹 Escape regex ký tự đặc biệt (tránh lỗi với tên có ký hiệu)
+// 🔹 Escape regex ký tự đặc biệt
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-
-// 🎨 Highlight @mentions (hỗ trợ tên có dấu và khoảng trắng)
+// 🎨 Highlight @mentions, @board/@card, hoặc email
 function highlightMentions(text, mentionsJson) {
   if (!text) return "";
 
@@ -1728,36 +1642,62 @@ function highlightMentions(text, mentionsJson) {
 
     if (Array.isArray(mentions) && mentions.length > 0) {
       mentions.forEach(m => {
-        const safeName = escapeRegex(m.name.trim());
-        const regex = new RegExp(`@${safeName}(?=\\b|\\s|$)`, "gu");
-        text = text.replace(
-          regex,
-          `<span class="mention-chip" onclick="openMentionProfile('${m.email}')">@${m.name}</span>`
-        );
+        const email = m.email || "";
+        const name = m.name || "";
+        const safeEmail = escapeRegex(email);
+        const safeName = escapeRegex(name.trim()).replace(/\s+/g, "\\s+");
+        const isSpecial = email === "@card" || email === "@board";
+
+        // 🟣 Tag đặc biệt: @card / @board
+        if (isSpecial) {
+          const regex = new RegExp(`@?${escapeRegex(email.replace("@", ""))}(?=[\\s,.!?]|$)`, "gu");
+          text = text.replace(
+            regex,
+            `<span class="mention-chip" data-type="special">@${email.replace("@", "")}</span>`
+          );
+          return;
+        }
+
+        // 🟢 Email thật hoặc mention @Tên
+        const regexEmail = new RegExp(`${safeEmail}(?=[\\s,.!?]|$)`, "gu");
+        const regexName = new RegExp(`@${safeName}(?=[\\s,.!?]|$)`, "gu");
+
+        text = text
+          .replace(regexEmail,
+            `<span class="mention-chip" onclick="openMentionProfile('${email}')">${email}</span>`)
+          .replace(regexName,
+            `<span class="mention-chip" onclick="openMentionProfile('${email}')">@${name}</span>`);
       });
+
       return text;
     }
   } catch (err) {
     console.warn("⚠️ Mentions parse failed:", err);
   }
 
-  // Fallback nếu không có mentionsJson
-  return text.replace(
-    /(^|\s)@([A-Za-zÀ-ỹ0-9_.]+(?:\s+[A-Za-zÀ-ỹ0-9_.]+){0,2})/gu,
-    (match, space, name) => {
-      return `${space}<span class="mention-chip" onclick="openMentionProfile('${name}')">@${name}</span>`;
-    }
-  );
+  // 🧩 Fallback: tự động highlight email và tag đặc biệt trong text thô
+  return text
+    // highlight email
+    .replace(
+      /\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g,
+      `<span class="mention-chip" onclick="openMentionProfile('$1')">$1</span>`
+    )
+    // highlight @card hoặc @board nếu người dùng gõ tay
+    .replace(
+      /@(?:card|board)\b/g,
+      match => `<span class="mention-chip" data-type="special">${match}</span>`
+    );
 }
 
-// ========== 👤 MỞ POPUP THÔNG TIN USER ==========
+
 async function openMentionProfile(email) {
   try {
-    const res = await fetch(`/api/users/by-email/${encodeURIComponent(email)}`);
+    const res = await fetch(`/api/users/by-email/${encodeURIComponent(email)}`, {
+      headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+    });
     if (!res.ok) throw new Error("Không tìm thấy người dùng");
     const data = await res.json();
 
-    // ✅ Gợi ý mở modal bằng Tailwind
     const popup = document.createElement("div");
     popup.className = "fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]";
     popup.innerHTML = `
@@ -1779,46 +1719,20 @@ async function openMentionProfile(email) {
   }
 }
 
-// ===============================
-// 💬 GỢI Ý @MENTION KHI NHẬP COMMENT
-// ===============================
-const commentInput = document.getElementById("comment-input");
-const suggestionBox = document.getElementById("mention-suggestions");
-let isMentioning = false;
-let mentionKeyword = "";
-
-
-if (commentInput) {
-  commentInput.addEventListener("input", async (e) => {
-    const cursorPos = e.target.selectionStart;
-    const text = e.target.value.slice(0, cursorPos);
-    const match = text.match(/@([\wÀ-ỹ\s]*)$/u);
-
-    if (match) {
-      mentionKeyword = match[1].trim();
-      isMentioning = true;
-      await loadMentionSuggestions(mentionKeyword);
-    } else {
-      isMentioning = false;
-      suggestionBox.classList.add("hidden");
-    }
-  });
-}
-
+// ========== 💬 GỢI Ý @MENTION ==========
 async function loadMentionSuggestions(keyword) {
   try {
     const res = await fetch(`/api/pm/members/project/${PROJECT_ID}/mentions?keyword=${encodeURIComponent(keyword)}`);
     const data = await res.json();
-    const members = data.members || [];
+ 
+    const allOptions = data.members || [];
 
-    if (!members.length) {
-      suggestionBox.classList.add("hidden");
-      return;
-    }
+    const suggestionBox = document.getElementById("mention-suggestions");
+    if (!allOptions.length || !suggestionBox) return suggestionBox?.classList.add("hidden");
 
-    suggestionBox.innerHTML = members.map(m => `
-      <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2" 
-           onclick="selectMention('${m.name}', '${m.email}')">
+    suggestionBox.innerHTML = allOptions.map(m => `
+      <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2"
+           onclick="selectMention('${m.name}', '${m.email}', '${m.avatarUrl || ""}')">
         <img src="${m.avatarUrl || 'https://i.pravatar.cc/30?u=' + m.email}" class="w-6 h-6 rounded-full">
         <div>
           <b class="text-sm text-gray-800">${m.name}</b>
@@ -1827,32 +1741,55 @@ async function loadMentionSuggestions(keyword) {
       </div>
     `).join("");
 
+    const commentInput = document.getElementById("comment-input");
+    const rect = commentInput.getBoundingClientRect();
+    suggestionBox.style.position = "absolute";
+    suggestionBox.style.top = rect.bottom + window.scrollY + "px";
+    suggestionBox.style.left = rect.left + window.scrollX + "px";
+    suggestionBox.style.width = rect.width + "px";
     suggestionBox.classList.remove("hidden");
+
   } catch (err) {
     console.error("⚠️ loadMentionSuggestions failed:", err);
   }
 }
 
+// ✅ GLOBAL LISTENER – chỉ 1 lần duy nhất, auto hoạt động mọi modal
+document.addEventListener("input", async (e) => {
+  if (e.target?.id === "comment-input") {
+    const cursorPos = e.target.selectionStart;
+    const text = e.target.value.slice(0, cursorPos);
+    const match = text.match(/@([\wÀ-ỹ\s]*)$/u);
+    if (match) {
+      const keyword = match[1].trim();
+      console.log("🔍 Mention trigger:", keyword);
+      await loadMentionSuggestions(keyword);
+    } else {
+      document.getElementById("mention-suggestions")?.classList.add("hidden");
+    }
+  }
+});
 
-
-// 🧩 Khi chọn mention → chèn vào nội dung
 window.selectMention = function (name, email, avatarUrl) {
+  const commentInput = document.getElementById("comment-input");
+  if (!commentInput) return;
+
   const cursorPos = commentInput.selectionStart;
-  const text = commentInput.value;
-  const before = text.slice(0, cursorPos).replace(/@[\wÀ-ỹ\s]*$/u, "");
-  const after = text.slice(cursorPos);
-  const mentionText = `@${name} `;
+  const before = commentInput.value.slice(0, cursorPos).replace(/@[\wÀ-ỹ\s]*$/u, "");
+  const after  = commentInput.value.slice(cursorPos);
 
-  commentInput.value = before + mentionText + after;
-  suggestionBox.classList.add("hidden");
+  // Chèn tag thực tế
+  commentInput.value = before + `${email} ` + after;
 
-  // ✅ Có thể lưu metadata mentions vào hidden field để backend xử lý (mentionsJson)
+  document.getElementById("mention-suggestions")?.classList.add("hidden");
+
   const mentions = JSON.parse(localStorage.getItem("currentMentions") || "[]");
   if (!mentions.some(m => m.email === email)) {
     mentions.push({ name, email, avatarUrl });
     localStorage.setItem("currentMentions", JSON.stringify(mentions));
   }
 };
+
 
 
   // ========== 📜 ACTIVITY (Trello-style) ==========
@@ -1948,99 +1885,33 @@ window.selectMention = function (name, email, avatarUrl) {
     }
   }
 
-  // ========== 💬 ADD COMMENT ==========
-  async function postComment(taskId, content) {
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/comments`, {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + localStorage.getItem("token"),
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ content })
-      });
-      if (!res.ok) throw new Error("Comment failed");
-
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to post comment");
-    }
-  }
-  
-  // ===================== @MENTION SYSTEM ===================== //
-  const mentionDropdown = document.createElement("div");
-  mentionDropdown.id = "mention-dropdown";
-  mentionDropdown.className = "hidden absolute z-50 bg-white border border-gray-300 rounded-md shadow-md w-64 max-h-48 overflow-y-auto text-sm";
-  document.body.appendChild(mentionDropdown);
-
-  let allMembers = [];
-  let mentionActive = false;
-
-  // 🟦 Load toàn bộ members của project khi mở task
-  async function loadMentionsList() {
-    try {
-      const res = await fetch(`/api/pm/members?projectId=${PROJECT_ID}`, {
-        headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
-      });
-      if (!res.ok) throw new Error("Failed to load members");
-      const data = await res.json();
-      allMembers = Array.isArray(data.content) ? data.content : data;
-    } catch (err) {
-      console.error("❌ loadMentionsList error:", err);
-    }
+ async function postComment(taskId, content) {
+  // ✅ fallback: lấy từ biến toàn cục
+  taskId = taskId || window.CURRENT_TASK_ID;
+  if (!taskId || taskId === "undefined") {
+    console.error("❌ taskId is undefined when posting comment");
+    alert("Không xác định được thẻ hiện tại (taskId undefined)");
+    return;
   }
 
-  // 🟦 Theo dõi textarea comment
-  document.addEventListener("input", async (e) => {
-    const input = e.target;
-    if (input.id !== "comment-input") return;
+  try {
+    const res = await fetch(`/api/tasks/${taskId}/comments`, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + localStorage.getItem("token"),
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ content })
+    });
 
-    const cursorPos = input.selectionStart;
-    const textBefore = input.value.slice(0, cursorPos);
-    const match = textBefore.match(/@([\w]*)$/);
+    if (!res.ok) throw new Error("Comment failed");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to post comment");
+  }
+}
 
-    if (match) {
-      mentionActive = true;
-      const keyword = match[1].toLowerCase();
-      if (allMembers.length === 0) await loadMentionsList();
-
-      const filtered = allMembers.filter(m =>
-        m.name.toLowerCase().includes(keyword) ||
-        (m.email && m.email.toLowerCase().includes(keyword))
-      ).slice(0, 5);
-
-      if (filtered.length > 0) {
-        const rect = input.getBoundingClientRect();
-        mentionDropdown.innerHTML = filtered.map(m => `
-          <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2" data-name="${m.name}">
-            <img src="${m.avatarUrl || "https://i.pravatar.cc/30"}" class="w-6 h-6 rounded-full border">
-            <span>${m.name}</span>
-          </div>`).join('');
-        mentionDropdown.style.left = rect.left + "px";
-        mentionDropdown.style.top = rect.bottom + window.scrollY + "px";
-        mentionDropdown.classList.remove("hidden");
-      } else {
-        mentionDropdown.classList.add("hidden");
-      }
-    } else {
-      mentionActive = false;
-      mentionDropdown.classList.add("hidden");
-    }
-  });
-
-  // 🟦 Khi click chọn 1 người
-  mentionDropdown.addEventListener("click", (e) => {
-    const target = e.target.closest("[data-name]");
-    if (!target) return;
-    const name = target.dataset.name;
-    const input = document.getElementById("comment-input");
-    const cursorPos = input.selectionStart;
-    const textBefore = input.value.slice(0, cursorPos);
-    const newText = textBefore.replace(/@[\w]*$/, `@${name} `) + input.value.slice(cursorPos);
-    input.value = newText;
-    input.focus();
-    mentionDropdown.classList.add("hidden");
-  });
+ 
 
   // ========== 🗑️ DELETE COMMENT ==========
   async function deleteComment(taskId, commentId) {
@@ -2111,11 +1982,13 @@ window.selectMention = function (name, email, avatarUrl) {
 
   closeSharePopup.addEventListener("click", closeShareBoard);
 
-  // ✅ Copy link (tạo & sao chép)
   document.getElementById("copy-link").addEventListener("click", async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/pm/invite/project/${PROJECT_ID}/share/enable`, { method: "POST" });
+      const res = await fetch(`/api/pm/invite/project/${PROJECT_ID}/share/enable`, {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+      });
       if (!res.ok) throw new Error();
       const data = await res.json();
       const fullLink = `${window.location.origin}/join/${data.inviteLink}`;
@@ -2126,17 +1999,20 @@ window.selectMention = function (name, email, avatarUrl) {
     }
   });
 
-  // ✅ Xóa link chia sẻ
-  document.getElementById("delete-link").addEventListener("click", async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`/api/pm/invite/project/${PROJECT_ID}/share/disable`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-      alert("🔒 Shared link disabled!");
-    } catch {
-      alert("❌ Failed to disable link");
-    }
-  });
+  
+document.getElementById("delete-link").addEventListener("click", async (e) => {
+  e.preventDefault();
+  try {
+    const res = await fetch(`/api/pm/invite/project/${PROJECT_ID}/share/disable`, {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+    });
+    if (!res.ok) throw new Error();
+    alert("🔒 Shared link disabled!");
+  } catch {
+    alert("❌ Failed to disable link");
+  }
+});
 
   async function loadBoardMembers(projectId) {
     const membersList = document.getElementById("members-list");
@@ -2326,25 +2202,27 @@ window.selectMention = function (name, email, avatarUrl) {
   }
 
   async function editLabel(labelId) {
-    CURRENT_EDIT_LABEL_ID = labelId;
-    try {
-      const res = await fetch(`/api/labels/${labelId}`);
-      if (!res.ok) throw new Error("Failed to fetch label");
-      const label = await res.json();
+  CURRENT_EDIT_LABEL_ID = labelId;
+  try {
+    const res = await fetch(`/api/labels/${labelId}`, {
+      headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+    });
+    if (!res.ok) throw new Error("Failed to fetch label");
+    const label = await res.json();
 
-      document.getElementById("edit-label-name").value = label.name;
-      selectedEditColor = label.color || "#94a3b8";
-      updateEditLabelPreview();
-      renderEditColorGrid();
+    document.getElementById("edit-label-name").value = label.name;
+    selectedEditColor = label.color || "#94a3b8";
+    updateEditLabelPreview();
+    renderEditColorGrid();
 
-      // Ẩn popup danh sách, hiện popup edit
-      document.getElementById("labels-popup").classList.add("hidden");
-      document.getElementById("edit-label-popup-wrapper").classList.remove("hidden");
-    } catch (err) {
-      console.error("❌ editLabel error:", err);
-      alert("Failed to open edit popup");
-    }
+    document.getElementById("labels-popup").classList.add("hidden");
+    document.getElementById("edit-label-popup-wrapper").classList.remove("hidden");
+  } catch (err) {
+    console.error("❌ editLabel error:", err);
+    alert("Failed to open edit popup");
   }
+}
+
 
 
   function renderEditColorGrid() {
@@ -3048,11 +2926,34 @@ console.log("✅ Context Menu Fixed - Members, Labels & Dates hoạt động t�
     const deleteBtn = document.getElementById("delete-btn");
 
     openTabBtn?.addEventListener("click", () => window.open(fileUrl, "_blank"));
-    downloadBtn?.addEventListener("click", () => {
-      const token = localStorage.getItem("token");
-      const authUrl = fileUrl + (fileUrl.includes("?") ? "&" : "?") + "token=" + token;
-      window.open(authUrl, "_blank");
+    downloadBtn?.addEventListener("click", async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(fileUrl, {
+          headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (!res.ok) throw new Error("Download failed");
+
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(blobUrl);
+        }, 500);
+      } catch (err) {
+        console.error("❌ Download error:", err);
+        alert("Không thể tải file này!");
+      }
     });
+
 
 
     deleteBtn?.addEventListener("click", async () => {
@@ -3222,29 +3123,25 @@ console.log("✅ Context Menu Fixed - Members, Labels & Dates hoạt động t�
       closeEditLabelPopup();
     }
   });
-async function ensureCurrentUser() {
-  try {
-    const res = await fetch("/api/auth/me", {
-      headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
-    });
-
-    if (!res.ok) throw new Error("Failed to fetch /api/auth/me");
-    const result = await res.json();
-const user = result.user || result;  // 🔹 fallback nếu backend thay đổi
-
-localStorage.setItem("currentUserId", user.userId);
-localStorage.setItem("currentUserName", user.name);
-localStorage.setItem("currentUserEmail", user.email);
-localStorage.setItem("currentUserAvatar", user.avatarUrl || "");
-
-console.log("👤 Current User:", user.userId, "-", user.email);
-
-
-    console.log("👤 Current User:", user.name, "-", user.email);
-  } catch (err) {
-    console.error("❌ Cannot fetch current user:", err);
+  async function ensureCurrentUser() {
+    try {
+      const res = await fetch("/api/auth/me", {
+        headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+      });
+      if (!res.ok) throw new Error("Failed to fetch /api/auth/me");
+      const result = await res.json();
+      const user = result.user || result;
+      localStorage.setItem("currentUserId", user.userId);
+      localStorage.setItem("currentUserName", user.name);
+      localStorage.setItem("currentUserEmail", user.email);
+      localStorage.setItem("currentUserAvatar", user.avatarUrl || "");
+      return user; // ✅ THÊM DÒNG NÀY
+    } catch (err) {
+      console.error("❌ Cannot fetch current user:", err);
+      return null; // ✅ fail-safe
+    }
   }
-}
+
   /**
  * 🎯 Lấy vai trò thực tế của user trong project hiện tại
  */
@@ -3283,7 +3180,31 @@ const toggleUnread = document.getElementById("toggle-unread");
 const notifDot = document.getElementById("notif-dot");
 const markAllBtn = document.getElementById("mark-all-read");
 const closeNotifPanel = document.getElementById("close-notif-panel");
+const notifCountBadge = document.getElementById("notif-count-badge");
 
+function updateUnreadBadge(count) {
+  if (!notifCountBadge) return;
+  const c = Number(count) || 0;
+  if (c <= 0) {
+    notifCountBadge.classList.add("hidden");
+    notifCountBadge.textContent = "";
+    notifDot?.classList.add("hidden");
+  } else {
+    notifCountBadge.classList.remove("hidden");
+    notifCountBadge.textContent = (c > 99) ? "99+" : String(c);
+    notifDot?.classList.remove("hidden");
+  }
+}
+
+// Tăng 1 khi nhận realtime (nếu panel đang đóng)
+function incrementUnreadBadge() {
+  if (!notifCountBadge) return;
+  const isOpen = !document.getElementById("notif-panel").classList.contains("hidden");
+  if (isOpen) return; // panel mở thì sẽ reload list và tính lại
+
+  const cur = parseInt(notifCountBadge.textContent) || 0;
+  updateUnreadBadge(cur + 1);
+}
 // ================== ⏰ Helper ==================
 function formatRelativeTime(isoString) {
   const now = new Date();
@@ -3310,11 +3231,12 @@ async function loadNotifications(onlyUnread = false) {
     if (!res.ok) throw new Error(`Failed to fetch notifications (${res.status})`);
 
     const data = await res.json();
-    console.log("📦 Notifications API result:", data);
-
     const list = Array.isArray(data)
       ? data
       : data?.content || data?.notifications || data?.data || [];
+
+    const totalUnread = list.filter(n => n.status && n.status.toLowerCase() !== "read").length;
+    updateUnreadBadge(totalUnread);
 
     const filtered = onlyUnread
       ? list.filter((n) => n.status && n.status.toLowerCase() !== "read")
@@ -3401,6 +3323,7 @@ async function markAllNotificationsRead() {
     });
     if (!res.ok) throw new Error("Failed to mark all as read");
     await loadNotifications(toggleUnread.checked);
+    updateUnreadBadge(0);
   } catch (err) {
     console.error("❌ markAllNotificationsRead:", err);
   }
@@ -3411,6 +3334,9 @@ if (markAllBtn) markAllBtn.addEventListener("click", markAllNotificationsRead);
 async function handleNotificationClick(id, link) {
   console.log("🟣 CLICK:", id, link);
   await markNotificationRead(id);
+  // Giảm 1 local (UI) – server sẽ sync lại khi reload panel
+  const cur = parseInt(document.getElementById("notif-count-badge")?.textContent) || 0;
+  if (cur > 0) updateUnreadBadge(cur - 1);
 
   if (!link || link === "#" || link === "null") {
     console.log("ℹ️ No link to redirect.");
@@ -3437,20 +3363,20 @@ async function handleNotificationClick(id, link) {
 }
 
 
-// ================== 📡 Fetch Task Detail & Render Popup ==================
 async function openTaskDetailFromApi(taskId) {
   try {
-    const res = await fetch(`/api/tasks/${taskId}`);
+    const res = await fetch(`/api/tasks/${taskId}`, {
+      headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+    });
     if (!res.ok) throw new Error("Failed to load task");
     const task = await res.json();
-
-    console.log("🟢 Task detail:", task);
     openTaskModal(task);
   } catch (err) {
     console.error("❌ openTaskDetailFromApi:", err);
     alert("Không thể tải thông tin công việc.");
   }
 }
+
 
 // ================== 🪟 Render Task Detail into Modal ==================
 function openTaskModal(task) {
@@ -3519,55 +3445,140 @@ function openTaskModal(task) {
 }
 
 // ================== 📡 WebSocket Realtime Notifications ==================
-function connectWebSocketNotifications() {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+let stompClient = null;
+let wsConnected = false;
+let wsRetry = 0;
+const WS_MAX_RETRY = 8;          // tối đa 8 lần (≈ ~30s backoff)
+const WS_BASE_DELAY = 1000;      // 1s
+const WS_MAX_DELAY  = 30000;     // 30s
+let wsSubscription = null;
+
+function backoffDelay(attempt) {
+  // exponential backoff + jitter
+  const expo = Math.min(WS_MAX_DELAY, WS_BASE_DELAY * Math.pow(2, attempt));
+  return Math.floor(expo * (0.7 + Math.random() * 0.6)); // 70%–130% jitter
+}
+
+async function connectWebSocketNotifications() {
+  let token = localStorage.getItem("token");
+
+  if (!token) {
+    try {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        console.log("✅ Fallback via cookie:", data.email || data.user?.email);
+      } else {
+        console.warn("⚠️ Không thể xác thực cookie, WS sẽ không kết nối");
+        return;
+      }
+    } catch (err) {
+      console.error("❌ Lỗi khi xác thực cookie:", err);
+      return;
+    }
+  }
+
+  // 3️⃣ Tiếp tục kết nối (có hoặc không có token)
+  if (stompClient && wsConnected) return;
 
   const socket = new SockJS("/ws");
-  const stompClient = Stomp.over(socket);
+  stompClient = Stomp.over(socket);
+  stompClient.heartbeat.outgoing = 15000;
+  stompClient.heartbeat.incoming = 15000;
 
-  stompClient.connect({ Authorization: `Bearer ${token}` }, (frame) => {
-    console.log("✅ Connected to WebSocket:", frame);
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  stompClient.connect(
+    headers,
+    (frame) => {
+      console.log("✅ WS connected:", frame);
+      wsConnected = true;
+      wsRetry = 0;
 
-    stompClient.subscribe("/user/queue/notifications", (message) => {
-      try {
-        const notif = JSON.parse(message.body);
-        console.log("🔔 Realtime notification received:", notif);
-        notifDot.classList.remove("hidden");
-
-        if (!notifPanel.classList.contains("hidden")) {
-          loadNotifications(toggleUnread.checked);
-        } else {
-          showToastNotification(notif.title, notif.message, notif.senderAvatar, notif.senderName);
-
-        }
-      } catch (e) {
-        console.error("❌ Error handling realtime notif:", e);
+      // hủy sub cũ
+      if (wsSubscription && typeof wsSubscription.unsubscribe === "function") {
+        try { wsSubscription.unsubscribe(); } catch {}
       }
-    });
-  });
+
+      wsSubscription = stompClient.subscribe("/user/queue/notifications", (message) => {
+        try {
+          const notif = JSON.parse(message.body);
+          console.log("🔔 Realtime:", notif);
+          incrementUnreadBadge();
+
+          if (!document.getElementById("notif-panel").classList.contains("hidden")) {
+            loadNotifications(document.getElementById("toggle-unread").checked);
+          } else {
+            showToastNotification(notif.title, notif.message, notif.senderAvatar, notif.senderName);
+          }
+        } catch (e) {
+          console.error("❌ WS message parse:", e);
+        }
+      });
+    },
+    (error) => {
+      console.warn("⚠️ WS connect ERROR:", error);
+      scheduleWsReconnect();
+    }
+  );
+
+  socket.onclose = () => {
+    console.warn("⚠️ WS closed");
+    wsConnected = false;
+    scheduleWsReconnect();
+  };
+}
+
+
+function scheduleWsReconnect() {
+  if (wsConnected) return; // đã kết nối lại
+  if (wsRetry >= WS_MAX_RETRY) {
+    console.error("🚫 WS max retries reached — stop reconnecting");
+    return;
+  }
+  const delay = backoffDelay(wsRetry);
+  console.log(`⏳ WS reconnect in ${Math.round(delay/1000)}s (attempt ${wsRetry+1}/${WS_MAX_RETRY})`);
+  setTimeout(() => {
+    wsRetry++;
+    connectWebSocketNotifications();
+  }, delay);
+}
+
+
+function ensureToastStack() {
+  let stack = document.getElementById("toast-stack");
+  if (!stack) {
+    stack = document.createElement("div");
+    stack.id = "toast-stack";
+    document.body.appendChild(stack);
+  }
+  return stack;
 }
 
 function showToastNotification(title, msg, avatarUrl, sender = "Hệ thống") {
+  const stack = ensureToastStack();
   const toast = document.createElement("div");
-  toast.className =
-    "fixed bottom-4 right-4 bg-white shadow-lg border border-gray-100 rounded-xl px-4 py-3 w-80 flex gap-3 items-start animate-fadeIn z-[9999]";
+  toast.className = "toast-card";
 
-  const safeAvatar =
-    avatarUrl && avatarUrl.trim() !== ""
-      ? avatarUrl
-      : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+  const safeAvatar = (avatarUrl && avatarUrl.trim() !== "")
+    ? avatarUrl
+    : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
   toast.innerHTML = `
     <img src="${safeAvatar}" class="w-10 h-10 rounded-full object-cover border" alt="avatar">
     <div class="flex-1">
-      <p class="text-sm font-semibold text-gray-800">${sender}</p>
-      <p class="text-gray-700 text-sm">${msg}</p>
-      <p class="text-xs text-gray-400 mt-1 italic">${formatRelativeTime(new Date().toISOString())}</p>
+      <div class="toast-title">${sender}</div>
+      <div class="toast-msg">${msg}</div>
+      <div class="toast-meta">${formatRelativeTime(new Date().toISOString())}</div>
     </div>
   `;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 5000);
+
+  stack.appendChild(toast);
+
+  // Auto close sau 5s, có animation slide-out
+  setTimeout(() => {
+    toast.classList.add("toast-exit");
+    setTimeout(() => toast.remove(), 200);
+  }, 5000);
 }
 
 
@@ -3600,9 +3611,110 @@ setInterval(() => {
     loadNotifications(toggleUnread.checked);
 }, 30000);
 
-// 🚀 Kết nối realtime khi trang load
-window.addEventListener("load", connectWebSocketNotifications);
 
-  
+// ====== ⋯ NOTIFICATION SETTINGS MENU ======
+const notifMenuBtn = document.getElementById("notif-options-btn");
+const notifMenu = document.getElementById("notif-options-menu");
+const toggleEmailBtn = document.getElementById("toggle-email-btn");
+const emailToggleText = document.getElementById("email-toggle-text");
+
+let emailEnabled = true; 
+
+notifMenuBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  notifMenu.classList.toggle("hidden");
+});
+
+// Đóng khi click ra ngoài
+document.addEventListener("click", (e) => {
+  if (!notifMenu.contains(e.target) && !notifMenuBtn.contains(e.target)) {
+    notifMenu.classList.add("hidden");
+  }
+});
+
+
+  // Gọi API bật/tắt Gmail notification
+toggleEmailBtn?.addEventListener("click", async (e) => {
+  e.preventDefault();     // 🛑 Ngăn hành vi mặc định
+  e.stopPropagation();    // 🛑 Không lan sang <a> bên dưới
+
+  emailEnabled = !emailEnabled;
+
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("/api/settings/notifications/email-toggle", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ enabled: emailEnabled })
+    });
+
+    if (res.ok) {
+      emailToggleText.textContent = emailEnabled
+        ? "Tắt thông báo qua Gmail"
+        : "Bật lại thông báo qua Gmail";
+      showToast(emailEnabled
+        ? "✅ Đã bật lại thông báo Gmail"
+        : "🚫 Đã tắt thông báo Gmail");
+    } else {
+      showToast("⚠️ Không thể cập nhật cài đặt.");
+    }
+  } catch (err) {
+    console.error("❌ toggleEmailBtn error:", err);
+    showToast("⚠️ Lỗi kết nối server.");
+  }
+
+  notifMenu.classList.add("hidden");
+});
+function showToast(message, type = "info") {
+  const toast = document.createElement("div");
+  toast.textContent = message;
+  toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white z-[9999]
+    ${type === "error" ? "bg-red-500" : "bg-green-600"} shadow-lg animate-fadeIn`;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add("opacity-0", "transition-opacity", "duration-300");
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+openSettingsLink.addEventListener("click", async (e) => {
+  e.preventDefault(); 
+  const user = await ensureCurrentUser(); 
+  if (!user) {
+    alert("Bạn chưa đăng nhập! Vui lòng đăng nhập trước khi truy cập trang cài đặt.");
+    window.location.href = "/view/signin";
+    return;
+  }
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert(" Bạn chưa đăng nhập! Vui lòng đăng nhập trước khi truy cập trang cài đặt.");
+    window.location.href = "/view/signin";
+    return;
+  }
+  const res = await fetch("/api/settings/notifications/me", {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const errorMsg = await res.text(); 
+    alert(` Không thể mở trang cài đặt! ${errorMsg || "Token không hợp lệ hoặc hết hạn."}`);
+    return;
+  }
+  window.location.href = "/settings/notifications";
+});
+
+
   </script>
-  </html> 
+  
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<!-- 🚀 Kích hoạt realtime -->
+<script>
+  window.addEventListener("load", connectWebSocketNotifications);
+</script>
+</html>

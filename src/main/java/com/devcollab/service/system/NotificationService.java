@@ -1,13 +1,8 @@
 package com.devcollab.service.system;
 
 
-import com.devcollab.domain.Notification;
-import com.devcollab.domain.Project;
-import com.devcollab.domain.Task;
-import com.devcollab.domain.User;
-
 import com.devcollab.domain.*;
-
+import com.devcollab.dto.CommentDTO;
 
 import java.util.List;
 
@@ -79,5 +74,7 @@ void createNotification(User receiver, String type, Long refId,
     void notifyMemberRoleUpdated(Project project, User target, User actor, String newRole);
 
     void notifyPaymentSuccess(User user, PaymentOrder order);
+    void notifyMentions(Task task, User actor, List<CommentDTO> mentions);
+
 
 }

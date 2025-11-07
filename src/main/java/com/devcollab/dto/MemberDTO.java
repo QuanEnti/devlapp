@@ -1,17 +1,9 @@
 package com.devcollab.dto;
-
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import com.devcollab.domain.Task;
 import lombok.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class MemberDTO {
     private Long userId;
     private String name;
@@ -30,6 +22,13 @@ public class MemberDTO {
         this.name = name;
         this.email = email;
         this.avatarUrl = avatarUrl;
+    }
+    public MemberDTO(Long userId, String name, String email, String avatarUrl, String roleInProject) {
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
+        this.avatarUrl = avatarUrl;
+        this.roleInProject = roleInProject;
     }
 
 }

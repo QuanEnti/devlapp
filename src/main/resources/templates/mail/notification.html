@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${subject}">DevCollab Notification</title>
+  <style>
+    body { font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 30px; color: #1e293b; }
+    .wrapper { background: #fff; max-width: 640px; margin: auto; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; text-align: center; padding: 20px 30px; }
+    .header h1 { margin: 0; font-size: 22px; }
+    .content { padding: 28px 34px; line-height: 1.6; }
+    .digest-list { background: #f9fafb; border-radius: 8px; padding: 16px; margin-top: 12px; border: 1px solid #e5e7eb; }
+    .digest-item { margin-bottom: 8px; color: #334155; }
+    .digest-item:last-child { margin-bottom: 0; }
+    .btn { display: inline-block; background: #2563eb; color: #fff !important; text-decoration: none; padding: 10px 22px; border-radius: 8px; font-weight: 600; margin-top: 16px; }
+    .btn:hover { background: #1e40af; }
+    .footer { text-align: center; font-size: 13px; color: #94a3b8; padding: 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; }
+    .footer a { color: #2563eb; text-decoration: none; }
+  </style>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>DevCollab Notification</h1>
+    </div>
+
+    <div class="content">
+      <h2 th:text="${title}">🔔 Thông báo mới</h2>
+
+      <!-- Nếu là mail digest -->
+      <div th:if="${isDigest}" class="digest-list">
+        <div th:each="notif : ${notifications}" class="digest-item">
+          <span th:text="${notif.icon}">📢</span>
+          <span th:text="${notif.message}">Nội dung thông báo</span>
+          <a th:href="${notif.link}" target="_blank">Xem chi tiết</a>
+        </div>
+      </div>
+
+      <!-- Nếu là mail đơn -->
+      <div th:if="${!isDigest}">
+        <p th:text="${message}">Bạn có thông báo mới.</p>
+        <a th:href="${link}" class="btn" th:if="${link}">View Details</a>
+      </div>
+
+      <p style="margin-top: 20px;"><b th:text="'From: ' + ${senderName}">From: DevCollab</b></p>
+    </div>
+
+    <div class="footer">
+      <p>© [[${year}]] DevCollab. All rights reserved.</p>
+      <p><a href="https://devcollab.app/settings/notifications">Quản lý cài đặt email</a></p>
+    </div>
+  </div>
+</body>
+</html>

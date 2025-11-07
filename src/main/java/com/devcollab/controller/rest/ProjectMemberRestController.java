@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -133,7 +134,6 @@ public class ProjectMemberRestController {
                     "message", "Lỗi hệ thống khi cập nhật vai trò!"));
         }
     }
-    
     @GetMapping("/project/{projectId}/mentions")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getMentionSuggestions(
@@ -142,13 +142,23 @@ public class ProjectMemberRestController {
 
         try {
             int limit = (keyword == null || keyword.isBlank()) ? 30 : 200;
-            List<MemberDTO> suggestions = projectMemberService.getMembersByProject(projectId, limit, keyword);
 
-            // 🧩 Thêm 2 mention đặc biệt
-            suggestions.add(new MemberDTO(null, "@card", "@card",
-                    "https://cdn-icons-png.flaticon.com/512/4727/4727400.png", "SPECIAL"));
-            suggestions.add(new MemberDTO(null, "@board", "@board",
-                    "https://cdn-icons-png.flaticon.com/512/1055/1055646.png", "SPECIAL"));
+            // ✅ ép sang ArrayList để có thể .add()
+            List<MemberDTO> suggestions = new ArrayList<>(projectMemberService.getMembersByProject(projectId, limit, keyword));
+            // 🧩 Thêm 2 mention đặc biệt (hiển thị đẹp hơn)
+            suggestions.add(new MemberDTO(
+                    null,
+                    "Tất cả thành viên trên thẻ", // 👈 name hiển thị
+                    "@card", // 👈 email / tag thực tế
+                    "https://cdn-icons-png.flaticon.com/512/4727/4727400.png",
+                    "SPECIAL"));
+
+            suggestions.add(new MemberDTO(
+                    null,
+                    "Tất cả thành viên trong bảng",
+                    "@board",
+                    "https://cdn-icons-png.flaticon.com/512/1055/1055646.png",
+                    "SPECIAL"));
 
             return ResponseEntity.ok(Map.of(
                     "count", suggestions.size(),

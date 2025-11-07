@@ -51,32 +51,26 @@ public class SecurityConfig {
                 return http.build();
         }
 
-        // 🎨 View security
         @Bean
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
                 http
-                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**","/user/**")
+                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**", "/user/**",
+                                                "/settings/**")
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(
                                                 sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(
-                                                                "/",
-                                                                "/view/home",
-                                                                "/view/signin",
-                                                                "/view/login",
+                                                                "/", "/view/home", "/view/signin", "/view/login",
                                                                 "/view/register",
-                                                                "/view/forgot-password",
-                                                                "/view/reset-password",
+                                                                "/view/forgot-password", "/view/reset-password",
                                                                 "/view/password-reset-success",
-                                                                "/view/verify-otp",
-                                                                "/join/**",
-                                                                "/css/**", "/js/**", "/images/**", "/assets/**",
-                                                                "/favicon.ico", "/webjars/**",
-                                                                "/oauth2/**")
+                                                                "/view/verify-otp", "/join/**", "/css/**", "/js/**",
+                                                                "/images/**", "/assets/**",
+                                                                "/favicon.ico", "/webjars/**", "/oauth2/**")
                                                 .permitAll()
-                                                .requestMatchers("/user/**").authenticated()
+                                                .requestMatchers("/user/**", "/settings/**").authenticated()
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth -> oauth
                                                 .loginPage("/view/signin")
@@ -108,4 +102,5 @@ public class SecurityConfig {
 
                 return http.build();
         }
+
 }
