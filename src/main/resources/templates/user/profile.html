@@ -8,74 +8,62 @@
 </head>
 <body class="bg-slate-50">
 
-<!-- Left sidebar -->
-<aside class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm">
-    <div class="flex items-center px-6 mb-8">
-        <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-            <i class="fa-solid fa-layer-group text-blue-600 text-lg"></i>
-        </div>
-        <h1 class="text-lg font-semibold text-slate-700">DevCollab</h1>
-    </div>
-    <nav class="flex-1 space-y-2 text-slate-600">
-        <a href="/view/pm/dashboard" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-            <i class="fa-regular fa-chart-bar"></i> Overview
-        </a>
-        <a href="/view/pm/projects" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-            <i class="fa-regular fa-clipboard"></i> Projects
-        </a>
-        <a href="/view/pm/teams" class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium">
-            <i class="fa-regular fa-user"></i> Members
-        </a>
-    </nav>
-</aside>
+<!-- 🔹 Header -->
+<div th:replace="fragments/header :: header"></div>
 
-<!-- Main -->
-<main class="ml-60 p-10 flex gap-6">
-    <!-- Left user card -->
-    <div class="w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center">
-        <button id="reportBtn"
-                class="absolute top-4 right-4 text-red-600 hover:text-red-700 transition"
-                title="Report this user">
-            <i class="fa-solid fa-flag text-lg"></i>
-        </button>
+<!-- 🔹 Sidebar + Main -->
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <!-- Sidebar -->
+    <div th:replace="fragments/sidebar :: sidebar"></div>
 
-        <img id="avatar" src="https://i.pravatar.cc/150" alt="avatar"
-             class="w-28 h-28 rounded-full mx-auto border mb-4 object-cover">
-        <h2 id="name" class="text-lg font-semibold text-slate-800 mb-1">User Name</h2>
-        <p id="skills" class="text-slate-600 mt-3 text-sm">Code</p>
-        <p id="role" class="text-slate-600 mt-3 text-sm">UI Intern</p>
-        <p id="email" class="text-blue-600 text-sm mt-2">user@example.com</p>
-        <hr class="my-4 border-slate-200">
-        <div class="text-left">
-            <h3 class="text-slate-700 font-semibold mb-2 text-sm flex items-center gap-2">
-                <i class="fa-regular fa-address-card text-blue-500"></i>
-                About
-            </h3>
-            <p id="bio" class="text-slate-600 text-sm leading-relaxed text-justify">
-                No bio provided yet.
-            </p>
-        </div>
-    </div>
+    <!-- Main content -->
+    <main class="flex-1 p-10 bg-slate-50 flex gap-6">
 
+        <!-- Left user card -->
+        <div class="w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center relative">
+            <button id="reportBtn"
+                    class="absolute top-4 right-4 text-red-600 hover:text-red-700 transition"
+                    title="Report this user">
+                <i class="fa-solid fa-flag text-lg"></i>
+            </button>
 
-
-    <!-- Right section -->
-    <div class="flex-1 flex flex-col gap-6">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h3 class="text-lg font-semibold text-slate-700 mb-3">Worked with</h3>
-            <div id="worked-with" class="flex flex-wrap gap-4"></div>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-slate-700">Projects</h3>
-                <a href="#" class="text-blue-600 text-sm">View all</a>
+            <img id="avatar" src="https://i.pravatar.cc/150" alt="avatar"
+                 class="w-28 h-28 rounded-full mx-auto border mb-4 object-cover">
+            <h2 id="name" class="text-lg font-semibold text-slate-800 mb-1">User Name</h2>
+            <p id="skills" class="text-slate-600 mt-3 text-sm">Code</p>
+            <p id="role" class="text-slate-600 mt-3 text-sm">UI Intern</p>
+            <p id="email" class="text-blue-600 text-sm mt-2">user@example.com</p>
+            <hr class="my-4 border-slate-200">
+            <div class="text-left">
+                <h3 class="text-slate-700 font-semibold mb-2 text-sm flex items-center gap-2">
+                    <i class="fa-regular fa-address-card text-blue-500"></i>
+                    About
+                </h3>
+                <p id="bio" class="text-slate-600 text-sm leading-relaxed text-justify">
+                    No bio provided yet.
+                </p>
             </div>
-            <div id="projects" class="grid grid-cols-4 gap-4"></div>
         </div>
-    </div>
-</main>
-<!-- Report User Modal -->
+
+        <!-- Right section -->
+        <div class="flex-1 flex flex-col gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-700 mb-3">Worked with</h3>
+                <div id="worked-with" class="flex flex-wrap gap-4"></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-700">Projects</h3>
+                    <a href="#" class="text-blue-600 text-sm hover:underline">View all</a>
+                </div>
+                <div id="projects" class="grid grid-cols-4 gap-4"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 🔹 Report User Modal -->
 <div id="reportModal"
      class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded-2xl w-[420px] shadow-xl border border-slate-200">
@@ -123,7 +111,6 @@
         </form>
     </div>
 </div>
-
 
 <script>
     const userId = window.location.pathname.split("/").pop();
@@ -196,6 +183,7 @@
         await loadWorkedWith();
         await loadProjects();
     });
+
     // --- Report User Logic ---
     const reportBtn = document.getElementById("reportBtn");
     const reportModal = document.getElementById("reportModal");
@@ -217,7 +205,6 @@
         let proofUrl = null;
 
         try {
-            // ✅ Upload proof file to Cloudinary if selected
             if (fileInput.files.length > 0) {
                 const formData = new FormData();
                 formData.append("file", fileInput.files[0]);
@@ -229,7 +216,6 @@
                 proofUrl = await uploadRes.text();
             }
 
-            // ✅ Send report info to backend
             const res = await fetch(`/api/reports`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -253,7 +239,6 @@
             alert("⚠️ " + err.message);
         }
     });
-
 </script>
 
 </body>

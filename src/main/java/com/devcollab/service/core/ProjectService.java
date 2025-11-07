@@ -11,6 +11,7 @@ import com.devcollab.dto.response.ProjectSearchResponseDTO;
 
 
 import java.util.List;
+import java.util.Map;
 
 import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
 import org.springframework.data.domain.Page;
@@ -57,4 +58,7 @@ public interface ProjectService {
     String getUserRoleInProjectByEmail(Long projectId, String email);
 
     List<ProjectFilterDTO> getActiveProjectsForUser(Long userId);
+
+    Map<String, Object> getProgress(Long projectId);
+    Map<String, Object> getMetrics(Long projectId);
 }

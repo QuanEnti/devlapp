@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${project.name} + ' – Project Detail'">Project Detail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+<div th:replace="fragments/header :: header"></div>
+
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+
+    <main class="flex-1 p-8 space-y-8 overflow-y-auto">
+        <!-- 5️⃣ Actions -->
+        <div class="flex gap-3">
+            <a th:href="@{'/view/pm/project/board?projectId=' + ${project.projectId}}">
+                <button class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    Open Kanban Board
+                </button>
+            </a>
+            <a href="/user/view/dashboard">
+                <button class="bg-gray-100 px-5 py-2 rounded-lg font-semibold hover:bg-gray-200 transition">
+                    Back to Projects
+                </button>
+            </a>
+        </div>
+        <!-- 1️⃣ Project Overview -->
+        <section class="bg-white p-6 rounded-2xl shadow">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2" th:text="${project.name}">Project Name</h1>
+            <p class="text-gray-600 mb-4" th:text="${project.description}">Project description here...</p>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-700">
+                <div><strong>Start:</strong> <span th:text="${project.startDate}">2025-01-01</span></div>
+                <div><strong>Due:</strong> <span th:text="${project.dueDate}">2025-12-31</span></div>
+                <div><strong>Status:</strong> <span th:text="${project.status}">Active</span></div>
+                <div><strong>Priority:</strong> <span th:text="${project.priority}">High</span></div>
+                <div><strong>Visibility:</strong> <span th:text="${project.visibility}">Private</span></div>
+                <div><strong>Created By:</strong> <span th:text="${project.createdBy.name}">Doan Viet</span></div>
+            </div>
+        </section>
+
+        <!-- 2️⃣ Progress Section -->
+        <section class="bg-white p-6 rounded-2xl shadow">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Progress Overview</h2>
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-gray-700">By Task Status:</p>
+                    <div class="mt-1 text-2xl font-bold text-blue-600"
+                         th:text="${progress.percent_done_by_status + '%'}">65%</div>
+                </div>
+                <div>
+                    <p class="text-gray-700">By Checklist Completion:</p>
+                    <div class="mt-1 text-2xl font-bold text-green-600"
+                         th:text="${progress.percent_done_by_checklist + '%'}">70%</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3️⃣ Key Metrics -->
+        <section class="bg-white p-6 rounded-2xl shadow">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Project Metrics</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="p-4 bg-blue-50 rounded-xl text-center">
+                    <p class="text-2xl font-bold text-blue-700" th:text="${metrics.totalTasks}">25</p>
+                    <p class="text-sm text-gray-600">Total Tasks</p>
+                </div>
+                <div class="p-4 bg-green-50 rounded-xl text-center">
+                    <p class="text-2xl font-bold text-green-700" th:text="${metrics.completedTasks}">12</p>
+                    <p class="text-sm text-gray-600">Completed</p>
+                </div>
+                <div class="p-4 bg-red-50 rounded-xl text-center">
+                    <p class="text-2xl font-bold text-red-700" th:text="${metrics.overdueTasks}">3</p>
+                    <p class="text-sm text-gray-600">Overdue</p>
+                </div>
+                <div class="p-4 bg-yellow-50 rounded-xl text-center">
+                    <p class="text-2xl font-bold text-yellow-700" th:text="${metrics.activeTasks}">10</p>
+                    <p class="text-sm text-gray-600">In Progress</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-2xl shadow">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Recent Updates</h2>
+            <ul class="divide-y divide-gray-200">
+                <li th:each="n : ${notifications}" class="py-3">
+                    <p class="text-gray-700">
+                        <span class="font-semibold text-blue-700" th:text="${n.actorName}">Viet</span>
+                        <span th:text="${n.title}">updated project</span>
+                    </p>
+                    <p class="text-sm text-gray-600 mt-1" th:text="${n.message}">Task 'UI Review' moved to Done</p>
+                    <p class="text-xs text-gray-500 mt-1"
+                       th:text="${#dates.format(n.created_at, 'dd MMM yyyy HH:mm')}">03 Nov 2025 09:30</p>
+                </li>
+            </ul>
+            <div th:if="${#lists.isEmpty(notifications)}" class="text-gray-500 text-sm mt-2">
+                No recent notifications yet.
+            </div>
+        </section>
+
+
+
+    </main>
+</div>
+</body>
+</html>

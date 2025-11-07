@@ -121,13 +121,11 @@
 
             <div class="mt-4 flex justify-end">
 <!--              <a th:href="@{'/user/view/project/' + ${project.projectId}}">-->
-
-                  <a th:href="@{'/view/pm/project/board?projectId=4'}">
-                <button
-                  class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold border hover:bg-gray-200 transition"
-                >
-                  View Project
-                </button>
+                <a th:href="@{'/view/pm/project/detail?projectId=' + ${project.projectId}}">
+                    <button class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold border hover:bg-gray-200 transition">
+                        View Project
+                    </button>
+                </a>
               </a>
             </div>
           </div>

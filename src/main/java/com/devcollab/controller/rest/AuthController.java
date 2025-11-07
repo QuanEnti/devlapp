@@ -137,7 +137,7 @@ public class AuthController {
         String refreshToken = jwtService.generateRefreshToken(email);
 
         ResponseCookie accessCookie = ResponseCookie.from("AUTH_TOKEN", accessToken)
-                .httpOnly(true).secure(false).path("/").maxAge(15 * 60).sameSite("Lax").build();
+                .httpOnly(true).secure(false).path("/").maxAge(60 * 60).sameSite("Lax").build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", refreshToken)
                 .httpOnly(true).secure(false).path("/").maxAge(7 * 24 * 60 * 60).sameSite("Lax").build();

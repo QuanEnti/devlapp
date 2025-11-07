@@ -167,8 +167,6 @@
               const roles = data.user?.roles || [];
               if (roles.includes('ADMIN')) {
                   setTimeout(() => window.location.href = '/admin/dashboard', 800);
-              } else if (roles.includes('PM')) {
-                  setTimeout(() => window.location.href = '/view/pm/dashboard', 800);
               } else {
                   setTimeout(() => window.location.href = '/user/view/dashboard', 800);
               }

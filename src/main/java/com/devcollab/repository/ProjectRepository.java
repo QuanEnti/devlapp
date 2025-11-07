@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
@@ -157,4 +158,20 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         ORDER BY p.name ASC
     """)
     List<ProjectFilterDTO> findActiveProjectsByUser(@Param("userId") Long userId);
+
+    // ✅ Use your stored procedure sp_GetProjectProgress
+    @Query(value = "EXEC sp_GetProjectProgress :projectId", nativeQuery = true)
+    Map<String, Object> getProjectProgress(Long projectId);
+
+    // ✅ Metrics summary (Total, Done, Overdue, In Progress)
+    @Query(value = """
+        SELECT 
+            COUNT(*) AS totalTasks,
+            SUM(CASE WHEN status='DONE' THEN 1 ELSE 0 END) AS completedTasks,
+            SUM(CASE WHEN status<>'DONE' AND deadline < SYSUTCDATETIME() THEN 1 ELSE 0 END) AS overdueTasks,
+            SUM(CASE WHEN status='IN_PROGRESS' THEN 1 ELSE 0 END) AS activeTasks
+        FROM Task
+        WHERE project_id = :projectId
+        """, nativeQuery = true)
+    Map<String, Object> getProjectMetrics(Long projectId);
 }   
