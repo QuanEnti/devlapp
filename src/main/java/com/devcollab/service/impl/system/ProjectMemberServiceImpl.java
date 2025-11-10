@@ -1,15 +1,18 @@
 package com.devcollab.service.impl.system;
 
 import com.devcollab.config.SpringContext;
+import com.devcollab.domain.PendingInvite;
 import com.devcollab.domain.Project;
 import com.devcollab.domain.ProjectMember;
 import com.devcollab.domain.User;
 import com.devcollab.dto.MemberDTO;
 import com.devcollab.exception.NotFoundException;
+import com.devcollab.repository.PendingInviteRepository;
 import com.devcollab.repository.ProjectMemberRepository;
 import com.devcollab.repository.ProjectRepository;
 import com.devcollab.repository.UserRepository;
 import com.devcollab.service.system.ActivityService;
+import com.devcollab.service.system.MailService;
 import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.system.ProjectMemberService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +27,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -39,6 +44,10 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     private NotificationService notificationService;
     @Autowired
     private ApplicationContext context;
+    @Autowired
+     private PendingInviteRepository pendingInviteRepo;
+    @Autowired
+     private MailService mailService;
 
     private NotificationService getNotificationService() {
         return context.getBean(NotificationService.class);
@@ -137,33 +146,62 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         return true;
     }
 
-    // 🧩 Thêm member vào project (chỉ Owner mới có quyền)
     @Transactional
     @Override
     public boolean addMemberToProject(Long projectId, String pmEmail, String email, String role) {
         Project project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án có ID: " + projectId));
 
+        User pm = userRepo.findByEmail(pmEmail)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người mời!"));
+
         if (!project.getCreatedBy().getEmail().equalsIgnoreCase(pmEmail)) {
             throw new IllegalStateException("Chỉ người tạo dự án mới có quyền mời thành viên!");
         }
+        var userOpt = userRepo.findByEmail(email);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
 
-        User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng có email: " + email));
+            if (projectMemberRepo.existsByProject_ProjectIdAndUser_UserId(projectId, user.getUserId())) {
+                throw new IllegalStateException("Người dùng này đã có trong dự án!");
+            }
 
-        if (projectMemberRepo.existsByProject_ProjectIdAndUser_UserId(projectId, user.getUserId())) {
-            throw new IllegalStateException("Người dùng này đã có trong dự án!");
+            projectMemberRepo.addMember(projectId, user.getUserId(), role.toUpperCase());
+            log.info("✅ {} mời {} vào project '{}' với vai trò {}", pmEmail, email, project.getName(), role);
+
+
+            notificationService.notifyMemberAdded(project, user);
+            mailService.sendNotificationMail(
+                    user.getEmail(),
+                    "Lời mời tham gia dự án " + project.getName(),
+                    pm.getName() + " đã mời bạn tham gia dự án này trên DevCollab.",
+                    "/project/" + projectId,
+                    pm.getName()
+            );
+            return true;
         }
 
-        // ✅ Thêm mới vào project
-        projectMemberRepo.addMember(projectId, user.getUserId(), role.toUpperCase());
-        log.info("✅ {} mời {} vào project '{}' với vai trò {}",
-                pmEmail, email, project.getName(), role);
+        if (pendingInviteRepo.existsByEmailAndAcceptedFalse(email)) {
+            throw new IllegalStateException("Email này đã được mời nhưng chưa đăng ký.");
+        }
 
-        // 🔔 Gửi notification realtime
-        notificationService.notifyMemberAdded(project, user);
+        String token = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        PendingInvite invite = new PendingInvite();
+        invite.setProjectId(projectId);
+        invite.setEmail(email);
+        invite.setRole(role);
+        invite.setToken(token);
+        invite.setAccepted(false);
+        invite.setCreatedAt(LocalDateTime.now());
+        invite.setExpiresAt(LocalDateTime.now().plusDays(7));
+        pendingInviteRepo.save(invite);
+
+        mailService.sendInviteRegistrationMail(email, project, pm, token);
+        log.info("📨 Đã gửi email mời đăng ký tới {} cho project '{}'", email, project.getName());
+
         return true;
     }
+
     
 
     @Transactional

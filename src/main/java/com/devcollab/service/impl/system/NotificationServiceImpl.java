@@ -215,6 +215,28 @@ public class NotificationServiceImpl implements NotificationService {
                 "/view/pm/project/board?projectId=" + project.getProjectId(),
                 project.getCreatedBy());
     }
+    
+    @Override
+    @Transactional
+    public void notifyProjectLinkRegenerated(Project project) {
+        if (project == null || project.getCreatedBy() == null)
+            return;
+
+        String message = "Hệ thống đã tự tạo một liên kết mời mới cho dự án \""
+                + project.getName()
+                + "\" do liên kết cũ đã hết hạn hoặc đạt giới hạn.";
+
+        createNotification(
+                project.getCreatedBy(),
+                "PROJECT_LINK_REGENERATED",
+                project.getProjectId(),
+                "Liên kết mời dự án được làm mới",
+                message,
+                "/view/pm/project/board?projectId=" + project.getProjectId(),
+                project.getCreatedBy());
+
+        log.info("📨 [Notification] Sent PROJECT_LINK_REGENERATED to {}", project.getCreatedBy().getEmail());
+    }
 
     @Override
     @Transactional
@@ -476,6 +498,7 @@ public class NotificationServiceImpl implements NotificationService {
                     "MEMBER_ADDED", "TASK_MEMBER_ADDED",
                     "PROJECT_MEMBER_ROLE_UPDATED",
                     "PASSWORD_CHANGED", "PAYMENT_SUCCESS",
+                    "PROJECT_LINK_REGENERATED",
                     "TASK_DUE_SOON" -> 
                 "HIGH";
             case "TASK_COMMENTED", "TASK_MEMBER_REMOVED",
@@ -498,6 +521,7 @@ public class NotificationServiceImpl implements NotificationService {
             Map.entry("PROJECT_COMMENT_MENTION", "Bạn được nhắc đến trong dự án"),
             Map.entry("TASK_DUE_SOON", "Công việc sắp đến hạn"),
             Map.entry("TASK_FOLLOWED", "Công việc được theo dõi"),
+            Map.entry("PROJECT_LINK_REGENERATED", "Liên kết mời được làm mới"),
             Map.entry("PROFILE_UPDATED", "Cập nhật hồ sơ"),
             Map.entry("PASSWORD_CHANGED", "Đổi mật khẩu"));
 
@@ -511,6 +535,7 @@ public class NotificationServiceImpl implements NotificationService {
             Map.entry("PROJECT_COMMENT_MENTION", "📢"),
             Map.entry("TASK_DUE_SOON", "⏰"),
             Map.entry("TASK_FOLLOWED", "⭐"),
+            Map.entry("PROJECT_LINK_REGENERATED", "🔗"),
             Map.entry("PASSWORD_CHANGED", "🔑"),
             Map.entry("PROFILE_UPDATED", "⚙️"));
 

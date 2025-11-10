@@ -1,5 +1,7 @@
 package com.devcollab.controller.rest;
 
+import com.devcollab.domain.Notification;
+import com.devcollab.domain.Project;
 import com.devcollab.domain.Role;
 import com.devcollab.domain.User;
 import com.devcollab.dto.UserDTO;
@@ -7,11 +9,15 @@ import com.devcollab.dto.request.*;
 import com.devcollab.dto.response.AuthResponseDTO;
 import com.devcollab.dto.response.CheckEmailResponseDTO;
 import com.devcollab.dto.response.ErrorResponseDTO;
+import com.devcollab.repository.PendingInviteRepository;
+import com.devcollab.repository.ProjectMemberRepository;
+import com.devcollab.repository.ProjectRepository;
 import com.devcollab.repository.UserRepository;
 import com.devcollab.service.impl.core.UserServiceImpl;
 import com.devcollab.service.system.AuthService;
 import com.devcollab.service.system.JwtService;
 import com.devcollab.service.system.MailService;
+import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.system.OtpService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -51,6 +56,10 @@ public class AuthController {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final AuthService authService;
+    private final PendingInviteRepository pendingInviteRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectRepository projectRepository;
+    private final NotificationService notificationService;
 
     @PostMapping("/check-email")
     public ResponseEntity<?> checkEmail(@Valid @RequestBody CheckEmailRequestDTO request) {
@@ -212,41 +221,42 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO request) {
+        public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO request) {
         String email = request.getEmail();
         String password = request.getPassword();
 
         if (!isStrongPassword(password)) {
-            return ResponseEntity.badRequest()
-                    .body(new ErrorResponseDTO("WEAK_PASSWORD",
-                            "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."));
+                return ResponseEntity.badRequest()
+                        .body(new ErrorResponseDTO("WEAK_PASSWORD",
+                                "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."));
         }
 
         Optional<User> existingOpt = userService.getByEmail(email);
         if (existingOpt.isPresent()) {
-            User existing = existingOpt.get();
-            String provider = existing.getProvider().toLowerCase();
+                User existing = existingOpt.get();
+                String provider = existing.getProvider().toLowerCase();
 
-            switch (provider) {
+                switch (provider) {
                 case "google":
-                    existing.setPasswordHash(userService.encodePassword(password));
-                    existing.setProvider("local_google");
-                    existing.setUpdatedAt(LocalDateTime.now());
-                    userService.save(existing);
-                    sendOtp(email, "Google");
-                    return ResponseEntity.ok(new AuthResponseDTO(
-                            "Đã thêm mật khẩu cho tài khoản Google. OTP đã gửi đến email.",
-                            "OTP_SENT", "local_google", null, email, "/view/verify-otp"));
+                        existing.setPasswordHash(userService.encodePassword(password));
+                        existing.setProvider("local_google");
+                        existing.setUpdatedAt(LocalDateTime.now());
+                        userService.save(existing);
+                        sendOtp(email, "Google");
+                        return ResponseEntity.ok(new AuthResponseDTO(
+                                "Đã thêm mật khẩu cho tài khoản Google. OTP đã gửi đến email.",
+                                "OTP_SENT", "local_google", null, email, "/view/verify-otp"));
                 case "local":
                 case "local_google":
-                    return ResponseEntity.badRequest()
-                            .body(new ErrorResponseDTO("EXISTED", "Email này đã có mật khẩu."));
+                        return ResponseEntity.badRequest()
+                                .body(new ErrorResponseDTO("EXISTED", "Email này đã có mật khẩu."));
                 default:
-                    return ResponseEntity.badRequest()
-                            .body(new ErrorResponseDTO("EXISTED", "Email đã tồn tại trong hệ thống."));
-            }
+                        return ResponseEntity.badRequest()
+                                .body(new ErrorResponseDTO("EXISTED", "Email đã tồn tại trong hệ thống."));
+                }
         }
 
+        // ✅ Tạo user mới
         User newUser = new User();
         newUser.setEmail(email);
         newUser.setName(email.split("@")[0]);
@@ -258,10 +268,28 @@ public class AuthController {
         newUser.setLastSeen(LocalDateTime.now());
         userService.save(newUser);
 
+        // ✅ Kiểm tra xem email này có trong bảng PendingInvite không
+        pendingInviteRepository.findByEmailAndAcceptedFalse(email).ifPresent(invite -> {
+                if (invite.getExpiresAt().isAfter(LocalDateTime.now())) {
+                projectMemberRepository.addMember(invite.getProjectId(), newUser.getUserId(), invite.getRole().toUpperCase());
+                invite.setAccepted(true);
+                pendingInviteRepository.save(invite);
+
+                Project project = projectRepository.findById(invite.getProjectId()).orElse(null);
+                if (project != null) {
+                        notificationService.notifyMemberAdded(project, newUser);
+                        log.info("✅ User {} auto-joined project {} via invite token {}", email, project.getName(), invite.getToken());
+                }
+                } else {
+                log.info("⚠️ Invite for {} expired (token={})", email, invite.getToken());
+                }
+        });
+
         sendOtp(email, "Register");
         return ResponseEntity.ok(new AuthResponseDTO(
                 "Mã OTP đã được gửi đến email của bạn", "OTP_SENT", "otp", null, email, "/view/verify-otp"));
-    }
+        }
+
     
     @PostMapping("/resend-otp")
     public ResponseEntity<?> resendOtp(@Valid @RequestBody EmailOnlyDTO request) {

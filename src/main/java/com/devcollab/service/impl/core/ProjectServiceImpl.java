@@ -331,57 +331,101 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
     });
 }
 
-    @Override
+  @Override
     public Project enableShareLink(Long projectId, String pmEmail) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
 
         authz.ensurePmOfProject(pmEmail, projectId);
-        
 
-        if (!project.isAllowLinkJoin()) {
-            String inviteLink = UUID.randomUUID().toString();
-            project.setInviteLink(inviteLink);
-            project.setAllowLinkJoin(true);
-            project.setUpdatedAt(LocalDateTime.now());
-            projectRepository.save(project);
+        boolean expired = project.getInviteExpiredAt() != null
+                && project.getInviteExpiredAt().isBefore(LocalDateTime.now());
+        boolean limitReached = project.getInviteUsageCount() >= project.getInviteMaxUses();
 
-            // activityService.log("PROJECT", projectId, "ENABLE_SHARE", "Link: " + inviteLink);
+        if (project.getInviteLink() == null || expired || limitReached) {
+            String newCode = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+            project.setInviteLink(newCode);
+            project.setInviteCreatedAt(LocalDateTime.now());
+            project.setInviteExpiredAt(LocalDateTime.now().plusDays(7));
+            project.setInviteUsageCount(0);
+            project.setInviteMaxUses(10);
         }
+
+        project.setAllowLinkJoin(true);
+        project.setUpdatedAt(LocalDateTime.now());
+        projectRepository.save(project);
 
         return project;
     }
+
     @Override
     public Project disableShareLink(Long projectId, String pmEmail) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
 
         authz.ensurePmOfProject(pmEmail, projectId);
 
         if (project.isAllowLinkJoin()) {
             project.setAllowLinkJoin(false);
-            project.setInviteLink(null);
             project.setUpdatedAt(LocalDateTime.now());
             projectRepository.save(project);
 
-            activityService.log("PROJECT", projectId, "DISABLE_SHARE", "Share link disabled");
+            activityService.log("PROJECT", projectId, "DISABLE_SHARE",
+                    "Share link disabled (link preserved)");
         }
 
         return project;
     }
-   
+
     @Override
+    @Transactional
     public ProjectMember joinProjectByLink(String inviteLink, Long userId) {
-        Project project = projectRepository.findActiveSharedProject(inviteLink)
-                .orElseThrow(() -> new BadRequestException("Link mời không hợp lệ hoặc đã bị tắt"));
+        Project project = projectRepository.findByInviteLink(inviteLink)
+                .orElseThrow(() -> new BadRequestException("Liên kết mời không hợp lệ!"));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User không tồn tại"));
 
+        if (!project.isAllowLinkJoin()) {
+            throw new BadRequestException("Liên kết mời đã bị vô hiệu hóa!");
+        }
+
+        boolean expired = project.getInviteExpiredAt() != null
+                && project.getInviteExpiredAt().isBefore(LocalDateTime.now());
+        boolean limitReached = project.getInviteUsageCount() >= project.getInviteMaxUses();
+
+        // 🧠 Nếu link hết hạn hoặc đã vượt số lượng, tự regen link mới ngay lập tức
+        if ((expired || limitReached) && project.isInviteAutoRegen()) {
+            String newCode = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+            project.setInviteLink(newCode);
+            project.setInviteCreatedAt(LocalDateTime.now());
+            project.setInviteExpiredAt(LocalDateTime.now().plusDays(7));
+            project.setInviteUsageCount(0);
+            project.setUpdatedAt(LocalDateTime.now());
+            projectRepository.save(project);
+
+            // 🔔 Ghi log activity và thông báo cho PM
+            activityService.log("PROJECT", project.getProjectId(), "AUTO_REGEN_LINK",
+                    "Link cũ hết hạn hoặc đầy, hệ thống đã tự tạo link mới: " + newCode);
+            notificationService.notifyProjectLinkRegenerated(project);
+
+            // ❌ Báo cho người join biết rằng link cũ đã hết hạn
+            throw new BadRequestException(
+                    "Liên kết mời đã hết hạn. Hệ thống đã tạo liên kết mới, vui lòng yêu cầu PM gửi lại.");
+        }
+
+        if (expired) {
+            throw new BadRequestException("Liên kết mời đã hết hạn!");
+        }
+        if (limitReached) {
+            throw new BadRequestException(
+                    "Liên kết này đã đạt giới hạn mời (" + project.getInviteMaxUses() + " người)!");
+        }
+
         boolean exists = projectMemberRepository.existsByProject_ProjectIdAndUser_UserId(project.getProjectId(),
                 userId);
         if (exists) {
-            throw new BadRequestException("Bạn đã là thành viên của dự án này");
+            throw new BadRequestException("Bạn đã là thành viên của dự án này!");
         }
 
         ProjectMember newMember = new ProjectMember();
@@ -391,18 +435,20 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
         newMember.setJoinedAt(LocalDateTime.now());
         projectMemberRepository.save(newMember);
 
-        activityService.log("PROJECT", project.getProjectId(), "JOIN_BY_LINK", user.getEmail());
+        project.setInviteUsageCount(project.getInviteUsageCount() + 1);
+        project.setUpdatedAt(LocalDateTime.now());
+        projectRepository.save(project);
+
+        activityService.log("PROJECT", project.getProjectId(), "JOIN_BY_LINK",
+                user.getEmail() + " đã tham gia dự án qua link mời");
         notificationService.notifyMemberAdded(project, user);
 
         return newMember;
     }
-    
+
     public List<Project> getProjectsByUsername(String username) {
-        // 1. Tìm User bằng username (email)
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new NotFoundException("User không tồn tại"));
-
-        // 2. Gọi lại phương thức cũ bằng userId
         return this.getProjectsByUser(user.getUserId());
     }
 

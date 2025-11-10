@@ -8,7 +8,6 @@ import java.util.*;
 @Entity
 @Table(name = "[Project]", schema = "dbo")
 public class Project {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "project_id")
@@ -35,6 +34,9 @@ public class Project {
     @Column(length = 16)
     private String visibility = "private"; // private | public
 
+    @Column(name = "cover_image", columnDefinition = "NVARCHAR(500)")
+    private String coverImage;
+
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
@@ -48,17 +50,29 @@ public class Project {
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
 
-    @Column(name = "cover_image", columnDefinition = "NVARCHAR(500)")
-    private String coverImage;
-
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectMember> members = new ArrayList<>();
 
     @Column(name = "invite_link", length = 200, unique = true)
-    private String inviteLink; 
+    private String inviteLink;
 
     @Column(name = "allow_link_join", nullable = false)
-    private boolean allowLinkJoin = false; 
+    private boolean allowLinkJoin = false;
+
+    @Column(name = "invite_auto_regen", nullable = false)
+    private boolean inviteAutoRegen = true;
+
+    @Column(name = "invite_created_at")
+    private LocalDateTime inviteCreatedAt;
+
+    @Column(name = "invite_expired_at")
+    private LocalDateTime inviteExpiredAt;
+
+    @Column(name = "invite_usage_count")
+    private Integer inviteUsageCount = 0; // số lượng người đã dùng link
+
+    @Column(name = "invite_max_uses")
+    private Integer inviteMaxUses = 10; // giới hạn số lần sử dụng link
 
     public Project() {
     }
@@ -127,6 +141,14 @@ public class Project {
         this.visibility = visibility;
     }
 
+    public String getCoverImage() {
+        return coverImage;
+    }
+
+    public void setCoverImage(String coverImage) {
+        this.coverImage = coverImage;
+    }
+
     public User getCreatedBy() {
         return createdBy;
     }
@@ -166,12 +188,7 @@ public class Project {
     public void setMembers(List<ProjectMember> members) {
         this.members = members;
     }
-    public String getCoverImage() {
-        return coverImage;
-    }
-    public void setCoverImage(String coverImage) {
-        this.coverImage = coverImage;
-    }
+
     public String getInviteLink() {
         return inviteLink;
     }
@@ -179,10 +196,52 @@ public class Project {
     public void setInviteLink(String inviteLink) {
         this.inviteLink = inviteLink;
     }
+
     public boolean isAllowLinkJoin() {
         return allowLinkJoin;
     }
+
     public void setAllowLinkJoin(boolean allowLinkJoin) {
         this.allowLinkJoin = allowLinkJoin;
-    }   
+    }
+
+    public boolean isInviteAutoRegen() {
+        return inviteAutoRegen;
+    }
+
+    public void setInviteAutoRegen(boolean inviteAutoRegen) {
+        this.inviteAutoRegen = inviteAutoRegen;
+    }
+
+    public LocalDateTime getInviteCreatedAt() {
+        return inviteCreatedAt;
+    }
+
+    public void setInviteCreatedAt(LocalDateTime inviteCreatedAt) {
+        this.inviteCreatedAt = inviteCreatedAt;
+    }
+
+    public LocalDateTime getInviteExpiredAt() {
+        return inviteExpiredAt;
+    }
+
+    public void setInviteExpiredAt(LocalDateTime inviteExpiredAt) {
+        this.inviteExpiredAt = inviteExpiredAt;
+    }
+
+    public Integer getInviteUsageCount() {
+        return inviteUsageCount != null ? inviteUsageCount : 0;
+    }
+
+    public void setInviteUsageCount(Integer inviteUsageCount) {
+        this.inviteUsageCount = inviteUsageCount;
+    }
+
+    public Integer getInviteMaxUses() {
+        return inviteMaxUses != null ? inviteMaxUses : 10;
+    }
+
+    public void setInviteMaxUses(Integer inviteMaxUses) {
+        this.inviteMaxUses = inviteMaxUses;
+    }
 }

@@ -34,5 +34,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email")
     Optional<User> findByEmailFetchRoles(@Param("email") String email);
 
-
+    @Query("""
+                SELECT u
+                FROM User u
+                WHERE LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                ORDER BY u.name ASC
+            """)
+    List<User> searchUsersByKeyword(@Param("keyword") String keyword);
 }

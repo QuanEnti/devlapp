@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: #f6f8fb;
+      padding: 30px;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 40px;
+    }
+    .header {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .btn {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff !important;
+      padding: 12px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      margin-top: 20px;
+      font-weight: 500;
+    }
+    .footer {
+      margin-top: 30px;
+      font-size: 13px;
+      text-align: center;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p class="header">🚀 <b th:text="${inviterName}"></b> đã mời bạn tham gia dự án <b th:text="${projectName}"></b> trên DevCollab</p>
+    <p>Tham gia cùng họ để cộng tác, chia sẻ tiến độ và quản lý nhiệm vụ trong dự án.</p>
+
+    <div style="text-align:center;">
+      <a class="btn" th:href="${registerLink}">Đăng ký & tham gia ngay</a>
+    </div>
+
+    <p class="footer">
+      Liên kết này sẽ hết hạn sau 7 ngày.<br>
+      © <span th:text="${year}"></span> DevCollab. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>

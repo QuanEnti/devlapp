@@ -2,6 +2,7 @@ package com.devcollab.controller.rest;
 
 import com.devcollab.domain.Project;
 import com.devcollab.domain.ProjectMember;
+import com.devcollab.domain.User;
 import com.devcollab.dto.MemberDTO;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.ProjectMemberRepository;
@@ -35,7 +36,8 @@ public class InviteUserRestController {
     private final ProjectMemberRepository projectMemberRepo;
     private final ProjectService projectService;
     private final ProjectMemberService projectMemberService;
-    private final ProjectAuthorizationService authz; // ✅ thêm service kiểm tra quyền project-level
+    private final ProjectAuthorizationService authz; 
+    private final UserRepository userRepository;
 
     /**
      * 🟢 Mời thành viên vào dự án — chỉ PM của project đó mới được phép
@@ -100,16 +102,14 @@ public class InviteUserRestController {
     }
 
     /**
-     * ✅ Bật chia sẻ link mời — bất kỳ thành viên nào của project đều có thể bật
+     * ✅ Bật chia sẻ link mời — chỉ PM được phép bật
      */
     @PostMapping("/project/{projectId}/share/enable")
     public ResponseEntity<?> enableShareLink(@PathVariable Long projectId, Authentication auth) {
         String email = extractEmail(auth);
 
-        // ✅ Chỉ cần là thành viên project
-        if (!authz.isMemberOfProject(email, projectId)) {
-            throw new AccessDeniedException("Bạn không thuộc dự án này");
-        }
+        // 🔒 Chỉ PM được phép bật
+        authz.ensurePmOfProject(email, projectId);
 
         Project updated = projectService.enableShareLink(projectId, email);
         return ResponseEntity.ok(Map.of(
@@ -119,20 +119,35 @@ public class InviteUserRestController {
     }
 
     /**
-     * 🔴 Tắt chia sẻ link mời — bất kỳ thành viên nào của project đều có thể tắt
+     * 🔴 Tắt chia sẻ link mời — chỉ PM được phép tắt
      */
     @DeleteMapping("/project/{projectId}/share/disable")
     public ResponseEntity<?> disableShareLink(@PathVariable Long projectId, Authentication auth) {
         String email = extractEmail(auth);
 
-        if (!authz.isMemberOfProject(email, projectId)) {
-            throw new AccessDeniedException("Bạn không thuộc dự án này");
-        }
+        // 🔒 Chỉ PM được phép tắt
+        authz.ensurePmOfProject(email, projectId);
 
         Project updated = projectService.disableShareLink(projectId, email);
         return ResponseEntity.ok(Map.of(
                 "message", "Đã tắt chia sẻ dự án!",
                 "allowLinkJoin", updated.isAllowLinkJoin()));
+    }
+
+    @GetMapping("/project/{projectId}/share/link")
+    public ResponseEntity<?> getShareLink(@PathVariable Long projectId, Authentication auth) {
+        String email = extractEmail(auth);
+        if (!authz.isMemberOfProject(email, projectId)) {
+            throw new AccessDeniedException("Bạn không thuộc dự án này");
+        }
+
+        Project project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("allowLinkJoin", project.isAllowLinkJoin());
+        resp.put("inviteLink", project.getInviteLink());
+        return ResponseEntity.ok(resp);
     }
 
     /**
@@ -179,6 +194,25 @@ public class InviteUserRestController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
         }
+    }
+    
+    @GetMapping("/search-users")
+    public ResponseEntity<?> searchUsers(@RequestParam String keyword) {
+        if (keyword == null || keyword.trim().length() < 2) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<User> users = userRepository.searchUsersByKeyword(keyword.trim());
+        var result = users.stream()
+                .limit(10)
+                .map(u -> Map.of(
+                        "userId", u.getUserId(),
+                        "name", u.getName(),
+                        "email", u.getEmail(),
+                        "avatarUrl", u.getAvatarUrl()))
+                .toList();
+
+        return ResponseEntity.ok(result);
     }
 
     /** 🔍 Helper lấy email người dùng */

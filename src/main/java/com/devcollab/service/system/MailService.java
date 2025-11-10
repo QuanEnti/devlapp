@@ -2,6 +2,8 @@ package com.devcollab.service.system;
 
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -9,10 +11,14 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.devcollab.domain.Project;
+import com.devcollab.domain.User;
+
 import java.time.Year;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MailService {
@@ -119,4 +125,30 @@ public class MailService {
             e.printStackTrace();
         }
     }
+    
+    public void sendInviteRegistrationMail(String to, Project project, User inviter, String token) {
+        try {
+            MimeMessage mime = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mime, true, "UTF-8");
+
+            helper.setFrom(senderAddress);
+            helper.setTo(to);
+            helper.setSubject("🚀 DevCollab – Lời mời tham gia dự án " + project.getName());
+
+            Context ctx = new Context();
+            ctx.setVariable("inviterName", inviter.getName());
+            ctx.setVariable("projectName", project.getName());
+            ctx.setVariable("registerLink", "https://devcollab.app/register?inviteToken=" + token);
+            ctx.setVariable("year", Year.now().getValue());
+
+            String html = templateEngine.process("mail/invite_register.html", ctx);
+            helper.setText(html, true);
+
+            mailSender.send(mime);
+            log.info("📨 Gửi email mời đăng ký cho {}", to);
+        } catch (Exception e) {
+            log.error("❌ Lỗi khi gửi mail mời đăng ký: {}", e.getMessage());
+        }
+    }
+
 }

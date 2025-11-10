@@ -75,6 +75,6 @@ void createNotification(User receiver, String type, Long refId,
 
     void notifyPaymentSuccess(User user, PaymentOrder order);
     void notifyMentions(Task task, User actor, List<CommentDTO> mentions);
-
+    void notifyProjectLinkRegenerated(Project project);
 
 }
