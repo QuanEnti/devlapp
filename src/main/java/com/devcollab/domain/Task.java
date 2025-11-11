@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Entity
 @Table(name = "[Task]")
 public class Task {
@@ -81,8 +83,14 @@ public class Task {
     private String lastReminderStage;
 
     @ManyToMany
-    @JoinTable(name = "TaskLabel", joinColumns = @JoinColumn(name = "task_id", nullable = false), inverseJoinColumns = @JoinColumn(name = "label_id", nullable = false))
+    @JoinTable(
+        name = "[TaskLabel]", 
+        joinColumns = @JoinColumn(name = "task_id", nullable = false),
+        inverseJoinColumns = @JoinColumn(name = "label_id", nullable = false)
+    )
+    @JsonIgnoreProperties("tasks") 
     private Set<Label> labels = new HashSet<>();
+
     
      @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<TaskFollower> followers = new ArrayList<>();

@@ -29,10 +29,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private String frontendRedirect;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request,
-            HttpServletResponse response,
-            Authentication authentication)
-            throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
 
         DefaultOAuth2User oauthUser = (DefaultOAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");
@@ -61,8 +59,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         user.setLastSeen(LocalDateTime.now());
 
         String avatar = initialAvatar;
-        if (avatar == null || avatar.isBlank() || !avatar.startsWith("https://lh3.googleusercontent.com/")) {
-            avatar = "https://ui-avatars.com/api/?name=" + (name != null ? name.replace(" ", "+") : "User");
+        if (avatar == null || avatar.isBlank()
+                || !avatar.startsWith("https://lh3.googleusercontent.com/")) {
+            avatar = "https://ui-avatars.com/api/?name="
+                    + (name != null ? name.replace(" ", "+") : "User");
         }
 
         if (user.getAvatarUrl() == null || !user.getAvatarUrl().equals(avatar)) {
@@ -75,21 +75,12 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = jwtService.generateAccessToken(email);
         String refreshToken = jwtService.generateRefreshToken(email);
 
-        ResponseCookie accessCookie = ResponseCookie.from("AUTH_TOKEN", accessToken)
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(15 * 60)
-                .build();
+        ResponseCookie accessCookie = ResponseCookie.from("AUTH_TOKEN", accessToken).httpOnly(true)
+                .secure(false).sameSite("Lax").path("/").maxAge(15 * 60).build();
 
-        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", refreshToken)
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(7 * 24 * 60 * 60)
-                .build();
+        ResponseCookie refreshCookie =
+                ResponseCookie.from("REFRESH_TOKEN", refreshToken).httpOnly(true).secure(false)
+                        .sameSite("Lax").path("/").maxAge(7 * 24 * 60 * 60).build();
 
         response.addHeader("Set-Cookie", accessCookie.toString());
         response.addHeader("Set-Cookie", refreshCookie.toString());

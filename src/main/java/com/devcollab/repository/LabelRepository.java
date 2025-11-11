@@ -33,7 +33,7 @@ public interface LabelRepository extends JpaRepository<Label, Long> {
 
     @Modifying
     @Transactional
-    @Query(value = "DELETE FROM [Task Label] WHERE task_id = :taskId AND label_id = :labelId", nativeQuery = true)
+    @Query(value = "DELETE FROM [TaskLabel] WHERE task_id = :taskId AND label_id = :labelId", nativeQuery = true)
     void deleteTaskLabel(@Param("taskId") Long taskId, @Param("labelId") Long labelId);
     
     @Modifying

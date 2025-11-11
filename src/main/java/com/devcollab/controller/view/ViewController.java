@@ -19,7 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 @Controller
 @RequestMapping("/view")
 public class ViewController {
-    @GetMapping({ "/", "/home" })
+    @GetMapping({"/", "/home"})
     public String homePage(Authentication authentication, Model model) {
         if (authentication != null && authentication.isAuthenticated()) {
             model.addAttribute("loggedIn", true);
@@ -32,12 +32,10 @@ public class ViewController {
 
 
     @GetMapping("/signin")
-    public String signinPage(
-            @RequestParam(value = "redirect", required = false) String redirect,
-            Authentication authentication,
-            Model model) {
+    public String signinPage(@RequestParam(value = "redirect", required = false) String redirect,
+            Authentication authentication, Model model) {
         if (authentication != null && authentication.isAuthenticated()) {
-            
+
             if (redirect != null && !redirect.isEmpty()) {
                 return "redirect:" + redirect;
             }
@@ -86,6 +84,6 @@ public class ViewController {
     @GetMapping("/dashboard")
     public String dashboardPage() {
         return "user/user-dashboard";
-    } 
+    }
 }
 

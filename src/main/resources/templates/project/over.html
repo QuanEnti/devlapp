@@ -1,278 +1,1042 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="'Dashboard - ' + ${projectId}">Project Dashboard</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevCollab – Kanban Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/kanban.css}" />
+  </head>
 
-  <!-- Tailwind + ChartJS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <body class="bg-gray-50 font-inter text-gray-800">
+    <!-- ✅ Layout Container -->
+    <div class="flex min-h-screen">
+      <!-- 📁 Sidebar -->
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
 
-  <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-    #pieChart { max-width: 160px; margin: auto; }
-    #chart-legend li { display: flex; align-items: center; gap: 8px; }
-    #chart-legend span { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
-  </style>
-</head>
+      <!-- 🧱 Main Content -->
+      <div class="flex flex-col flex-1">
+        <!-- 📌 Header -->
+        <header th:replace="~{fragments/header :: header}"></header>
 
-<body class="bg-slate-50">
+        <!-- 📋 Kanban Area -->
+        <main
+          class="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-indigo-100 to-purple-100"
+        >
+          <!-- 🔘 Top Bar (nếu muốn giữ phần cũ như Share, Notification) -->
+          <div class="flex justify-between items-center mb-5">
+            <h1 class="text-2xl font-semibold text-gray-800">Kanban Board</h1>
 
-  <!-- Sidebar -->
-  <aside class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm">
-    <div class="flex items-center px-6 mb-8">
-      <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-        <i class="fa-solid fa-user text-blue-600 text-lg"></i>
+            <div class="flex items-center gap-3">
+              <button
+                id="share-board-btn"
+                class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md shadow-sm transition"
+              >
+                <span>👤+</span> Share
+              </button>
+              <button
+                id="open-notif-btn"
+                class="relative bg-white text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-md shadow-sm border border-gray-200"
+              >
+                🔔
+                <span
+                  id="notif-count-badge"
+                  class="hidden absolute -top-1 -right-2 text-[10px] px-1.5 py-0.5 rounded-full bg-red-600 text-white font-semibold min-w-[18px] text-center"
+                ></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 🧩 Kanban Board -->
+          <div id="kanban-board" class="flex gap-5 overflow-x-auto pb-6"></div>
+
+          <!-- 🧩 Task Detail Modal -->
+          <div
+            id="task-detail-modal"
+            class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/60 backdrop-blur-sm hidden"
+          >
+            <div
+              class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col"
+            >
+              <!-- Header -->
+              <div
+                class="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10"
+              >
+                <div class="flex items-center gap-2">
+                  <!-- ✅ Button Members (KHÔNG dùng inline onclick) -->
+                  <button
+                    id="open-members-btn"
+                    class="flex items-center gap-1 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded"
+                  >
+                    👥 Members
+                  </button>
+
+                  <button
+                    id="open-labels-btn"
+                    class="flex items-center gap-1 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded"
+                  >
+                    🏷️ Labels
+                  </button>
+
+                  <span
+                    class="text-sm bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded cursor-pointer"
+                  >
+                    Marketing Website ▼
+                  </span>
+                </div>
+                <button
+                  id="close-modal-btn"
+                  class="text-gray-600 hover:text-gray-900 text-2xl font-light"
+                >
+                  ×
+                </button>
+              </div>
+
+              <!-- Content -->
+              <div
+                class="flex flex-col md:flex-row p-4 md:p-6 gap-6 overflow-y-auto"
+              >
+                <!-- Left column -->
+                <div class="w-full md:w-2/3 space-y-6">
+                  <div class="flex items-center gap-3">
+                    <span class="text-2xl text-gray-500">○</span>
+                    <h2 class="text-2xl font-semibold text-gray-900">
+                      Task Title
+                    </h2>
+                  </div>
+                  <!-- 🕒 Due Date -->
+                  <div id="due-date-section" class="mb-4">
+                    <h3 class="text-sm text-gray-600 font-semibold mb-1">
+                      Due date
+                    </h3>
+                    <div
+                      id="due-date-display"
+                      class="flex items-center justify-between border border-gray-200 bg-gray-50 rounded-md px-3 py-2 w-fit min-w-[220px] text-sm cursor-pointer hover:bg-gray-100"
+                    >
+                      <span id="due-date-text" class="text-gray-800"
+                        >No due date</span
+                      >
+                      <span
+                        id="due-date-status"
+                        class="ml-2 text-xs font-medium rounded px-2 py-0.5 bg-gray-200 text-gray-600"
+                      >
+                        None
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Description -->
+                  <div>
+                    <h3
+                      class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2"
+                    >
+                      <span class="text-gray-600">☰</span> Description
+                    </h3>
+
+                    <div
+                      id="description-display"
+                      class="group relative bg-white border border-transparent rounded-md p-3 min-h-[60px] text-sm text-gray-800 hover:border-gray-300 transition"
+                    >
+                      <p
+                        id="description-content"
+                        class="whitespace-pre-line"
+                      ></p>
+                      <p id="description-placeholder" class="text-gray-500">
+                        Add a more detailed description...
+                      </p>
+
+                      <button
+                        id="edit-desc-btn"
+                        class="absolute top-2 right-2 hidden group-hover:inline-flex text-sm text-gray-600 hover:text-blue-600"
+                      >
+                        Edit
+                      </button>
+                    </div>
+
+                    <div id="description-editor" class="hidden mt-2">
+                      <textarea
+                        id="description-textarea"
+                        class="w-full border border-gray-300 p-3 h-40 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 border-blue-400"
+                        placeholder="Type @ to mention your teammates..."
+                      ></textarea>
+
+                      <div class="flex items-center gap-2 mt-2">
+                        <button
+                          id="save-desc-btn"
+                          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium"
+                        >
+                          Save
+                        </button>
+                        <button
+                          id="cancel-desc-btn"
+                          class="hover:bg-gray-200 px-3 py-1.5 rounded-md text-sm text-gray-700"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right column -->
+                <!-- 📎 ATTACHMENTS -->
+                <div id="attachments-section" class="space-y-3">
+                  <h3
+                    class="font-semibold text-gray-800 flex items-center gap-2"
+                  >
+                    <span class="text-gray-600">📎</span> Attachments
+                  </h3>
+
+                  <!-- Upload -->
+                  <div class="flex items-center gap-2">
+                    <input id="attachment-file" type="file" class="hidden" />
+                    <button
+                      id="upload-attachment-btn"
+                      class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-md"
+                    >
+                      + Upload file
+                    </button>
+                    <button
+                      id="open-attach-popup"
+                      class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-3 py-1.5 rounded-md"
+                    >
+                      + Attach link
+                    </button>
+                  </div>
+
+                  <!-- List -->
+                  <div
+                    id="attachments-list"
+                    class="space-y-2 text-sm text-gray-700"
+                  >
+                    <p class="text-gray-400 italic">No attachments yet.</p>
+                  </div>
+                </div>
+
+                <!-- 💬 COMMENTS & ACTIVITY SECTION -->
+                <div id="activity-section" class="w-full md:w-1/3 space-y-4">
+                  <h3
+                    class="font-semibold text-gray-800 flex items-center gap-2"
+                  >
+                    💬 Comments & Activity
+                  </h3>
+
+                  <!-- Comment input + mention dropdown -->
+                  <div class="relative">
+                    <textarea
+                      id="comment-input"
+                      rows="2"
+                      placeholder="Write a comment... (type @ to mention)"
+                      class="w-full border border-gray-300 rounded-md p-2 text-sm resize-none focus:ring-2 focus:ring-blue-400"
+                    ></textarea>
+
+                    <!-- Mention dropdown -->
+                  </div>
+
+                  <div class="flex justify-end">
+                    <button
+                      id="post-comment-btn"
+                      class="hidden bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-md transition"
+                    >
+                      Post
+                    </button>
+                  </div>
+
+                  <!-- Comment list -->
+                  <div
+                    id="comments-list"
+                    class="space-y-3 text-sm text-gray-800"
+                  ></div>
+
+                  <!-- Activity section -->
+                  <hr class="my-3" />
+                  <h4
+                    class="font-semibold text-gray-700 flex items-center gap-2"
+                  >
+                    <span class="text-gray-600">📜</span> Activity
+                  </h4>
+                  <div
+                    id="activity-feed"
+                    class="space-y-2 text-sm text-gray-700"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🏷️ LABELS POPUP -->
+          <div
+            id="labels-popup"
+            class="hidden fixed z-[70] bg-white border border-gray-300 rounded-lg shadow-lg w-80 p-3"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold text-gray-800 text-sm">Labels</h3>
+              <button
+                id="close-labels-btn"
+                class="text-gray-500 hover:text-gray-700 text-lg"
+              >
+                ×
+              </button>
+            </div>
+
+            <input
+              id="search-label-input"
+              type="text"
+              placeholder="Search labels..."
+              class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400"
+            />
+
+            <div
+              id="labels-list"
+              class="space-y-2 max-h-[300px] overflow-y-auto"
+            ></div>
+
+            <button
+              id="create-label-btn"
+              class="mt-3 w-full text-center border border-gray-300 hover:bg-gray-50 text-sm rounded-md py-2"
+            >
+              + Create a new label
+            </button>
+          </div>
+
+          <!-- 🆕 CREATE LABEL POPUP -->
+          <div
+            id="create-label-popup"
+            class="hidden fixed z-[80] bg-white border border-gray-300 rounded-lg shadow-xl w-96 p-4"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-gray-800 text-sm">Create label</h3>
+              <button
+                id="close-create-label-btn"
+                class="text-gray-500 hover:text-gray-700 text-lg"
+              >
+                ×
+              </button>
+            </div>
+            <div
+              id="label-preview"
+              class="w-full h-8 rounded-md mb-3 border border-gray-300 flex items-center justify-center text-sm font-semibold text-white"
+            >
+              New Label
+            </div>
+
+            <input
+              id="new-label-name"
+              type="text"
+              placeholder="Title"
+              class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400"
+            />
+
+            <label class="text-sm text-gray-700 mb-1 block"
+              >Select a color</label
+            >
+            <div id="color-grid" class="grid grid-cols-8 gap-2 mb-3"></div>
+
+            <div class="flex items-center justify-between">
+              <button
+                id="remove-color-btn"
+                class="text-gray-600 hover:text-red-600 text-sm"
+              >
+                Remove color
+              </button>
+              <button
+                id="create-label-confirm"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+          <!-- ✏️ EDIT LABEL POPUP -->
+          <div
+            id="edit-label-popup-wrapper"
+            class="hidden fixed inset-0 z-[90] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          >
+            <div
+              id="edit-label-popup"
+              class="bg-white border border-gray-300 rounded-lg shadow-xl w-96 p-4 animate-[fadeIn_0.15s_ease-out]"
+            >
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-800 text-sm">Edit label</h3>
+                <button
+                  onclick="closeEditLabelPopup()"
+                  class="text-gray-500 hover:text-gray-700 text-lg"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div
+                id="edit-label-preview"
+                class="w-full h-8 rounded-md mb-3 flex items-center justify-center text-sm font-semibold text-white"
+              >
+                New
+              </div>
+
+              <input
+                id="edit-label-name"
+                type="text"
+                placeholder="Title"
+                class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400"
+              />
+
+              <label class="text-sm text-gray-700 mb-1 block"
+                >Select a color</label
+              >
+              <div
+                id="edit-color-grid"
+                class="grid grid-cols-8 gap-2 mb-3"
+              ></div>
+
+              <div class="flex items-center justify-between mb-3">
+                <button
+                  onclick="removeEditColor()"
+                  class="text-gray-600 hover:text-red-600 text-sm"
+                >
+                  ✕ Remove color
+                </button>
+              </div>
+
+              <div class="flex justify-between">
+                <button
+                  onclick="saveEditedLabel()"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium"
+                >
+                  Save
+                </button>
+                <button
+                  onclick="deleteEditedLabel()"
+                  class="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-medium"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🔗 SHARE BOARD POPUP -->
+          <div
+            id="share-board-popup"
+            class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          >
+            <div class="bg-white rounded-lg shadow-2xl w-[460px] p-5">
+              <!-- Header -->
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">Share board</h2>
+                <button
+                  id="close-share-popup"
+                  class="text-gray-500 hover:text-gray-700 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div class="flex items-center gap-2 mb-3 relative">
+                <div class="relative flex-1">
+                  <input
+                    id="invite-email"
+                    type="email"
+                    placeholder="Email address or name"
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                  />
+                  <!-- 📩 Suggestion dropdown -->
+                  <div
+                    id="invite-suggestions"
+                    class="hidden absolute bg-white border border-gray-300 rounded-md shadow-md mt-1 w-full z-[9999]"
+                  ></div>
+                </div>
+
+                <select
+                  id="invite-role"
+                  class="border border-gray-300 rounded-md text-sm px-2 py-2"
+                >
+                  <option value="MEMBER">Member</option>
+                  <option value="ADMIN">PM</option>
+                </select>
+                <button
+                  id="invite-btn"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Share
+                </button>
+              </div>
+
+              <!-- Anyone with link -->
+              <div
+                class="flex items-center justify-between text-sm border-t border-b py-2 mb-3"
+              >
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-1">
+                    <span class="text-gray-600">🔗</span>
+                    <span class="text-gray-700"
+                      >Anyone with the link can join as a member</span
+                    >
+                  </div>
+                  <div class="ml-5 mt-1 flex gap-3 text-blue-600 text-xs">
+                    <a href="#" id="copy-link" class="hover:underline"
+                      >Copy link</a
+                    >
+                    <a
+                      href="#"
+                      id="delete-link"
+                      class="hover:underline text-red-600"
+                      >Delete link</a
+                    >
+                  </div>
+                  <p
+                    id="share-link-hint"
+                    class="text-xs text-gray-500 mt-1 ml-5 italic"
+                  ></p>
+                </div>
+                <select
+                  id="link-permission"
+                  class="text-xs border border-gray-300 rounded-md px-2 py-1 text-gray-700"
+                >
+                  <option>Can view</option>
+                  <option>Can edit</option>
+                  <option>Admin</option>
+                </select>
+              </div>
+
+              <!-- Tabs -->
+              <div class="flex items-center gap-5 border-b mb-2">
+                <button
+                  id="tab-members"
+                  class="text-blue-600 border-b-2 border-blue-600 text-sm font-semibold pb-1"
+                >
+                  Board members
+                </button>
+                <button
+                  id="tab-requests"
+                  class="text-gray-500 text-sm font-medium hover:text-blue-600"
+                >
+                  Join requests
+                </button>
+              </div>
+
+              <!-- Members list -->
+              <div
+                id="members-list"
+                class="space-y-2 max-h-[280px] overflow-y-auto mt-2"
+              >
+                <!-- Render member rows here -->
+              </div>
+            </div>
+          </div>
+          <!-- 📛 Confirm Delete Popup -->
+          <div
+            id="delete-link-confirm"
+            class="hidden absolute bg-white border border-gray-300 rounded-lg shadow-lg p-3 w-64 z-[999] animate-[fadeIn_0.15s_ease-out]"
+          >
+            <p class="text-sm text-gray-700 mb-2">
+              Liên kết chia sẻ hiện có sẽ không hoạt động nữa.
+            </p>
+            <button
+              id="confirm-delete-link"
+              class="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-2 rounded-md font-medium"
+            >
+              Xóa liên kết chia sẻ
+            </button>
+          </div>
+
+          <!-- 📅 DATE POPUP -->
+          <div
+            id="date-popup"
+            class="hidden fixed z-[90] bg-white border border-gray-300 rounded-lg shadow-xl w-96 p-4"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-gray-800 text-sm">Dates</h3>
+              <button
+                id="close-date-btn"
+                class="text-gray-500 hover:text-gray-700 text-lg"
+              >
+                ×
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="start-check" class="w-4 h-4" />
+                <label for="start-check" class="text-sm text-gray-700"
+                  >Start date</label
+                >
+              </div>
+              <input
+                type="datetime-local"
+                id="start-date-input"
+                class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+                disabled
+              />
+
+              <div class="flex items-center gap-2 mt-3">
+                <input type="checkbox" id="due-check" class="w-4 h-4" />
+                <label for="due-check" class="text-sm text-gray-700"
+                  >Due date</label
+                >
+              </div>
+              <input
+                type="datetime-local"
+                id="due-date-input"
+                class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm"
+                disabled
+              />
+
+              <div>
+                <label class="text-sm text-gray-700">Recurring</label>
+                <select
+                  id="recurring-select"
+                  class="w-full mt-1 border border-gray-300 rounded-md px-2 py-1 text-sm"
+                >
+                  <option>Never</option>
+                  <option>Daily</option>
+                  <option>Weekly</option>
+                  <option>Monthly</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="text-sm text-gray-700"
+                  >Set due date reminder</label
+                >
+                <select
+                  id="reminder-select"
+                  class="w-full mt-1 border border-gray-300 rounded-md px-2 py-1 text-sm"
+                >
+                  <option>Never</option>
+                  <option>5 Minutes before</option>
+                  <option>10 Minutes before</option>
+                  <option>1 Hour before</option>
+                  <option>1 Day before</option>
+                </select>
+              </div>
+
+              <div class="flex items-center justify-between mt-4">
+                <button
+                  id="remove-date-btn"
+                  class="text-gray-600 hover:text-red-600 text-sm font-medium"
+                >
+                  Remove
+                </button>
+                <button
+                  id="save-date-btn"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 📎 ATTACH FILE POPUP -->
+          <div
+            id="attach-popup"
+            class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          >
+            <div
+              class="bg-white rounded-lg shadow-2xl w-[420px] p-5 animate-[fadeIn_0.15s_ease-out]"
+            >
+              <!-- Header -->
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">
+                  Attach a file or link
+                </h2>
+                <button
+                  id="close-attach-popup"
+                  class="text-gray-500 hover:text-gray-700 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <!-- Upload section -->
+              <div class="mb-4">
+                <label class="text-sm text-gray-700 font-medium mb-1 block"
+                  >Attach a file from your computer</label
+                >
+                <input id="popup-attachment-file" type="file" class="hidden" />
+                <button
+                  id="choose-file-btn"
+                  class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 rounded-md"
+                >
+                  Choose a file
+                </button>
+                <p class="text-xs text-gray-500 mt-1">
+                  You can also drag and drop files to upload.
+                </p>
+              </div>
+
+              <!-- Link section -->
+              <div class="mb-4">
+                <label class="text-sm text-gray-700 font-medium mb-1 block">
+                  Search or paste a link <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="link-input"
+                  type="url"
+                  placeholder="Paste link here..."
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+                />
+              </div>
+
+              <!-- Display text -->
+              <div class="mb-4">
+                <label class="text-sm text-gray-700 font-medium mb-1 block"
+                  >Display text (optional)</label
+                >
+                <input
+                  id="display-text"
+                  type="text"
+                  placeholder="Text to display"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  Give this link a title or description
+                </p>
+              </div>
+
+              <!-- Recently viewed -->
+              <div class="mb-5">
+                <p class="text-sm font-medium text-gray-700 mb-2">
+                  Recently Viewed
+                </p>
+                <div id="recent-links" class="space-y-1 text-sm text-blue-600">
+                  <p class="text-gray-400 italic text-sm">
+                    Loading recent links...
+                  </p>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex justify-end gap-2">
+                <button
+                  id="cancel-attach-btn"
+                  class="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  id="insert-attach-btn"
+                  class="px-4 py-2 text-sm rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Insert
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 📄 ATTACHMENT PREVIEW MODAL -->
+          <div
+            id="attachment-preview-modal"
+            class="hidden fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center"
+          >
+            <div
+              class="bg-white rounded-lg shadow-2xl w-[90%] max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+            >
+              <!-- Header -->
+              <div class="flex justify-between items-center p-3 border-b">
+                <h2
+                  id="preview-file-name"
+                  class="font-semibold text-gray-800 text-sm"
+                ></h2>
+                <button
+                  id="close-preview-btn"
+                  class="text-gray-600 hover:text-gray-900 text-2xl font-light"
+                >
+                  ×
+                </button>
+              </div>
+
+              <!-- Content -->
+              <div
+                id="preview-content"
+                class="flex-1 flex items-center justify-center bg-gray-50"
+              >
+                <p class="text-gray-500 italic">Loading preview...</p>
+              </div>
+
+              <!-- Footer -->
+              <div class="p-3 border-t flex justify-end">
+                <a
+                  id="download-file-btn"
+                  href="#"
+                  download
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                >
+                  Download
+                </a>
+              </div>
+            </div>
+          </div>
+          <div
+            id="card-context-menu"
+            class="hidden fixed z-[70] bg-white border border-gray-300 rounded-lg shadow-lg w-64 p-2 space-y-1"
+          >
+            <button
+              data-action="open"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                <path
+                  fill-rule="evenodd"
+                  d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h4a1 1 0 110 2H9a1 1 0 01-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Open card
+            </button>
+            <button
+              data-action="labels"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7a1 1 0 011.414-1.414L10 14.586l6.293-6.293a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Edit labels
+            </button>
+            <button
+              data-action="members"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Change members
+            </button>
+
+            <button
+              data-action="cover"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Change cover
+            </button>
+
+            <button
+              data-action="dates"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Edit dates
+            </button>
+
+            <button
+              data-action="move"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Move
+            </button>
+
+            <button
+              data-action="copy"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"
+                />
+                <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h6a2 2 0 00-2-2H5z" />
+              </svg>
+              Copy card
+            </button>
+            <button
+              data-action="mark-complete"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-green-700 hover:bg-green-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-7.778 7.778a1 1 0 01-1.414 0L3.293 9.85a1 1 0 111.414-1.414l3.102 3.102 7.071-7.071a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Mark as Complete
+            </button>
+
+            <button
+              data-action="copy-link"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Copy link
+            </button>
+
+            <button
+              data-action="mirror"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M12 1.586l-4 4V4a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h2a2 2 0 002-2v-1.586l4 4a1 1 0 001.707-.707V2.293a1 1 0 00-1.707-.707zM6 12H4V4h2v8zm8 0V4l-3 3 3 3z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Mirror
+            </button>
+
+            <button
+              data-action="archive"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-red-600 hover:bg-red-500 hover:text-white rounded"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7H5V5z"
+                  clip-rule="evenodd"
+                />
+                <path d="M8 8a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+              </svg>
+              Archive
+            </button>
+
+            <button
+              id="delete-card-btn"
+              data-action="delete"
+              class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-white bg-red-600 hover:bg-red-700 rounded hidden"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M6 8a1 1 0 011-1h6a1 1 0 011 1v8a2 2 0 01-2 2H8a2 2 0 01-2-2V8zm2 0v8h4V8H8zM4 5a1 1 0 011-1h10a1 1 0 011 1v1H4V5z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Delete permanently
+            </button>
+          </div>
+
+          <div
+            id="mention-suggestions"
+            class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-md max-h-40 overflow-y-auto"
+          ></div>
+          <div id="toast-stack"></div>
+
+          <div
+            id="members-popup"
+            class="hidden absolute top-10 left-0 bg-white border border-gray-300 rounded-lg shadow-lg w-80 p-3 z-[999]"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold text-gray-800 text-sm">Members</h3>
+              <button
+                id="close-members-btn"
+                class="text-gray-500 hover:text-gray-700 text-lg"
+              >
+                ×
+              </button>
+            </div>
+
+            <input
+              id="search-member-input"
+              type="text"
+              placeholder="Search members..."
+              class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400"
+            />
+
+            <div
+              id="members-section"
+              class="space-y-2 max-h-[300px] overflow-y-auto"
+            ></div>
+          </div>
+        </main>
       </div>
-      <h1 class="text-lg font-semibold text-slate-700">AProjectO</h1>
     </div>
 
-    <nav class="flex-1 space-y-2 text-slate-600">
-      <a href="#" class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium">
-        <i class="fa-regular fa-clipboard"></i> Project
-      </a>
-      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-regular fa-folder-open"></i> Tasks
-      </a>
-      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-regular fa-clock"></i> Work Logs
-      </a>
-      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-solid fa-gear"></i> Settings
-      </a>
-      <a href="#" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-regular fa-chart-bar"></i> Performance
-      </a>
-    </nav>
-  </aside>
-
-  <!-- Header -->
-  <header class="ml-60 bg-white h-16 flex items-center justify-between px-8 shadow-sm border-b border-slate-200 sticky top-0 z-30">
-    <div class="flex items-center space-x-2">
-      <div class="bg-blue-100 p-2 rounded-lg">
-        <img src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png" class="w-6 h-6" alt="DevCollab" />
-      </div>
-      <span class="text-lg font-semibold text-slate-700">AProjectO</span>
-    </div>
-
-    <div class="relative w-96">
-      <input type="text" placeholder="Search for anything..."
-             class="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-           stroke="currentColor" class="w-5 h-5 text-slate-400 absolute left-3 top-2.5">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
-      </svg>
-    </div>
-
-    <div class="flex items-center space-x-4">
-      <button class="text-slate-500 hover:text-blue-600">
-        <i class="fa-regular fa-bell text-lg"></i>
-      </button>
-      <div class="text-right">
-        <p class="text-sm font-medium text-slate-700">Anima Agrawal</p>
-        <p class="text-xs text-slate-400">U.P, India</p>
-      </div>
-      <img src="https://i.pravatar.cc/60?img=68" alt="avatar" class="w-10 h-10 rounded-full border">
-    </div>
-  </header>
-
-  <!-- Main content -->
-  <main class="flex-1 p-8 ml-60 bg-slate-50 space-y-8">
-    <h1 class="text-2xl font-semibold text-slate-800 mb-2">Projects</h1>
-
-    <!-- Main grid -->
-    <div class="grid grid-cols-12 gap-6">
-      <!-- Project Stats -->
-      <div class="col-span-12 md:col-span-4 bg-white rounded-2xl shadow p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-semibold text-slate-700">Projects Stats</h3>
-          <button class="text-sm px-3 py-1 bg-blue-50 text-blue-700 rounded-lg">This Week ▼</button>
-        </div>
-
-        <div class="flex items-start">
-          <div class="w-1/2">
-            <canvas id="pieChart" height="180"></canvas>
-          </div>
-          <div class="w-1/2 pl-4">
-            <ul id="chart-legend" class="space-y-2 text-sm font-medium text-slate-600"></ul>
-            <ul id="task-stats" class="mt-4 space-y-1 text-sm"></ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- Performance -->
-      <div class="col-span-12 md:col-span-5 bg-white rounded-2xl shadow p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-semibold text-slate-700">Performance</h3>
-          <button class="text-sm px-3 py-1 bg-blue-50 text-blue-700 rounded-lg">This Week ▼</button>
-        </div>
-        <canvas id="lineChart" height="180"></canvas>
-      </div>
-
-      <!-- Projects list -->
-      <div class="col-span-12 md:col-span-3 bg-white rounded-2xl shadow p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-semibold text-slate-700">Projects</h3>
-          <a href="#" class="text-sm text-indigo-600 font-medium hover:underline">View all</a>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="text-center">
-            <img src="https://picsum.photos/80?random=1" class="w-20 h-20 rounded-lg mx-auto mb-2 shadow-sm">
-            <p class="text-sm text-slate-700">Emo stuff</p>
-          </div>
-          <div class="text-center">
-            <img src="https://picsum.photos/80?random=2" class="w-20 h-20 rounded-lg mx-auto mb-2 shadow-sm">
-            <p class="text-sm text-slate-700">Tim Burton</p>
-          </div>
-          <div class="text-center">
-            <img src="https://picsum.photos/80?random=3" class="w-20 h-20 rounded-lg mx-auto mb-2 shadow-sm">
-            <p class="text-sm text-slate-700">Halloween!</p>
-          </div>
-          <div class="text-center">
-            <img src="https://picsum.photos/80?random=4" class="w-20 h-20 rounded-lg mx-auto mb-2 shadow-sm">
-            <p class="text-sm text-slate-700">Spooky Art</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Members -->
-    <div class="bg-white rounded-2xl shadow p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="font-semibold text-slate-700">Members (39)</h3>
-        <a href="#" class="text-sm text-indigo-600 font-medium hover:underline">View all</a>
-      </div>
-
-      <div class="flex items-center mb-5">
-        <input type="text" placeholder="Search for anything..."
-               class="flex-1 border px-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none text-sm">
-      </div>
-
-      <div class="grid grid-cols-6 md:grid-cols-10 lg:grid-cols-12 gap-4">
-        <img src="https://i.pravatar.cc/60?img=1" class="rounded-full border-2 border-white shadow-md">
-        <img src="https://i.pravatar.cc/60?img=2" class="rounded-full border-2 border-white shadow-md">
-        <img src="https://i.pravatar.cc/60?img=3" class="rounded-full border-2 border-white shadow-md">
-        <img src="https://i.pravatar.cc/60?img=4" class="rounded-full border-2 border-white shadow-md">
-        <img src="https://i.pravatar.cc/60?img=5" class="rounded-full border-2 border-white shadow-md">
-        <img src="https://i.pravatar.cc/60?img=6" class="rounded-full border-2 border-white shadow-md">
-      </div>
-    </div>
-  </main>
-
- <script th:inline="javascript">
-  const projectId = [[${projectId}]];
-
-  async function loadDashboard() {
-    try {
-      const res = await fetch(`/api/pm/project/${projectId}/dashboard`, { credentials: 'include' });
-      if (!res.ok) throw new Error(`Server trả lỗi ${res.status}`);
-      const json = await res.json();
-      const d = json.data ?? json;
-
-      // 🟢 Hiển thị thống kê số lượng task
-      document.getElementById('task-stats').innerHTML = `
-        <li class="flex justify-between text-sm text-slate-600"><span>Completed</span><span>${d.doneTasks}</span></li>
-        <li class="flex justify-between text-sm text-slate-600"><span>On Hold</span><span>${d.reviewTasks}</span></li>
-        <li class="flex justify-between text-sm text-slate-600"><span>On Progress</span><span>${d.inProgressTasks}</span></li>
-        <li class="flex justify-between text-sm text-slate-600"><span>Pending</span><span>${d.openTasks}</span></li>
-      `;
-
-      // 🟡 Tính phần trăm
-      const total = d.totalTasks || 1;
-      const completed = ((d.doneTasks / total) * 100).toFixed(0);
-      const onHold = ((d.reviewTasks / total) * 100).toFixed(0);
-      const onProgress = ((d.inProgressTasks / total) * 100).toFixed(0);
-      const pending = ((d.openTasks / total) * 100).toFixed(0);
-
-      // 🟣 Biểu đồ tròn (Pie Chart)
-      const pieCtx = document.getElementById('pieChart').getContext('2d');
-      const pieChart = new Chart(pieCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Completed', 'On Hold', 'On Progress', 'Pending'],
-          datasets: [{
-            data: [completed, onHold, onProgress, pending],
-            backgroundColor: ['#0ea5e9', '#6366f1', '#3b82f6', '#ef4444'],
-            borderColor: '#fff',
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          cutout: '65%',
-          plugins: {
-            legend: { display: false },
-            datalabels: {
-              color: '#fff',
-              font: { weight: 'bold', size: 12 },
-              formatter: (value) => value + '%'
-            }
-          }
-        },
-        plugins: [ChartDataLabels]
-      });
-
-      const legendContainer = document.getElementById('chart-legend');
-      legendContainer.innerHTML = pieChart.data.labels.map((label, i) => `
-        <li><span style="background:${pieChart.data.datasets[0].backgroundColor[i]}"></span>${label}</li>
-      `).join('');
-
-      const resPerf = await fetch(`/api/pm/project/${projectId}/performance`, { credentials: 'include' });
-      if (!resPerf.ok) throw new Error(`Không tải được performance: ${resPerf.status}`);
-      const jsonPerf = await resPerf.json();
-      const perf = jsonPerf.data ?? jsonPerf;
-
-      const labels = perf.labels ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-      const achieved = perf.achieved ?? [0, 0, 0, 0, 0];
-      const target = perf.target ?? [0, 0, 0, 0, 0];
-
-      new Chart(document.getElementById('lineChart'), {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'Achieved',
-              data: achieved,
-              borderColor: '#f97316',
-              backgroundColor: 'rgba(249,115,22,0.2)',
-              fill: true,
-              tension: 0.3
-            },
-            {
-              label: 'Target',
-              data: target,
-              borderColor: '#6366f1',
-              backgroundColor: 'rgba(99,102,241,0.2)',
-              fill: true,
-              tension: 0.3
-            }
-          ]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { stepSize: 1 },
-              grid: { color: 'rgba(226,232,240,0.6)' }
-            },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-
-    } catch (err) {
-      console.error("Lỗi tải dashboard:", err);
-    }
-  } 
-  document.addEventListener('DOMContentLoaded', loadDashboard);
-</script>
-
-
-</body>
+    <!-- 📜 Script -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script type="module" src="/js/taskview/main.js"></script>
+  </body>
 </html>

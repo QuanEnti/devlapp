@@ -18,8 +18,9 @@ public class ViewAdminManagement {
 
     @GetMapping("/admin/user-reports")
     public String showUserReports() {
-        return "admin/user-report";  // maps to templates/admin/user-report.html
+        return "admin/user-report"; // maps to templates/admin/user-report.html
     }
+
     @GetMapping("/admin/dashboard")
     public String showDashboard() {
         return "admin/admin-dashboard";

@@ -25,105 +25,101 @@ import java.util.stream.Collectors;
 @Transactional
 public class ProjectReportServiceImpl implements ProjectReportService {
 
-    private final ProjectReportRepository reportRepo;
-    private final ProjectRepository projectRepo;
-    private final NotificationRepository notificationRepo;
-    private final ActivityService activityService;
+        private final ProjectReportRepository reportRepo;
+        private final ProjectRepository projectRepo;
+        private final NotificationRepository notificationRepo;
+        private final ActivityService activityService;
 
-    /** 🟢 Lấy tất cả report (phân trang) */
-    @Override
-    public Map<String, Object> getAllReports(int page, int size) {
-        if (page < 0) page = 0;
-        if (size <= 0 || size > 100) size = 10;
+        @Override
+        public Map<String, Object> getAllReports(int page, int size) {
+                if (page < 0)
+                        page = 0;
+                if (size <= 0 || size > 100)
+                        size = 10;
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ProjectReport> reportPage = reportRepo.findAllByOrderByCreatedAtDesc(pageable);
+                Pageable pageable = PageRequest.of(page, size);
+                Page<ProjectReport> reportPage = reportRepo.findAllByOrderByCreatedAtDesc(pageable);
 
-        List<ProjectReportDto> content = reportPage.getContent()
-                .stream()
-                .map(ProjectReportDto::new)
-                .collect(Collectors.toList());
+                List<ProjectReportDto> content = reportPage.getContent().stream()
+                                .map(ProjectReportDto::new).collect(Collectors.toList());
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", content);
-        response.put("currentPage", reportPage.getNumber());
-        response.put("totalItems", reportPage.getTotalElements());
-        response.put("totalPages", reportPage.getTotalPages());
-        return response;
-    }
+                Map<String, Object> response = new HashMap<>();
+                response.put("content", content);
+                response.put("currentPage", reportPage.getNumber());
+                response.put("totalItems", reportPage.getTotalElements());
+                response.put("totalPages", reportPage.getTotalPages());
+                return response;
+        }
 
-    /** ⚠️ Gửi cảnh báo (Warning) cho chủ dự án */
-    @Override
-    public void warnOwner(Long id, Map<String, String> body) {
-        String message = body.get("message");
+        /** ⚠️ Gửi cảnh báo (Warning) cho chủ dự án */
+        @Override
+        public void warnOwner(Long id, Map<String, String> body) {
+                String message = body.get("message");
 
-        ProjectReport report = reportRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
-        Project project = projectRepo.findById(report.getProject().getProjectId())
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+                ProjectReport report = reportRepo.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Report not found"));
+                Project project = projectRepo.findById(report.getProject().getProjectId())
+                                .orElseThrow(() -> new RuntimeException("Project not found"));
 
-        // Update report
-        report.setStatus("reviewed");
-        report.setActionTaken("Warning");
-        report.setReviewedAt(Instant.now());
-        reportRepo.save(report);
+                // Update report
+                report.setStatus("reviewed");
+                report.setActionTaken("Warning");
+                report.setReviewedAt(Instant.now());
+                reportRepo.save(report);
 
-        // Send notification
-        Notification n = new Notification();
-        n.setUser(project.getCreatedBy());
-        n.setType("warning");
-        n.setReferenceId(id);
-        // n.setContent("⚠️ Admin Warning: " + message);
-        n.setStatus("unread");
-        n.setCreatedAt(java.time.LocalDateTime.now());
-        notificationRepo.save(n);
+                // Send notification
+                Notification n = new Notification();
+                n.setUser(project.getCreatedBy());
+                n.setType("warning");
+                n.setReferenceId(id);
+                // n.setContent("⚠️ Admin Warning: " + message);
+                n.setStatus("unread");
+                n.setCreatedAt(java.time.LocalDateTime.now());
+                notificationRepo.save(n);
 
-        // // Log admin action
-        // activityService.logWithActor(
-        //         1L, // admin
-        //         "ProjectReport",
-        //         id,
-        //         "warn",
-        //         String.format("{\"project\":\"%s\",\"message\":\"%s\"}", project.getName(), message)
-        // );
-    }
+                // // Log admin action
+                // activityService.logWithActor(
+                // 1L, // admin
+                // "ProjectReport",
+                // id,
+                // "warn",
+                // String.format("{\"project\":\"%s\",\"message\":\"%s\"}", project.getName(),
+                // message)
+                // );
+        }
 
-    /** 🔴 Xóa hoặc ban dự án */
-    @Override
-    public void removeProject(Long id) {
-        ProjectReport report = reportRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
-        Project project = projectRepo.findById(report.getProject().getProjectId())
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+        /** 🔴 Xóa hoặc ban dự án */
+        @Override
+        public void removeProject(Long id) {
+                ProjectReport report = reportRepo.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Report not found"));
+                Project project = projectRepo.findById(report.getProject().getProjectId())
+                                .orElseThrow(() -> new RuntimeException("Project not found"));
 
-        // Update project status
-        project.setStatus("removed");
-        projectRepo.save(project);
+                // Update project status
+                project.setStatus("removed");
+                projectRepo.save(project);
 
-        // Update report
-        report.setStatus("reviewed");
-        report.setActionTaken("Removed");
-        report.setReviewedAt(Instant.now());
-        reportRepo.save(report);
+                // Update report
+                report.setStatus("reviewed");
+                report.setActionTaken("Removed");
+                report.setReviewedAt(Instant.now());
+                reportRepo.save(report);
 
-        // // Send notification
-        // Notification n = new Notification();
-        // n.setUser(project.getCreatedBy());
-        // n.setType("ban");
-        // n.setReferenceId(id);
-        // n.setContent("🚫 Your project \"" + project.getName() + "\" has been removed due to a violation.");
-        // n.setStatus("unread");
-        // n.setCreatedAt(java.time.LocalDateTime.now());
-        // notificationRepo.save(n);
+                // // Send notification
+                // Notification n = new Notification();
+                // n.setUser(project.getCreatedBy());
+                // n.setType("ban");
+                // n.setReferenceId(id);
+                // n.setContent("🚫 Your project \"" + project.getName() + "\" has been removed due
+                // to a violation.");
+                // n.setStatus("unread");
+                // n.setCreatedAt(java.time.LocalDateTime.now());
+                // notificationRepo.save(n);
 
-        // Log admin action
-        activityService.logWithActor(
-                1L,
-                "ProjectReport",
-                id,
-                "ban",
-                String.format("{\"project\":\"%s\",\"status\":\"removed\"}", project.getName())
-        );
-    }
+                // Log admin action
+                activityService.logWithActor(1L, "ProjectReport", id, "ban", String.format(
+                                "{\"project\":\"%s\",\"status\":\"removed\"}", project.getName()));
+        }
 }
 

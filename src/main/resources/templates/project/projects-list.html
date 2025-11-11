@@ -1,145 +1,200 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8" />
-  <title>All Projects - DevCollab</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-  </style>
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <title>All Projects - DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f1f5f9;
+      }
+    </style>
+  </head>
 
-<body class="bg-slate-100">
-
-  <!-- Sidebar -->
-  <aside class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm">
-    <div class="flex items-center px-6 mb-8">
-      <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-        <i class="fa-solid fa-user text-blue-600 text-lg"></i>
+  <body class="bg-slate-100">
+    <!-- Sidebar -->
+    <aside
+      class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm"
+    >
+      <div class="flex items-center px-6 mb-8">
+        <div
+          class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3"
+        >
+          <i class="fa-solid fa-user text-blue-600 text-lg"></i>
+        </div>
+        <h1 class="text-lg font-semibold text-slate-700">DevCollab</h1>
       </div>
-      <h1 class="text-lg font-semibold text-slate-700">DevCollab</h1>
-    </div>
 
-    <nav class="flex-1 space-y-2 text-slate-600">
-      <a href="/view/pm/dashboard" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-regular fa-chart-bar"></i> Overview
-      </a>
-      <a href="/view/pm/projects" class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium">
-        <i class="fa-regular fa-clipboard"></i> Projects
-      </a>
-      <a href="/view/pm/teams" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-regular fa-users"></i> Teams
-      </a>
-      <a href="/view/pm/settings" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full">
-        <i class="fa-solid fa-gear"></i> Settings
-      </a>
-    </nav>
-  </aside>
+      <nav class="flex-1 space-y-2 text-slate-600">
+        <a
+          href="/view/pm/dashboard"
+          class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full"
+        >
+          <i class="fa-regular fa-chart-bar"></i> Overview
+        </a>
+        <a
+          href="/view/pm/projects"
+          class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium"
+        >
+          <i class="fa-regular fa-clipboard"></i> Projects
+        </a>
+        <a
+          href="/view/pm/teams"
+          class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full"
+        >
+          <i class="fa-regular fa-users"></i> Teams
+        </a>
+        <a
+          href="/view/pm/settings"
+          class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full"
+        >
+          <i class="fa-solid fa-gear"></i> Settings
+        </a>
+      </nav>
+    </aside>
 
-  <!-- Header -->
-  <header class="ml-60 bg-white h-16 flex items-center justify-between px-8 shadow-sm border-b border-slate-200 sticky top-0 z-30">
-    <h1 class="text-xl font-semibold text-slate-700">Projects</h1>
-    <div class="flex items-center gap-4">
-      <div class="relative">
-        <input id="searchBox" type="text" placeholder="Search projects..."
-               class="pl-10 pr-3 py-2 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-400 outline-none w-64" />
-        <svg xmlns="http://www.w3.org/2000/svg"
-             class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"
-             fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
-        </svg>
+    <!-- Header -->
+    <header
+      class="ml-60 bg-white h-16 flex items-center justify-between px-8 shadow-sm border-b border-slate-200 sticky top-0 z-30"
+    >
+      <h1 class="text-xl font-semibold text-slate-700">Projects</h1>
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <input
+            id="searchBox"
+            type="text"
+            placeholder="Search projects..."
+            class="pl-10 pr-3 py-2 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-400 outline-none w-64"
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"
+            />
+          </svg>
+        </div>
+        <button
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+        >
+          Create
+        </button>
       </div>
-      <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-        Create
-      </button>
-    </div>
-  </header>
+    </header>
 
-  <!-- Main -->
-  <main class="ml-60 p-8">
-    <div id="project-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-    <div id="pagination" class="flex justify-center items-center gap-2 mt-8 text-sm"></div>
-  </main>
+    <!-- Main -->
+    <main class="ml-60 p-8">
+      <div
+        id="project-list"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+      ></div>
+      <div
+        id="pagination"
+        class="flex justify-center items-center gap-2 mt-8 text-sm"
+      ></div>
+    </main>
 
-  <script>
-    let currentPage = 0;
-    let totalPages = 1;
-    let keyword = "";
+    <script>
+      let currentPage = 0;
+      let totalPages = 1;
+      let keyword = "";
 
-    // ✅ Kiểm tra quyền PM trước khi load
-    async function ensureCurrentUser() {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("/api/auth/me", {
-          headers: { "Authorization": "Bearer " + token },
-          credentials: "include"
-        });
-        if (!res.ok) throw new Error("Unauthorized");
+      // ✅ Kiểm tra quyền PM trước khi load
+      async function ensureCurrentUser() {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch("/api/auth/me", {
+            headers: { Authorization: "Bearer " + token },
+            credentials: "include",
+          });
+          if (!res.ok) throw new Error("Unauthorized");
 
-        const result = await res.json();
-        const user = result.user || result;
-        const roles = user.roles || [];
+          const result = await res.json();
+          const user = result.user || result;
+          const roles = user.roles || [];
 
-        if (!roles.includes("ROLE_PM")) {
-          alert("⚠️ Bạn không có quyền truy cập trang này!");
-          window.location.href = "/view/member/overview";
+          if (!roles.includes("ROLE_PM")) {
+            alert("⚠️ Bạn không có quyền truy cập trang này!");
+            window.location.href = "/view/member/overview";
+            return false;
+          }
+
+          console.log("✅ PM xác thực:", user.email);
+          return true;
+        } catch (err) {
+          console.error("❌ Lỗi xác thực:", err);
+          window.location.href = "/view/signin?redirect=/view/pm/projects";
           return false;
         }
-
-        console.log("✅ PM xác thực:", user.email);
-        return true;
-      } catch (err) {
-        console.error("❌ Lỗi xác thực:", err);
-        window.location.href = "/view/signin?redirect=/view/pm/projects";
-        return false;
       }
-    }
 
-    // ✅ Load danh sách dự án
-    async function loadProjects(page = 0) {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`/api/pm/project/all?page=${page}&size=6&keyword=${encodeURIComponent(keyword)}`, {
-          headers: { "Authorization": "Bearer " + token },
-          credentials: "include"
-        });
+      // ✅ Load danh sách dự án
+      async function loadProjects(page = 0) {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch(
+            `/api/pm/project/all?page=${page}&size=6&keyword=${encodeURIComponent(
+              keyword
+            )}`,
+            {
+              headers: { Authorization: "Bearer " + token },
+              credentials: "include",
+            }
+          );
 
-        const data = await res.json();
-        const content = data.content || data.data?.content || [];
-        totalPages = data.totalPages || data.data?.totalPages || 1;
-        currentPage = page;
+          const data = await res.json();
+          const content = data.content || data.data?.content || [];
+          totalPages = data.totalPages || data.data?.totalPages || 1;
+          currentPage = page;
 
-        const container = document.getElementById("project-list");
-        if (!content.length) {
-          container.innerHTML = `<p class='text-slate-500 text-center col-span-3'>No projects found.</p>`;
-          document.getElementById("pagination").innerHTML = "";
-          return;
-        }
+          const container = document.getElementById("project-list");
+          if (!content.length) {
+            container.innerHTML = `<p class='text-slate-500 text-center col-span-3'>No projects found.</p>`;
+            document.getElementById("pagination").innerHTML = "";
+            return;
+          }
 
-        container.innerHTML = content.map(p => {
-          const visibleAvatars = (p.memberAvatars || []).slice(0, 4);
-          const visibleNames = (p.memberNames || []).slice(0, 4);
-          const extraCount = Math.max(0, (p.memberCount || 0) - 4);
+          container.innerHTML = content
+            .map((p) => {
+              const visibleAvatars = (p.memberAvatars || []).slice(0, 4);
+              const visibleNames = (p.memberNames || []).slice(0, 4);
+              const extraCount = Math.max(0, (p.memberCount || 0) - 4);
 
-          const avatarsHTML = `
+              const avatarsHTML = `
             <div class="flex items-center mt-3">
               <div class="flex -space-x-3 overflow-visible relative z-10">
-                ${visibleAvatars.map((url, i) => `
+                ${visibleAvatars
+                  .map(
+                    (url, i) => `
                   <div class="relative group">
-                    <img src="${url || 'https://i.pravatar.cc/100?img=' + i}" 
+                    <img src="${url || "https://i.pravatar.cc/100?img=" + i}" 
                         class="w-9 h-9 rounded-full border-2 border-white object-cover" 
                         alt="Member avatar">
                     <div class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 
                                 opacity-0 group-hover:opacity-100 transition-opacity duration-200 
                                 bg-slate-800 text-white text-xs font-medium py-1 px-2 rounded-lg 
                                 pointer-events-none whitespace-nowrap shadow-sm">
-                      ${visibleNames[i] || 'Member'}
+                      ${visibleNames[i] || "Member"}
                     </div>
                   </div>
-                `).join('')}
-                ${extraCount > 0 ? `
+                `
+                  )
+                  .join("")}
+                ${
+                  extraCount > 0
+                    ? `
                   <div class="relative group">
                     <div class="w-9 h-9 rounded-full bg-blue-50 border-2 border-white flex items-center justify-center 
                                 text-sm font-semibold text-blue-600 cursor-pointer">+${extraCount}</div>
@@ -149,30 +204,38 @@
                                 pointer-events-none whitespace-nowrap shadow-sm">
                       ${p.memberCount} members
                     </div>
-                  </div>` : ''}
+                  </div>`
+                    : ""
+                }
               </div>
             </div>
           `;
 
-          return `
+              return `
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-all">
               <div class="flex justify-between items-start mb-2">
                 <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
                   <a href="/view/pm/project/board?projectId=${p.projectId}" 
-                    class="hover:text-blue-600 transition">${p.name || 'Untitled'}</a>
+                    class="hover:text-blue-600 transition">${
+                      p.name || "Untitled"
+                    }</a>
                   <i class="fa-regular fa-pen-to-square text-gray-400 text-sm hover:text-blue-500 cursor-pointer"></i>
                 </h3>
 
                 <span class="text-xs font-medium px-3 py-1 rounded-full
-                  ${p.status === 'Completed' ? 'bg-green-50 text-green-600 border border-green-200'
-                  : p.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                  : 'bg-red-50 text-red-600 border border-red-200'}">
-                  ${p.status || 'Offtrack'}
+                  ${
+                    p.status === "Completed"
+                      ? "bg-green-50 text-green-600 border border-green-200"
+                      : p.status === "In Progress"
+                      ? "bg-blue-50 text-blue-600 border border-blue-200"
+                      : "bg-red-50 text-red-600 border border-red-200"
+                  }">
+                  ${p.status || "Offtrack"}
                 </span>
               </div>
 
               <p class="text-gray-500 text-sm mb-4 leading-relaxed">
-                ${p.description || 'No description provided for this project.'}
+                ${p.description || "No description provided for this project."}
               </p>
 
               <div class="border-t border-gray-200 my-3"></div>
@@ -180,7 +243,9 @@
               <div class="flex justify-between items-center text-sm text-gray-500">
                 <div class="flex items-center gap-2">
                   <i class="fa-regular fa-clock text-red-500"></i>
-                  <span class="font-medium text-gray-700">${p.dueDate || 'No due date'}</span>
+                  <span class="font-medium text-gray-700">${
+                    p.dueDate || "No due date"
+                  }</span>
                 </div>
 
                 <div class="flex items-center gap-1">
@@ -192,47 +257,61 @@
               ${avatarsHTML}
             </div>
           `;
-        }).join('');
+            })
+            .join("");
 
-        renderPagination();
-      } catch (err) {
-        console.error("⚠️ Error loading projects:", err);
-        alert("Không thể tải danh sách dự án. Vui lòng đăng nhập lại!");
+          renderPagination();
+        } catch (err) {
+          console.error("⚠️ Error loading projects:", err);
+          alert("Không thể tải danh sách dự án. Vui lòng đăng nhập lại!");
+        }
       }
-    }
 
-    function renderPagination() {
-      const container = document.getElementById("pagination");
-      let html = "";
+      function renderPagination() {
+        const container = document.getElementById("pagination");
+        let html = "";
 
-      html += `<button ${currentPage === 0 ? 'disabled' : ''} 
-                 class="px-3 py-1 border rounded-md ${currentPage === 0 ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'hover:bg-slate-100'}"
+        html += `<button ${currentPage === 0 ? "disabled" : ""} 
+                 class="px-3 py-1 border rounded-md ${
+                   currentPage === 0
+                     ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                     : "hover:bg-slate-100"
+                 }"
                  onclick="loadProjects(${currentPage - 1})">Prev</button>`;
 
-      for (let i = 0; i < totalPages; i++) {
-        html += `<button class="px-3 py-1 border rounded-md ${i === currentPage ? 'bg-blue-600 text-white' : 'hover:bg-blue-50'}"
+        for (let i = 0; i < totalPages; i++) {
+          html += `<button class="px-3 py-1 border rounded-md ${
+            i === currentPage ? "bg-blue-600 text-white" : "hover:bg-blue-50"
+          }"
                  onclick="loadProjects(${i})">${i + 1}</button>`;
-      }
+        }
 
-      html += `<button ${currentPage === totalPages - 1 ? 'disabled' : ''} 
-                 class="px-3 py-1 border rounded-md ${currentPage === totalPages - 1 ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'hover:bg-slate-100'}"
+        html += `<button ${currentPage === totalPages - 1 ? "disabled" : ""} 
+                 class="px-3 py-1 border rounded-md ${
+                   currentPage === totalPages - 1
+                     ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                     : "hover:bg-slate-100"
+                 }"
                  onclick="loadProjects(${currentPage + 1})">Next</button>`;
 
-      container.innerHTML = html;
-    }
+        container.innerHTML = html;
+      }
 
-    document.getElementById("searchBox").addEventListener("input", e => {
-      keyword = e.target.value.trim();
-      loadProjects(0);
-    });
+      document.getElementById("searchBox").addEventListener("input", (e) => {
+        keyword = e.target.value.trim();
+        loadProjects(0);
+      });
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      const ok = await ensureCurrentUser();
-      if (!ok) return;
-      loadProjects();
-    });
-  </script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const ok = await ensureCurrentUser();
+        if (!ok) return;
+        loadProjects();
+      });
+    </script>
 
-  <script src="https://kit.fontawesome.com/a2e0e9c6f1.js" crossorigin="anonymous"></script>
-</body>
+    <script
+      src="https://kit.fontawesome.com/a2e0e9c6f1.js"
+      crossorigin="anonymous"
+    ></script>
+  </body>
 </html>

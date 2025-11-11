@@ -257,6 +257,29 @@
                 </configuration>
             </plugin>
 
+
+        <plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>exec-maven-plugin</artifactId>
+    <version>3.1.0</version>
+    <executions>
+        <execution>
+            <id>run-katalon</id>
+            <phase>verify</phase>
+            <goals>
+                <goal>exec</goal>
+            </goals>
+            <configuration>
+                <executable>cmd</executable>
+                <arguments>
+                    <argument>/c</argument>
+                    <argument>katalonc -noSplash -runMode=console -projectPath="E:\DEVLLAP\devlapp-katalon\DevCollab.prj" -retry=0 -testSuitePath="Test Suites/User_Flow" -executionProfile="default" -browserType="Chrome (headless)"</argument>
+                </arguments>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+
         </plugins>
     </build>
 

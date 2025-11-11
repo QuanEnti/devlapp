@@ -66,7 +66,8 @@ public class MailService {
     // ======================================================
     // 🔔 Gửi Email Notification (đơn lẻ)
     // ======================================================
-    public void sendNotificationMail(String to, String title, String messageBody, String link, String senderName) {
+    public void sendNotificationMail(String to, String title, String messageBody, String link,
+            String senderName) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -98,7 +99,8 @@ public class MailService {
     // ======================================================
     // 📬 Gửi Email Digest (tổng hợp nhiều thông báo)
     // ======================================================
-    public void sendDigestMail(String to, String title, List<Map<String, String>> notifications, String senderName) {
+    public void sendDigestMail(String to, String title, List<Map<String, String>> notifications,
+            String senderName) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -125,7 +127,7 @@ public class MailService {
             e.printStackTrace();
         }
     }
-    
+
     public void sendInviteRegistrationMail(String to, Project project, User inviter, String token) {
         try {
             MimeMessage mime = mailSender.createMimeMessage();

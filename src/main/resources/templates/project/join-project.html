@@ -1,123 +1,138 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tham gia dự án - DevCollab</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #4f46e5, #9333ea);
-    }
-  </style>
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tham gia dự án - DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #4f46e5, #9333ea);
+      }
+    </style>
+  </head>
 
-<body class="min-h-screen flex items-center justify-center">
-  <div id="invite-card" class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center">
-    <img src="/assets/devcollab-logo.svg" alt="DevCollab" class="w-14 h-14 mx-auto mb-3">
+  <body class="min-h-screen flex items-center justify-center">
+    <div
+      id="invite-card"
+      class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center"
+    >
+      <img
+        src="/assets/devcollab-logo.svg"
+        alt="DevCollab"
+        class="w-14 h-14 mx-auto mb-3"
+      />
 
-    <h1 id="invite-title" class="text-lg font-semibold text-gray-800 mb-1">
-      Nguyễn Tiến Quân đã chia sẻ 
-      <span class="font-bold text-indigo-600">Design Project Template</span> với bạn.
-    </h1>
+      <h1 id="invite-title" class="text-lg font-semibold text-gray-800 mb-1">
+        Nguyễn Tiến Quân đã chia sẻ
+        <span class="font-bold text-indigo-600">Design Project Template</span>
+        với bạn.
+      </h1>
 
-    <p class="text-gray-500 text-sm mb-6">
-      Bạn được mời tham gia dự án trên DevCollab. Hãy xác nhận để bắt đầu cộng tác cùng nhóm!
-    </p>
+      <p class="text-gray-500 text-sm mb-6">
+        Bạn được mời tham gia dự án trên DevCollab. Hãy xác nhận để bắt đầu cộng
+        tác cùng nhóm!
+      </p>
 
-    <button id="join-btn"
-      class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2.5 rounded-md shadow transition">
-      🚀 Tham gia dự án
-    </button>
+      <button
+        id="join-btn"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2.5 rounded-md shadow transition"
+      >
+        🚀 Tham gia dự án
+      </button>
 
-    <p class="text-xs text-gray-400 mt-5">
-      Không phải bạn?
-      <a href="/logout" class="text-indigo-600 hover:underline">Đăng xuất</a>
-    </p>
-  </div>
+      <p class="text-xs text-gray-400 mt-5">
+        Không phải bạn?
+        <a href="/logout" class="text-indigo-600 hover:underline">Đăng xuất</a>
+      </p>
+    </div>
 
-  <script>
-    // ✅ Đọc cookie
-    function getCookie(name) {
-      const value = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-      return value ? value.pop() : null;
-    }
-
-    // ✅ Hàm kiểm tra token có tồn tại chưa
-    function hasToken() {
-      return localStorage.getItem("token") || getCookie("AUTH_TOKEN");
-    }
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      const path = window.location.pathname;
-      const inviteLink = path.split("/join/")[1];
-      const joinBtn = document.getElementById("join-btn");
-
-      // Ngăn vòng lặp reload sau đăng nhập
-      if (sessionStorage.getItem("redirectedOnce") === "true") {
-        sessionStorage.removeItem("redirectedOnce");
-      } else if (!hasToken()) {
-        sessionStorage.setItem("redirectedOnce", "true");
-        const redirectUrl = encodeURIComponent(window.location.pathname);
-        window.location.href = `/view/signin?redirect=${redirectUrl}`;
-        return;
+    <script>
+      // ✅ Đọc cookie
+      function getCookie(name) {
+        const value = document.cookie.match(
+          "(^|;)\\s*" + name + "\\s*=\\s*([^;]+)"
+        );
+        return value ? value.pop() : null;
       }
 
-      // Đợi token cookie ổn định (đặc biệt sau OAuth2 redirect)
-      await new Promise(r => setTimeout(r, 300));
+      // ✅ Hàm kiểm tra token có tồn tại chưa
+      function hasToken() {
+        return localStorage.getItem("token") || getCookie("AUTH_TOKEN");
+      }
 
-      joinBtn.addEventListener("click", async () => {
-        joinBtn.disabled = true;
-        joinBtn.textContent = "⏳ Đang xử lý...";
+      document.addEventListener("DOMContentLoaded", async () => {
+        const path = window.location.pathname;
+        const inviteLink = path.split("/join/")[1];
+        const joinBtn = document.getElementById("join-btn");
 
-        const token = localStorage.getItem("token") || getCookie("AUTH_TOKEN");
-
-        try {
-          const res = await fetch(`/api/pm/invite/join/${inviteLink}`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Authorization": "Bearer " + token,
-              "Content-Type": "application/json"
-            }
-          });
-
-          const text = await res.text();
-
-          // 🟢 Nếu backend trả lỗi "đã là thành viên"
-          if (!res.ok) {
-            if (text.includes("đã là thành viên")) {
-              alert("✅ Bạn đã là thành viên của dự án này. Đang chuyển đến bảng công việc...");
-
-              try {
-                const errObj = JSON.parse(text);
-                if (errObj.projectId) {
-                  window.location.href = `/view/pm/project/board?projectId=${errObj.projectId}`;
-                  return;
-                }
-              } catch (_) {}
-
-              window.location.href = `/view/pm/dashboard?joined=true`;
-              return;
-            }
-            throw new Error(text);
-          }
-
-          // 🟢 Tham gia mới thành công
-          const data = JSON.parse(text);
-          alert(`🎉 Tham gia dự án thành công!\n📁 ${data.projectName}`);
-          window.location.href = `/view/pm/project/board?projectId=${data.projectId}`;
-
-        } catch (err) {
-          console.error("❌ Join failed:", err);
-          alert("❌ Không thể tham gia dự án!\n" + (err.message || ""));
-        } finally {
-          joinBtn.disabled = false;
-          joinBtn.textContent = "🚀 Tham gia dự án";
+        // Ngăn vòng lặp reload sau đăng nhập
+        if (sessionStorage.getItem("redirectedOnce") === "true") {
+          sessionStorage.removeItem("redirectedOnce");
+        } else if (!hasToken()) {
+          sessionStorage.setItem("redirectedOnce", "true");
+          const redirectUrl = encodeURIComponent(window.location.pathname);
+          window.location.href = `/view/signin?redirect=${redirectUrl}`;
+          return;
         }
+
+        // Đợi token cookie ổn định (đặc biệt sau OAuth2 redirect)
+        await new Promise((r) => setTimeout(r, 300));
+
+        joinBtn.addEventListener("click", async () => {
+          joinBtn.disabled = true;
+          joinBtn.textContent = "⏳ Đang xử lý...";
+
+          const token =
+            localStorage.getItem("token") || getCookie("AUTH_TOKEN");
+
+          try {
+            const res = await fetch(`/api/pm/invite/join/${inviteLink}`, {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                Authorization: "Bearer " + token,
+                "Content-Type": "application/json",
+              },
+            });
+
+            const text = await res.text();
+
+            // 🟢 Nếu backend trả lỗi "đã là thành viên"
+            if (!res.ok) {
+              if (text.includes("đã là thành viên")) {
+                alert(
+                  "✅ Bạn đã là thành viên của dự án này. Đang chuyển đến bảng công việc..."
+                );
+
+                try {
+                  const errObj = JSON.parse(text);
+                  if (errObj.projectId) {
+                    window.location.href = `/view/pm/project/board?projectId=${errObj.projectId}`;
+                    return;
+                  }
+                } catch (_) {}
+
+                window.location.href = `/view/pm/dashboard?joined=true`;
+                return;
+              }
+              throw new Error(text);
+            }
+
+            // 🟢 Tham gia mới thành công
+            const data = JSON.parse(text);
+            alert(`🎉 Tham gia dự án thành công!\n📁 ${data.projectName}`);
+            window.location.href = `/view/pm/project/board?projectId=${data.projectId}`;
+          } catch (err) {
+            console.error("❌ Join failed:", err);
+            alert("❌ Không thể tham gia dự án!\n" + (err.message || ""));
+          } finally {
+            joinBtn.disabled = false;
+            joinBtn.textContent = "🚀 Tham gia dự án";
+          }
+        });
       });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

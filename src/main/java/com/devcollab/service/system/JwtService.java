@@ -35,32 +35,22 @@ public class JwtService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
 
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", user.getRoles().stream()
-                .map(Role::getName)
-                .collect(Collectors.toList()));
+        claims.put("roles",
+                user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
 
         Date now = new Date();
         Date exp = new Date(now.getTime() + jwtExpMinutes * 60 * 1000);
 
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(email)
-                .setIssuedAt(now)
-                .setExpiration(exp)
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
-                .compact();
+        return Jwts.builder().setClaims(claims).setSubject(email).setIssuedAt(now)
+                .setExpiration(exp).signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
     }
 
     // ✅ Refresh token: chỉ chứa email
     public String generateRefreshToken(String email) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + 7L * 24 * 60 * 60 * 1000);
-        return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(now)
-                .setExpiration(exp)
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
-                .compact();
+        return Jwts.builder().setSubject(email).setIssuedAt(now).setExpiration(exp)
+                .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
     }
 
     public String extractEmail(String token) {
@@ -74,8 +64,7 @@ public class JwtService {
             Claims claims = extractAllClaims(token);
             Object rolesObj = claims.get("roles");
             if (rolesObj instanceof List<?>) {
-                return ((List<?>) rolesObj).stream()
-                        .map(Object::toString)
+                return ((List<?>) rolesObj).stream().map(Object::toString)
                         .collect(Collectors.toList());
             }
         } catch (Exception e) {
@@ -85,23 +74,22 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
+        return Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token)
                 .getBody();
     }
 
     public boolean isValid(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            System.out.println("[JwtService] Token is null or empty");
+            return false;
+        }
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(getSignKey())
-                    .build()
-                    .parseClaimsJws(token);
+            Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token);
             return true;
         } catch (JwtException e) {
             System.out.println("[JwtService] Token invalid: " + e.getMessage());
             return false;
         }
     }
+
 }

@@ -3,7 +3,7 @@
    ========================== */
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 /* ==========================
@@ -37,16 +37,34 @@ body {
    ✨ Global Animations
    ========================== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes toast-slide-in {
-  from {opacity: 0; transform: translateX(80px);}
-  to {opacity: 1; transform: translateX(0);}
+  from {
+    opacity: 0;
+    transform: translateX(80px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 @keyframes toast-slide-out {
-  from {opacity: 1; transform: translateX(0);}
-  to {opacity: 0; transform: translateX(80px);}
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(80px);
+  }
 }
 
 /* ==========================
@@ -74,7 +92,7 @@ body {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   width: 220px;
   padding: 12px;
   animation: fadeIn 0.15s ease;
@@ -114,21 +132,28 @@ body {
 /* ==========================
    🧭 Popup & Transition
    ========================== */
-.popup-enter { opacity: 0; transform: scale(0.98); }
-.popup-enter-active { opacity: 1; transform: scale(1); transition: .12s ease-out; }
+.popup-enter {
+  opacity: 0;
+  transform: scale(0.98);
+}
+.popup-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: 0.12s ease-out;
+}
 
 #edit-label-popup-wrapper,
 #labels-popup,
 #create-label-popup,
 #attach-popup > div {
-  animation: fadeIn .15s ease-out;
+  animation: fadeIn 0.15s ease-out;
 }
 
 /* ==========================
    🎨 Color Picker
    ========================== */
 .color-option {
-  transition: transform .15s ease, box-shadow .15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .color-option:hover {
   transform: scale(1.15);
@@ -137,14 +162,14 @@ body {
 .color-option.selected {
   outline: 3px solid #3b82f6;
   transform: scale(1.1);
-  box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
 
 /* ==========================
    📎 Attachment Preview Modal
    ========================== */
 #attachment-preview-modal {
-  transition: opacity .15s ease;
+  transition: opacity 0.15s ease;
   pointer-events: none;
 }
 #attachment-preview-modal:not(.hidden) {
@@ -168,22 +193,28 @@ body {
   background: white;
   border-radius: 12px;
   padding: 10px 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   gap: 10px;
   width: 320px;
-  animation: toast-slide-in .3s ease-out;
+  animation: toast-slide-in 0.3s ease-out;
 }
 .toast-exit {
-  animation: toast-slide-out .25s ease-in forwards;
+  animation: toast-slide-out 0.25s ease-in forwards;
 }
 
 /* ==========================
    🧠 Misc
    ========================== */
-#members-popup { position: fixed !important; z-index: 9999 !important; }
-#date-popup { pointer-events: auto !important; z-index: 9999 !important; }
+#members-popup {
+  position: fixed !important;
+  z-index: 9999 !important;
+}
+#date-popup {
+  pointer-events: auto !important;
+  z-index: 9999 !important;
+}
 
 /* Switch animation */
 #email-toggle-icon.active {
@@ -191,4 +222,159 @@ body {
 }
 #email-toggle-icon.active .dot {
   transform: translateX(20px);
+}
+/* ===== 🎯 BOARD CONTAINER ===== */
+#kanban-board {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+}
+
+/* Elegant horizontal scrollbar - Trello style */
+.kanban-board-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+.kanban-board-scroll::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.5);
+  border-radius: 5px;
+}
+.kanban-board-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 5px;
+  transition: background 0.2s ease;
+}
+.kanban-board-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
+
+/* Firefox scrollbar */
+.kanban-board-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) rgba(241, 245, 249, 0.5);
+}
+
+/* ===== 🎯 COLUMN (LIST) - Trello style ===== */
+.kanban-list {
+  display: flex;
+  flex-direction: column;
+  width: 272px;
+  flex-shrink: 0;
+  background: #f8fafc;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  max-height: calc(100vh - 10rem);
+}
+
+.kanban-list:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Column header - sticky */
+.kanban-list > div:first-child {
+  position: relative;
+}
+
+/* Task container - scrollable với custom scrollbar */
+.kanban-list [id^="col-"] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar cho column - Trello style */
+.kanban-list [id^="col-"]::-webkit-scrollbar {
+  width: 8px;
+}
+.kanban-list [id^="col-"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kanban-list [id^="col-"]::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+.kanban-list [id^="col-"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* ===== 🎴 CARD (TASK) - Trello style ===== */
+.kanban-card {
+  background: white;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 1px 0 rgba(9, 30, 66, 0.13);
+  transition: all 0.15s ease;
+  position: relative;
+  word-wrap: break-word;
+}
+
+.kanban-card:hover {
+  box-shadow: 0 2px 4px rgba(9, 30, 66, 0.16);
+  background: #f8f9fa;
+}
+
+/* Add card button area - Trello style */
+.add-card-area {
+  padding: 4px 6px 6px 6px;
+  margin-top: 0;
+}
+
+.add-card-area button {
+  font-size: 13px;
+  color: #5e6c84;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.add-card-area button:hover {
+  color: #172b4d;
+  background-color: rgba(9, 30, 66, 0.08);
+}
+
+/* ===== ✨ SMOOTH ANIMATIONS ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kanban-list {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.kanban-card {
+  animation: fadeIn 0.15s ease-out;
+}
+
+/* ===== 📱 RESPONSIVE ===== */
+@media (max-width: 1366px) {
+  .kanban-list {
+    width: 260px;
+  }
+  
+  #kanban-board {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .kanban-list {
+    width: 240px;
+  }
+  
+  #kanban-board {
+    gap: 8px;
+  }
 }
