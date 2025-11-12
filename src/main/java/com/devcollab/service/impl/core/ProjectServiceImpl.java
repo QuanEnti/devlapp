@@ -3,6 +3,7 @@ package com.devcollab.service.impl.core;
 import com.devcollab.domain.*;
 import com.devcollab.dto.MemberDTO;
 import com.devcollab.dto.ProjectDTO;
+import com.devcollab.dto.ProjectSummaryDTO;
 import com.devcollab.dto.response.ProjectDashboardDTO;
 import com.devcollab.dto.response.ProjectPerformanceDTO;
 import com.devcollab.dto.response.ProjectSearchResponseDTO;
@@ -55,6 +56,13 @@ public class ProjectServiceImpl implements ProjectService {
         if (project == null || project.getName() == null || project.getName().isBlank()) {
             throw new BadRequestException("Tên dự án không được để trống");
         }
+        String projectName = project.getName().trim();
+
+        // ✅ Check for duplicate (case-insensitive)
+        boolean exists = projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserId(projectName,creatorId);
+        if (exists) {
+            throw new BadRequestException("Tên dự án bị trùng");
+        }
         if (project.getStartDate() != null && project.getDueDate() != null
                 && project.getDueDate().isBefore(project.getStartDate())) {
             throw new BadRequestException("Ngày kết thúc phải sau ngày bắt đầu");
@@ -104,6 +112,19 @@ public class ProjectServiceImpl implements ProjectService {
     public Project updateProject(Long id, Project patch) {
         Project existing = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+        if (patch.getName() != null && !patch.getName().isBlank()) {
+            String projectName = patch.getName().trim();
+
+            boolean exists = projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserIdAndProjectIdNot(
+                    projectName, existing.getCreatedBy().getUserId(), id
+            );
+
+            if (exists) {
+                throw new BadRequestException("Tên dự án bị trùng");
+            }
+
+            existing.setName(projectName);
+        }
 
         if (patch.getName() != null && !patch.getName().isBlank())
             existing.setName(patch.getName());
@@ -463,5 +484,33 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
             );
         }
     }
+    @Override
+    public Page<ProjectMember> getProjectsByUserSorted(User user, String role, Pageable pageable) {
+        if ("manager".equalsIgnoreCase(role)) {
+            return projectMemberRepository.findByUserSortedByManager(user, pageable);
+        } else if ("member".equalsIgnoreCase(role)) {
+            return projectMemberRepository.findByUserSortedByMember(user, pageable);
+        } else {
+            return projectMemberRepository.findByUser(user, pageable);
+        }
+    }
+    @Override
+    public Page<ProjectSummaryDTO> getProjectsByUserPaginated(String email, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return projectRepository.findByUserEmail(email, pageable)
+                .map(p -> new ProjectSummaryDTO(
+                        p.getProjectId(),
+                        p.getName(),
+                        p.getDescription(),
+                        p.getStartDate(),
+                        p.getDueDate(),
+                        p.getStatus(),
+                        p.getPriority()
+                ));
+    }
+
+
+
+
 }
 

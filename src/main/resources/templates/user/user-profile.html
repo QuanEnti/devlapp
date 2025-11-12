@@ -153,17 +153,6 @@
                   active
                 </span>
               </div>
-
-              <!-- Last Seen -->
-              <!-- <div class="flex items-center justify-center space-x-2">
-                <span class="material-icons text-gray-400 text-base"
-                  >Last Seen</span
-                >
-                <span
-                  th:text="${#temporals.format(user.lastSeen, 'dd/MM/yyyy HH:mm')}"
-                  >22/10/2025 10:00</span
-                >
-              </div> -->
             </div>
           </div>
 
@@ -421,70 +410,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-          </div>
-
-          <!-- ✅ Right Section -->
-          <div class="col-span-3 space-y-6">
-            <!-- Projects -->
-            <div class="bg-white rounded-2xl shadow p-6">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="font-semibold text-gray-700">Projects</h3>
-                <a
-                  href="/user/view/view-all-projects"
-                  class="text-blue-500 text-sm font-medium hover:underline"
-                  >View all</a
-                >
-              </div>
-
-              <div class="grid grid-cols-3 gap-3">
-                <img
-                  src="https://i.imgur.com/7Y7Q1cJ.jpg"
-                  class="rounded-lg w-full h-20 object-cover"
-                />
-                <img
-                  src="https://i.imgur.com/rQO3vDk.jpg"
-                  class="rounded-lg w-full h-20 object-cover"
-                />
-                <img
-                  src="https://i.imgur.com/EiAG7qz.jpg"
-                  class="rounded-lg w-full h-20 object-cover"
-                />
-                <img
-                  src="https://i.imgur.com/k8UqS93.jpg"
-                  class="rounded-lg w-full h-20 object-cover"
-                />
-                <img
-                  src="https://i.imgur.com/lsHOPkz.jpg"
-                  class="rounded-lg w-full h-20 object-cover"
-                />
-                <img
-                  src="https://i.imgur.com/jPyKbrv.jpg"
-                  class="rounded-lg w-full h-20 object-cover"
-                />
-              </div>
-            </div>
-
-            <!-- Work Done -->
-            <div class="bg-white rounded-2xl shadow p-6">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="font-semibold text-gray-700">Total work done</h3>
-                <span
-                  class="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-lg"
-                  >This Week</span
-                >
-              </div>
-              <div class="flex justify-center items-center">
-                <div
-                  class="relative w-32 h-32 rounded-full border-8 border-gray-200 flex items-center justify-center"
-                >
-                  <div
-                    class="absolute w-32 h-32 rounded-full border-8 border-blue-500 border-t-transparent animate-spin-slow"
-                    style="animation: spin 10s linear infinite"
-                  ></div>
-                  <p class="text-lg font-semibold text-gray-800">5w:2d</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>

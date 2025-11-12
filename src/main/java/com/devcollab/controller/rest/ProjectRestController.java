@@ -2,12 +2,15 @@ package com.devcollab.controller.rest;
 
 import com.devcollab.domain.Project;
 import com.devcollab.domain.User;
+import com.devcollab.dto.ProjectSummaryDTO;
 import com.devcollab.dto.request.ProjectCreateRequestDTO;
 import com.devcollab.dto.response.ApiResponse;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.web.bind.annotation.*;
 
@@ -110,5 +113,21 @@ public class ProjectRestController {
             return ApiResponse.error("Không thể lấy vai trò: " + e.getMessage());
         }
     }
+    private String getEmailFromAuthentication(Authentication auth) {
+        if (auth instanceof OAuth2AuthenticationToken oauthToken) {
+            var attributes = oauthToken.getPrincipal().getAttributes();
+            return (String) attributes.get("email");
+        }
+        return auth.getName(); // Local login
+    }
+    @GetMapping("")
+    public Page<ProjectSummaryDTO> getUserProjects(Authentication auth,
+                                                   @RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "9") int size) {
+        String email = getEmailFromAuthentication(auth);
+        return projectService.getProjectsByUserPaginated(email, page, size);
+    }
+
+
 
 }

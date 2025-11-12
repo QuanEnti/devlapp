@@ -1,6 +1,7 @@
 package com.devcollab.service.impl.core;
 
 import com.devcollab.domain.*;
+import com.devcollab.dto.MemberPerformanceDTO;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.userTaskDto.TaskCardDTO;
@@ -15,13 +16,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.hibernate.Hibernate;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.devcollab.dto.TaskFollowerDTO;
@@ -554,24 +554,109 @@ public class TaskServiceImpl implements TaskService {
         log.error("❌ sendDeadlineNotification() failed: {}", e.getMessage(), e);
     }
 }
-    @Override
-    public List<TaskCardDTO> getUserTasks(Long userId, Long projectId, String statuses) {
-        return taskRepository.findUserTasks(userId, projectId, statuses);
-    }
+
 
     @Override
     public List<Task> getTasksByAssignee(User user) {
         return taskRepository.findTasksByAssignee(user);
     }
-
-    @Override
-    public List<Task> getTasksFollowedByUser(User user) {
-        return taskRepository.findTasksFollowedByUser(user);
-    }
-
     @Override
     public List<Task> getTasksCreatedBy(User user) {
         return taskRepository.findTasksCreatedBy(user);
+    }
+    @Override
+    public Map<String, Object> getPercentDoneByStatus(Long projectId) {
+        List<Map<String, Object>> raw = taskRepository.countTasksByStatus(projectId);
+
+        long total = raw.stream()
+                .mapToLong(m -> ((Number) m.get("count")).longValue())
+                .sum();
+
+        Map<String, Double> temp = new HashMap<>();
+        raw.forEach(m -> {
+            String status = (String) m.get("status");
+            long count = ((Number) m.get("count")).longValue();
+            double percent = total == 0 ? 0 : ((double) count / total) * 100;
+            temp.put(status, percent);
+        });
+
+        // ✅ Ensure all keys exist
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("DONE", String.format("%.1f", temp.getOrDefault("DONE", 0.0)));
+        result.put("IN_PROGRESS", String.format("%.1f", temp.getOrDefault("IN_PROGRESS", 0.0)));
+        result.put("OPEN", String.format("%.1f", temp.getOrDefault("OPEN", 0.0)));
+        result.put("total", total);
+
+        return result;
+    }
+    @Override
+    public List<MemberPerformanceDTO> getMemberPerformance(Long projectId) {
+        List<Object[]> rows = taskRepository.findMemberPerformanceByProject(projectId);
+        List<MemberPerformanceDTO> list = new ArrayList<>();
+
+        for (Object[] r : rows) {
+            MemberPerformanceDTO dto = new MemberPerformanceDTO();
+            dto.setUserId(((Number) r[0]).longValue());
+            dto.setName((String) r[1]);
+            dto.setEmail((String) r[2]);
+            dto.setTotalTasks(((Number) r[3]).longValue());
+            dto.setCompletedTasks(((Number) r[4]).longValue());
+            dto.setOnTimeTasks(((Number) r[5]).longValue());
+            dto.setLateTasks(((Number) r[6]).longValue());
+            dto.setAvgDelayHours(((Number) r[7]).doubleValue());
+            dto.setPriorityPoints(((Number) r[8]).intValue());
+
+            // 🧮 Calculate weighted performance score
+            double score = 0;
+            if (dto.getTotalTasks() > 0) {
+                double completion = ((double) dto.getCompletedTasks() / dto.getTotalTasks()) * 50;
+                double punctuality = dto.getCompletedTasks() > 0
+                        ? ((double) dto.getOnTimeTasks() / dto.getCompletedTasks()) * 30
+                        : 0;
+                double effort = ((double) dto.getPriorityPoints() / dto.getTotalTasks()) * 20;
+                score = completion + punctuality + effort;
+                if (score > 100) score = 100;
+            }
+
+            dto.setPerformanceScore(Math.round(score * 100.0) / 100.0);
+            list.add(dto);
+        }
+
+        return list;
+    }
+    @Override
+    public List<Task> getTasksByUser(User user) {
+        return taskRepository.findAllUserTasks(user);
+    }
+    @Override
+    public Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size, String status) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // If status is provided -> FILTER, not sort
+        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
+            return taskRepository.findUserTasksByStatus(user, status.toUpperCase(), pageable);
+        }
+
+        // Sorting path (no status filter)
+        String key = (sortBy == null || sortBy.isBlank()) ? "deadline" : sortBy.toLowerCase();
+        return switch (key) {
+            case "priority" -> taskRepository.findUserTasksOrderByPriority(user, pageable);
+            case "project"  -> taskRepository.findUserTasksOrderByProject(user, pageable);
+            case "deadline" -> taskRepository.findUserTasksOrderByDeadline(user, pageable);
+            default         -> taskRepository.findUserTasksOrderByDeadline(user, pageable);
+        };
+    }
+
+
+
+
+    private Sort getSort(String sortBy) {
+        return switch (sortBy.toLowerCase()) {
+            case "priority" -> Sort.by("priority").ascending();
+            case "project" -> Sort.by("project.name").ascending();
+            case "deadline" -> Sort.by("deadline").ascending();
+            default -> Sort.by("deadline").ascending();
+        };
     }
 
 }

@@ -73,7 +73,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             if (SecurityContextHolder.getContext().getAuthentication() != null && isPublicAuthPage(path)) {
-                response.sendRedirect("/view/home");
+                response.sendRedirect("/user/view/dashboard");
                 return;
             }
 

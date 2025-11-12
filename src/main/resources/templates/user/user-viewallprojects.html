@@ -1,146 +1,187 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>User View All Projects - Sidebar Updated</title>
+    <title>User Projects</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* Sidebar full height - KẾ THỪA TỪ FILE GỐC */
-      .sidebar {
-        /* Đã điều chỉnh cho header 4rem = h-16 */
-        height: calc(100vh - 4rem);
-        top: 4rem;
-        transition: all 0.3s ease;
-      }
-
-      /* Avatar style (Giữ lại) - KẾ THỪA TỪ FILE GỐC */
-      .avatar {
-        width: 28px;
-        height: 28px;
-        object-fit: cover;
-        border: 2px solid white;
-        box-shadow: 0 0 0 1px #e5e7eb;
-      }
-
-      /* Sidebar active styles - KẾ THỪA TỪ FILE GỐC */
-      .sidebar-item-active {
-        background-color: #eff6ff; /* blue-50 */
-        color: #2563eb; /* blue-600 */
-        font-weight: 600;
-        border-right: 4px solid #2563eb;
-      }
-      .sidebar-item {
-        color: #4b5563; /* gray-600 */
-        transition: background-color 0.15s;
-        border-right: 4px solid transparent;
-      }
-      .sidebar-item:hover {
-        background-color: #f9fafb; /* gray-50 */
-        color: #1f2937; /* gray-900 */
-      }
-
-      /* Style cho nút '+' trong danh sách thành viên */
-      .member-plus {
-        background-color: #f3f4f6; /* bg-gray-100 */
-        border-radius: 9999px;
-        width: 28px; /* Kích thước icon thành viên */
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.75rem; /* text-xs */
-        font-weight: 600; /* font-semibold */
-        margin-left: -0.5rem; /* Điều chỉnh vị trí chồng lên */
-        border: 1px solid white;
-      }
+        .sidebar {
+            height: calc(100vh - 4rem);
+            top: 4rem;
+            transition: all 0.3s ease;
+        }
+        .avatar {
+            width: 28px;
+            height: 28px;
+            object-fit: cover;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px #e5e7eb;
+        }
+        .sidebar-item-active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            font-weight: 600;
+            border-right: 4px solid #2563eb;
+        }
+        .sidebar-item {
+            color: #4b5563;
+            transition: background-color 0.15s;
+            border-right: 4px solid transparent;
+        }
+        .sidebar-item:hover {
+            background-color: #f9fafb;
+            color: #1f2937;
+        }
+        .member-plus {
+            background-color: #f3f4f6;
+            border-radius: 9999px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: -0.5rem;
+            border: 1px solid white;
+        }
     </style>
-  </head>
+</head>
 
-  <body class="bg-gray-50 font-sans">
-    <!-- ✅ Import Header -->
-    <div th:replace="fragments/header :: header"></div>
+<body class="bg-gray-50 font-sans">
+<!-- ✅ Header -->
+<div th:replace="fragments/header :: header"></div>
 
-    <div class="flex min-h-[calc(100vh-4rem)]">
-      <!-- ✅ Import Sidebar -->
-      <div th:replace="fragments/sidebar :: sidebar"></div>
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <!-- ✅ Sidebar -->
+    <div th:replace="fragments/sidebar :: sidebar"></div>
 
-      <!-- ✅ Main content -->
-      <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
-        <div class="flex justify-between items-center mb-6">
-          <h1 class="text-3xl font-bold text-gray-800">Projects You Joined</h1>
-          <a href="/user/view/create-project">
-            <button
-              class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md hover:bg-blue-700 flex items-center"
-            >
-              <span class="mr-1">+</span> Create
-            </button>
-          </a>
-        </div>
+    <!-- ✅ Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
+        <!-- Header Row -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+            <h1 class="text-3xl font-bold text-gray-800">Projects You Joined</h1>
 
-        <!-- GRID -->
-        <div
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          th:if="${projects != null}"
-        >
-          <div
-            th:each="project : ${projects}"
-            class="bg-white p-5 rounded-xl shadow-lg border hover:shadow-xl transition transform hover:-translate-y-1"
-          >
-            <div class="flex justify-between items-start mb-2">
-              <h2
-                class="text-lg font-bold text-gray-800"
-                th:text="${project.name}"
-              >
-                Project Name
-              </h2>
-              <span
-                class="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full"
-                th:text="${project.priority}"
-                >NORMAL</span
-              >
-            </div>
+            <div class="flex items-center gap-3">
+                <!-- 🔹 Sort Filter -->
+                <form th:action="@{/user/view/view-all-projects}" method="get" class="flex items-center">
+                    <label for="role" class="text-sm text-gray-600 mr-2">Sort by:</label>
+                    <select
+                            id="role"
+                            name="role"
+                            class="border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                            onchange="this.form.submit()"
+                    >
+                        <option value="all" th:selected="${role == 'all'}">All Projects</option>
+                        <option value="manager" th:selected="${role == 'manager'}">Manager</option>
+                        <option value="member" th:selected="${role == 'member'}">Member</option>
+                    </select>
+                </form>
 
-            <p
-              class="text-gray-600 text-sm mb-4 leading-snug line-clamp-3"
-              th:text="${project.description}"
-            >
-              Project description here...
-            </p>
-
-            <div class="text-sm text-gray-600 mb-2">
-              <span class="font-semibold text-gray-700">Start:</span>
-              <span th:text="${project.startDate}">2025-01-01</span>
-            </div>
-            <div
-              class="text-sm text-gray-600 mb-3 border-b pb-2 border-gray-100"
-            >
-              <span class="font-semibold text-gray-700">End:</span>
-              <span th:text="${project.dueDate}">2025-12-31</span>
-            </div>
-
-            <div class="mt-4 flex justify-end">
-<!--              <a th:href="@{'/user/view/project/' + ${project.projectId}}">-->
-                <a th:href="@{'/view/pm/project/detail?projectId=' + ${project.projectId}}">
-                    <button class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold border hover:bg-gray-200 transition">
-                        View Project
+                <a href="/user/view/create-project">
+                    <button
+                            class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md hover:bg-blue-700 flex items-center"
+                    >
+                        <span class="mr-1">+</span> Create
                     </button>
                 </a>
-              </a>
             </div>
-          </div>
         </div>
+
+        <!-- 🔹 Projects Grid -->
         <div
-          th:if="${projects == null or #lists.isEmpty(projects)}"
-          class="text-center text-gray-500 mt-10 text-lg"
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                th:if="${projects != null and !#lists.isEmpty(projects)}"
         >
-          You have not joined or created any projects yet.
+            <div
+                    th:each="project : ${projects}"
+                    class="bg-white p-5 rounded-xl shadow-lg border hover:shadow-xl transition transform hover:-translate-y-1"
+            >
+                <!-- Title and Priority -->
+                <div class="flex justify-between items-start mb-2">
+                    <h2
+                            class="text-lg font-bold text-gray-800"
+                            th:text="${project.name}"
+                    >
+                        Project Name
+                    </h2>
+                    <span
+                            class="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full"
+                            th:text="${project.priority}"
+                    >
+              NORMAL
+            </span>
+                </div>
+
+                <!-- Description -->
+                <p
+                        class="text-gray-600 text-sm mb-4 leading-snug line-clamp-3"
+                        th:text="${project.description}"
+                >
+                    Project description here...
+                </p>
+
+                <!-- Dates -->
+                <div class="text-sm text-gray-600 mb-2">
+                    <span class="font-semibold text-gray-700">Start:</span>
+                    <span th:text="${project.startDate}">2025-01-01</span>
+                </div>
+                <div class="text-sm text-gray-600 mb-3 border-b pb-2 border-gray-100">
+                    <span class="font-semibold text-gray-700">End:</span>
+                    <span th:text="${project.dueDate}">2025-12-31</span>
+                </div>
+
+                <!-- View Button -->
+                <div class="mt-4 flex justify-end">
+                    <a th:href="@{'/view/pm/project/detail?projectId=' + ${project.projectId}}">
+                        <button
+                                class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-semibold border hover:bg-gray-200 transition"
+                        >
+                            View Project
+                        </button>
+                    </a>
+                </div>
+            </div>
         </div>
-      </main>
-    </div>
-    <!-- ✅ CHATBOX FRAGMENT -->
-    <div th:replace="fragments/chatbox :: chatbox"></div>
-    <!-- Gọi script riêng -->
-    <script th:src="@{/js/chatbox.js}"></script>
-  </body>
+
+        <!-- 🔹 Empty State -->
+        <div
+                th:if="${projects == null or #lists.isEmpty(projects)}"
+                class="text-center text-gray-500 mt-10 text-lg"
+        >
+            You have not joined or created any projects yet.
+        </div>
+
+        <!-- 🔹 Pagination -->
+        <div class="flex justify-center mt-10" th:if="${page != null and page.totalPages > 1}">
+            <nav class="inline-flex rounded-md shadow-sm" aria-label="Pagination">
+                <a
+                        th:href="@{'/user/view/view-all-projects?page=' + ${page.number - 1} + '&role=' + ${role}}"
+                        th:if="${!page.first}"
+                        class="px-3 py-2 border rounded-l-md bg-white text-gray-700 hover:bg-gray-100"
+                >Previous</a>
+
+                <a
+                        th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}"
+                        th:href="@{'/user/view/view-all-projects?page=' + ${i} + '&role=' + ${role}}"
+                        th:text="${i + 1}"
+                        th:classappend="${i == page.number} ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
+                        class="px-3 py-2 border"
+                ></a>
+
+                <a
+                        th:href="@{'/user/view/view-all-projects?page=' + ${page.number + 1} + '&role=' + ${role}}"
+                        th:if="${!page.last}"
+                        class="px-3 py-2 border rounded-r-md bg-white text-gray-700 hover:bg-gray-100"
+                >Next</a>
+            </nav>
+        </div>
+    </main>
+</div>
+
+<!-- ✅ Chatbox -->
+<div th:replace="fragments/chatbox :: chatbox"></div>
+<script th:src="@{/js/chatbox.js}"></script>
+</body>
 </html>

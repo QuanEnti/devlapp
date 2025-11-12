@@ -34,14 +34,16 @@ public class SecurityConfig {
                                                 .requestMatchers(
                                                                 "/api/auth/**",
                                                                 "/api/users/**",
-                                                                "/api/admin/**",
-                                                                "api/payment/webhook",
+                                                                "api/payment/webhook"
                                                                 // "/api/pm/public/**",
-                                                                "/user/**")
+                                                                )
                                                 .permitAll()
+                                                // Admin-only APIs
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 // 🔹 Cho phép truy cập dashboard public nếu có
                                                 // .requestMatchers("/api/pm/project/*/dashboard").permitAll()
                                                 // 🔹 API join cần đăng nhập (Bearer hoặc cookie JWT)
+                                                .requestMatchers("/api/tasks/**").authenticated()
                                                 .requestMatchers("/api/pm/invite/join/**").authenticated()
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -56,7 +58,7 @@ public class SecurityConfig {
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
                 http
-                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**","/user/**")
+                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**","/user/**","/admin/**")
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(
                                                 sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -76,6 +78,7 @@ public class SecurityConfig {
                                                                 "/favicon.ico", "/webjars/**",
                                                                 "/oauth2/**")
                                                 .permitAll()
+                                                .requestMatchers("/admin/**").hasRole("ADMIN")
                                                 .requestMatchers("/user/**").authenticated()
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth -> oauth

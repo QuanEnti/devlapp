@@ -2,11 +2,16 @@ package com.devcollab.controller.view;
 
 import com.devcollab.domain.Project;
 import com.devcollab.domain.ProjectMember;
+import com.devcollab.dto.MemberPerformanceDTO;
 import com.devcollab.service.core.ProjectService;
+import com.devcollab.service.core.TaskService;
+import com.devcollab.service.core.UserService;
 import com.devcollab.service.system.ActivityService;
 import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.system.ProjectMemberService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +24,26 @@ import java.util.List;
 public class ViewPmController {
 
     private final ProjectService projectService;
-    private final ProjectMemberService projectMemberService;
+    private final UserService userService;
     private final NotificationService notificationService;
+    private final TaskService taskService;
+    @ModelAttribute
+    public void addGlobalAttributes(Model model, Authentication auth) {
+        if (auth == null || !auth.isAuthenticated())
+            return;
+
+        // ✅ Lấy đúng email theo từng trường hợp (Local hoặc Google OAuth2)
+        String email = getEmailFromAuthentication(auth);
+        if (email == null)
+            return;
+
+        final String userEmail = email; // phải là final nếu dùng trong lambda
+
+        userService.getByEmail(userEmail).ifPresent(user -> {
+            model.addAttribute("user", user);
+            model.addAttribute("unreadNotifications", notificationService.countUnread(userEmail));
+        });
+    }
 
     @GetMapping("/project/{id}/dashboard")
     public String dashboard(@PathVariable("id") Long id, Model model) {
@@ -41,19 +64,78 @@ public class ViewPmController {
         model.addAttribute("projectId", id);
         return "project/task-view";
     }
+    private String getEmailFromAuthentication(Authentication auth) {
+        if (auth instanceof OAuth2AuthenticationToken oauthToken) {
+            var attributes = oauthToken.getPrincipal().getAttributes();
+            return (String) attributes.get("email");
+        }
+        return auth.getName(); // Local login
+    }
     @GetMapping("/project/detail")
-    public String viewProjectDetail(@RequestParam("projectId") Long projectId, Model model) {
+    public String viewProjectDetail(
+            @RequestParam("projectId") Long projectId,
+            Model model,
+            Authentication auth) {
+
         Project project = projectService.getById(projectId);
         if (project == null) {
             return "redirect:/user/view/dashboard";
         }
 
+        // ✅ Get current user's email
+        String email = getEmailFromAuthentication(auth);
+
+        // ✅ Reuse existing ProjectService function to get role
+        String roleInProject = projectService.getUserRoleInProjectByEmail(projectId, email);
+
+        // ✅ Add role & other data to model
         model.addAttribute("project", project);
-        model.addAttribute("progress", projectService.getProgress(projectId));
+        model.addAttribute("roleInProject", roleInProject);
+        model.addAttribute("statusBreakdown", taskService.getPercentDoneByStatus(projectId));
         model.addAttribute("metrics", projectService.getMetrics(projectId));
         model.addAttribute("notifications", notificationService.findRecentByProject(projectId));
-        return "pm/project-detail.html"; // your Thymeleaf template name
+
+        return "pm/project-detail.html";
     }
+
+    @GetMapping("/project/members")
+    public String viewProjectMembers(@RequestParam Long projectId, Model model, Authentication auth) {
+        String email = getEmailFromAuthentication(auth);
+        String roleInProject = projectService.getUserRoleInProjectByEmail(projectId, email);
+
+        model.addAttribute("projectId", projectId);
+        model.addAttribute("roleInProject", roleInProject);
+
+        return "pm/project-members";
+    }
+
+    @GetMapping("/project/review")
+    public String viewProjectReview(@RequestParam Long projectId, Model model) {
+        model.addAttribute("projectId", projectId);
+        return "pm/project-task-review"; // ✅ templates/pm/project-task-review.html
+    }
+    @GetMapping("/project/performance")
+    public String viewPerformance(@RequestParam("projectId") Long projectId, Model model) {
+        Project project = projectService.getById(projectId);
+        var performanceList = taskService.getMemberPerformance(projectId);
+
+        // Extract names & scores for Chart.js
+        List<String> names = performanceList.stream()
+                .map(MemberPerformanceDTO::getName)
+                .toList();
+
+        List<Double> scores = performanceList.stream()
+                .map(MemberPerformanceDTO::getPerformanceScore)
+                .toList();
+
+        model.addAttribute("project", project);
+        model.addAttribute("performance", performanceList);
+        model.addAttribute("labels", names);
+        model.addAttribute("scores", scores);
+
+        return "pm/project-performance.html";
+    }
+
 
 
 }

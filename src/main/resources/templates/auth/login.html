@@ -165,7 +165,7 @@
 
               // ✅ Xác định trang redirect
               const roles = data.user?.roles || [];
-              if (roles.includes('ADMIN')) {
+              if (roles.includes('ROLE_ADMIN')) {
                   setTimeout(() => window.location.href = '/admin/dashboard', 800);
               } else {
                   setTimeout(() => window.location.href = '/user/view/dashboard', 800);

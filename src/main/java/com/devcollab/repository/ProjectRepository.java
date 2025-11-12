@@ -174,4 +174,15 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         WHERE project_id = :projectId
         """, nativeQuery = true)
     Map<String, Object> getProjectMetrics(Long projectId);
+    boolean existsByNameIgnoreCaseAndCreatedBy_UserId(String name, Long creatorId);
+    boolean existsByNameIgnoreCaseAndCreatedBy_UserIdAndProjectIdNot(String name, Long creatorId, Long projectId);
+    @Query("""
+    SELECT p FROM ProjectMember pm
+    JOIN pm.project p
+    JOIN pm.user u
+    WHERE u.email = :email
+    ORDER BY pm.joinedAt DESC
+""")
+    Page<Project> findByUserEmail(@Param("email") String email, Pageable pageable);
+
 }   

@@ -3,12 +3,15 @@ package com.devcollab.service.core;
 import com.devcollab.domain.ProjectMember;
 import com.devcollab.domain.Task;
 import com.devcollab.domain.User;
+import com.devcollab.dto.MemberPerformanceDTO;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.request.TaskDatesUpdateReq;
 import com.devcollab.dto.userTaskDto.TaskCardDTO;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Map;
 
 public interface TaskService {
 
@@ -51,10 +54,13 @@ public interface TaskService {
     
     TaskDTO markComplete(Long taskId, Long userId);
 
-    List<TaskCardDTO> getUserTasks(Long userId, Long projectId, String statuses);
 
     List<Task> getTasksByAssignee(User user);
-    List<Task> getTasksFollowedByUser(User user);
     List<Task> getTasksCreatedBy(User user);
+    public Map<String, Object> getPercentDoneByStatus(Long projectId);
+
+    public List<MemberPerformanceDTO> getMemberPerformance(Long projectId);
+    public List<Task> getTasksByUser(User user);
+    public Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size, String status);
 }
 

@@ -3,12 +3,15 @@ package com.devcollab.repository;
 import com.devcollab.domain.Task;
 import com.devcollab.domain.User;
 import com.devcollab.dto.userTaskDto.TaskCardDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByProject_ProjectId(Long projectId);
@@ -77,59 +80,117 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
         """)
     List<Task> findTasksDueBetween(@Param("from") LocalDateTime from,
         @Param("to") LocalDateTime to);
-    @Query(value = """
-        SELECT
-            t.task_id AS id,
-            t.title,
-            t.status,
-            t.priority,
-            t.created_at AS createdAt,
-            t.deadline,
-            creator.name AS creatorName,
-            assignee.avatar_url AS assigneeAvatarUrl,
-
-            -- Dùng Correlated Subquery (Hiệu năng cao)
-
-        FROM
-            Task AS t
-        -- JOIN để lọc bảo mật (dựa trên Entity)
-        INNER JOIN
-            Project AS p ON t.project_id = p.project_id
-        INNER JOIN
-            ProjectMember AS pm ON p.project_id = pm.project_id
-        -- JOIN để lấy thông tin
-        LEFT JOIN
-            [User] AS creator ON t.created_by = creator.user_id
-        LEFT JOIN
-            [User] AS assignee ON t.assignee_id = assignee.user_id
-        WHERE
-            t.assignee_id = :userId       -- 1. Gán cho tôi
-            AND p.status = 'active'       -- 2. Project đang 'active'
-            AND pm.user_id = :userId      -- 3. Tôi là thành viên project
-
-            -- 4. Bộ lọc Project (NULL = lấy tất cả)
-            AND (:projectId IS NULL OR p.project_id = :projectId) 
-
-            -- 5. Bộ lọc Status (NULL = lấy tất cả)
-            AND (
-                :statuses IS NULL 
-                OR t.status IN (SELECT value FROM STRING_SPLIT(:statuses, ','))
-            )
-        """, nativeQuery = true)
-    List<TaskCardDTO> findUserTasks(
-            @Param("userId") Long userId,
-            @Param("projectId") Long projectId,
-            @Param("statuses") String statuses
-    );
     @Query("SELECT t FROM Task t WHERE t.assignee = :user ORDER BY t.deadline ASC")
     List<Task> findTasksByAssignee(@Param("user") User user);
 
-    // ✅ Tasks followed by the user
-    @Query("SELECT tf.task FROM TaskFollower tf WHERE tf.user = :user")
-    List<Task> findTasksFollowedByUser(@Param("user") User user);
+    @Query("""
+    SELECT DISTINCT t FROM Task t
+    LEFT JOIN t.followers f
+    WHERE t.assignee = :user OR t.createdBy = :user OR f.user = :user
+""")
+    List<Task> findAllUserTasks(@Param("user") User user);
+
+    static String SCOPE = """
+        (t.assignee = :user OR t.createdBy = :user OR
+         EXISTS (SELECT 1 FROM TaskFollower tf WHERE tf.task = t AND tf.user = :user))
+    """;
+
+    // ----- ORDER BY DEADLINE (NULLS LAST)
+    @Query("""
+        SELECT t FROM Task t
+        WHERE """ + SCOPE + """
+        ORDER BY CASE WHEN t.deadline IS NULL THEN 1 ELSE 0 END,
+                 t.deadline ASC
+    """)
+    Page<Task> findUserTasksOrderByDeadline(@Param("user") User user, Pageable pageable);
+
+    // ----- ORDER BY PRIORITY (HIGH > MEDIUM > LOW)
+    @Query("""
+        SELECT t FROM Task t
+        WHERE """ + SCOPE + """
+        ORDER BY CASE t.priority
+                   WHEN 'CRITICAL' THEN 1
+                   WHEN 'HIGH' THEN 2
+                   WHEN 'MEDIUM' THEN 3
+                   WHEN 'LOW' THEN 4
+                   ELSE 5
+                 END
+    """)
+    Page<Task> findUserTasksOrderByPriority(@Param("user") User user, Pageable pageable);
+
+    // ----- ORDER BY PROJECT NAME (NULL LAST)
+    @Query("""
+        SELECT t FROM Task t
+        LEFT JOIN t.project p
+        WHERE """ + SCOPE + """
+        ORDER BY CASE WHEN p.name IS NULL THEN 1 ELSE 0 END,
+                 p.name ASC
+    """)
+    Page<Task> findUserTasksOrderByProject(@Param("user") User user, Pageable pageable);
+
+    @Query("""
+        SELECT t FROM Task t
+        WHERE (t.assignee = :user OR t.createdBy = :user 
+           OR EXISTS (
+               SELECT 1 FROM TaskFollower tf WHERE tf.task = t AND tf.user = :user
+           ))
+           AND t.status = :status
+        ORDER BY CASE WHEN t.deadline IS NULL THEN 1 ELSE 0 END,
+                 t.deadline ASC
+        """)
+    Page<Task> findUserTasksByStatus(@Param("user") User user,
+                                     @Param("status") String status,
+                                     Pageable pageable);
 
     // ✅ Tasks created by the user (optional)
     @Query("SELECT t FROM Task t WHERE t.createdBy = :user ORDER BY t.createdAt DESC")
     List<Task> findTasksCreatedBy(@Param("user") User user);
+
+    @Query("""
+    SELECT t.status AS status, COUNT(t) AS count
+    FROM Task t
+    WHERE t.project.projectId = :projectId AND t.archived = false
+    GROUP BY t.status
+""")
+    List<Map<String, Object>> countTasksByStatus(@Param("projectId") Long projectId);
+    @Query(value = """
+    SELECT 
+        u.user_id AS userId,
+        u.name AS name,
+        u.email AS email,
+        COUNT(DISTINCT t.task_id) AS totalTasks,
+        SUM(CASE WHEN t.status = 'DONE' THEN 1 ELSE 0 END) AS completedTasks,
+        SUM(CASE 
+            WHEN t.status = 'DONE' 
+                 AND t.closed_at IS NOT NULL 
+                 AND t.deadline IS NOT NULL 
+                 AND t.closed_at <= t.deadline 
+            THEN 1 ELSE 0 END) AS onTimeTasks,
+        SUM(CASE 
+            WHEN t.status = 'DONE' 
+                 AND t.closed_at IS NOT NULL 
+                 AND t.deadline IS NOT NULL 
+                 AND t.closed_at > t.deadline 
+            THEN 1 ELSE 0 END) AS lateTasks,
+        ISNULL(AVG(
+            CASE 
+                WHEN t.status = 'DONE' AND t.deadline IS NOT NULL AND t.closed_at IS NOT NULL 
+                THEN DATEDIFF(HOUR, t.deadline, t.closed_at)
+                ELSE NULL
+            END
+        ), 0) AS avgDelayHours,
+        SUM(CASE 
+            WHEN t.status = 'DONE' AND t.priority = 'HIGH' THEN 3
+            WHEN t.status = 'DONE' AND t.priority = 'MEDIUM' THEN 2
+            WHEN t.status = 'DONE' AND t.priority = 'LOW' THEN 1
+            ELSE 0 END) AS priorityPoints
+    FROM [Task] t
+    JOIN [TaskFollower] tf ON t.task_id = tf.task_id
+    JOIN [User] u ON tf.user_id = u.user_id
+    WHERE t.project_id = :projectId
+    GROUP BY u.user_id, u.name, u.email
+    ORDER BY completedTasks DESC
+""", nativeQuery = true)
+    List<Object[]> findMemberPerformanceByProject(@Param("projectId") Long projectId);
 }
 

@@ -44,16 +44,22 @@
                 </a>
             </li>
 
-            <!-- My Tasks -->
-            <li>
-                <a href="/user/view/tasks" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 text-slate-600">
-                    <i class="fa-regular fa-folder-open w-5"></i> My Tasks
+            <!-- ✅ Styled My Tasks -->
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item hover:bg-slate-100 transition">
+                <a href="/user/view/tasks" class="flex items-center w-full text-slate-700 hover:text-blue-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                        <!-- checklist icon -->
+                        <path d="M7 4.5h9a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2Zm0 4h9a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2Zm0 4h9a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2ZM3.22 5.22a.75.75 0 0 1 1.06 0L5.5 6.44l1.22-1.22a.75.75 0 1 1 1.06 1.06L6.56 7.5l1.22 1.22a.75.75 0 1 1-1.06 1.06L5.5 8.56l-1.22 1.22a.75.75 0 1 1-1.06-1.06L4.44 7.5 3.22 6.28a.75.75 0 0 1 0-1.06Z"/>
+                    </svg>
+                    My Tasks
                 </a>
             </li>
 
-            <li>
-                <a href="/view/pm/teams" class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 text-slate-600">
-                    <i class="fa-regular fa-users w-5"></i> Teams
+            <!-- Teams -->
+            <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+                <a href="/view/pm/teams" class="flex items-center w-full">
+                    <i class="fa-regular fa-users mr-3 text-gray-500"></i>
+                    Teams
                 </a>
             </li>
 

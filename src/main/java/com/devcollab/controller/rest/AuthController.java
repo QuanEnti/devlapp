@@ -164,9 +164,11 @@ public class AuthController {
 
         // Set redirect based on roles
         String redirectPath;
-        if (roles.contains("ADMIN")) {
+        if (roles.contains("ROLE_ADMIN")) {
+            System.out.println(roles);
             redirectPath = "/admin/dashboard";
         } else {
+            System.out.println(roles);
             redirectPath = (redirect != null && !redirect.isEmpty()) ? redirect : "/user/view/dashboard";
         }
         res.put("redirect", redirectPath);

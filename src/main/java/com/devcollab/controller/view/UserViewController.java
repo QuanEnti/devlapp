@@ -1,13 +1,22 @@
 package com.devcollab.controller.view;
 
+import com.devcollab.domain.Project;
+import com.devcollab.domain.ProjectMember;
+import com.devcollab.domain.Task;
+import com.devcollab.dto.TaskDTO;
+import com.devcollab.dto.UserTaskViewDTO;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.TaskService;
 import com.devcollab.service.feature.MessageService;
 import com.devcollab.service.system.NotificationService;
 import com.devcollab.domain.User;
 import com.devcollab.service.core.UserService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
@@ -16,6 +25,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/user/view")
@@ -71,7 +82,7 @@ public class UserViewController {
         System.out.println("=== DEBUG CREATE PROJECT ===");
 
         if (auth != null && auth.isAuthenticated()) {
-            String email = auth.getName();
+            String email = getEmailFromAuthentication(auth);
             System.out.println("Authenticated user: " + email);
 
             User user = userService.getByEmail(email).orElse(null);
@@ -88,13 +99,31 @@ public class UserViewController {
         model.addAttribute("isPremium", isPremium);
         return "user/user-createproject";
     }
-    // 📋 Xem toàn bộ project của user
     @GetMapping("/view-all-projects")
-    public String viewAllProjects(Model model, Authentication auth) {
+    public String viewAllProjects(Model model,
+                                  @RequestParam(defaultValue = "0") int page,
+                                  Authentication auth,
+                                  @RequestParam(defaultValue = "all") String role) {
+
         String email = getEmailFromAuthentication(auth);
-        model.addAttribute("projects", projectService.getProjectsByUsername(email));
+        User currentUser = userService.getByEmail(email).orElseThrow();
+
+        Pageable pageable = PageRequest.of(page, 9);
+        Page<ProjectMember> memberPage = projectService.getProjectsByUserSorted(currentUser, role, pageable);
+
+        // ✅ Just extract the Project entity, no role injection
+        List<Project> projectList = memberPage.getContent()
+                .stream()
+                .map(ProjectMember::getProject)
+                .toList();
+
+        model.addAttribute("projects", projectList);
+        model.addAttribute("page", memberPage);
+        model.addAttribute("role", role);
+
         return "user/user-viewallprojects";
     }
+
 
     // ✉️ Danh sách lời mời
     @GetMapping("/view-invitation")
@@ -140,23 +169,30 @@ public class UserViewController {
     }
 
     @GetMapping("/tasks")
-    public String userTasksPage(Model model, Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) {
-            return "redirect:/view/login";
-        }
+    public String userTasksPage(Model model,
+                                Authentication auth,
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "10") int size,
+                                @RequestParam(required = false) String sortBy,
+                                @RequestParam(required = false) String status) {
+        if (auth == null || !auth.isAuthenticated()) return "redirect:/view/login";
 
-        // ✅ Get current user from authentication
-        String email = auth.getName();
+        String email = getEmailFromAuthentication(auth);
         User user = userService.getByEmail(email).orElse(null);
-        if (user == null) {
-            return "redirect:/view/login";
-        }
+        if (user == null) return "redirect:/view/login";
 
-        // ✅ Fetch tasks
-        model.addAttribute("assignedTasks", taskService.getTasksByAssignee(user));
-        model.addAttribute("followedTasks", taskService.getTasksFollowedByUser(user));
-        model.addAttribute("createdTasks", taskService.getTasksCreatedBy(user));
+        Page<Task> taskPage = taskService.getUserTasksPaged(user, sortBy, page, size, status);
 
-        return "user/user-task"; // Thymeleaf page
+        // map to your lightweight DTO (or keep entity if your view is safe)
+        Page<UserTaskViewDTO> dtoPage = taskPage.map(UserTaskViewDTO::fromEntity);
+
+        model.addAttribute("tasks", dtoPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", dtoPage.getTotalPages());
+        model.addAttribute("totalItems", dtoPage.getTotalElements());
+        model.addAttribute("sortBy", (sortBy == null || sortBy.isBlank()) ? "deadline" : sortBy);
+        model.addAttribute("status", (status == null || status.isBlank()) ? "ALL" : status);
+
+        return "user/user-task";
     }
 }

@@ -1,6 +1,7 @@
 package com.devcollab.controller.rest;
 
 import com.devcollab.domain.Task;
+import com.devcollab.domain.User;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.TaskFollowerDTO;
 import com.devcollab.dto.UserDTO;
@@ -13,14 +14,18 @@ import com.devcollab.exception.NotFoundException;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.TaskService;
 import com.devcollab.service.core.TaskFollowerService; // ✅ Thêm service cho member
+import com.devcollab.service.core.UserService;
 import com.devcollab.service.system.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -184,18 +189,6 @@ public class TaskRestController {
                         .body(Map.of("message", "❌ Đã xảy ra lỗi khi đánh dấu hoàn thành"));
             }
         }
-    @GetMapping("/user/my-tasks")
-    public ResponseEntity<List<TaskCardDTO>> getMyTasks(
-            @RequestParam(value = "projectId", required = false) Long projectId,
-            @RequestParam(value = "statuses", required = false) String statuses,
-            Authentication auth) {
-        UserDTO current = authService.getCurrentUser(auth);
-        if (current == null  && current.getUserId() == null) {
-            return ResponseEntity.status(401).build();
-        }
-        List<TaskCardDTO> tasks = taskService.getUserTasks(current.getUserId(), projectId, statuses);
-        return ResponseEntity.ok(tasks);
-    }
 
     @GetMapping("/user/projects")
     public ResponseEntity<List<ProjectFilterDTO>> getUserProjects(Authentication auth) {

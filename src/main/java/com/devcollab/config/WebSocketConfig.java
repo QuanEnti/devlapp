@@ -11,23 +11,27 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        // ✅ Client sẽ subscribe các topic này để nhận thông báo
-        config.enableSimpleBroker("/topic", "/queue");
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        // ✅ Simple message broker for broadcasting
+        // "/topic" → group messages (e.g., project chat)
+        // "/queue" → private messages (e.g., notifications)
+        registry.enableSimpleBroker("/topic", "/queue");
 
-        // ✅ Prefix cho các endpoint mà client có thể gửi tin (nếu có)
-        config.setApplicationDestinationPrefixes("/app");
+        // ✅ Prefix for messages sent from client to server
+        // Example: client sends to /app/chat/{projectId}
+        registry.setApplicationDestinationPrefixes("/app");
 
-        // ✅ Định tuyến riêng cho từng user (sẽ gửi đến
-        // /user/{email}/queue/notifications)
-        config.setUserDestinationPrefix("/user");
+        // ✅ Allow server to send messages directly to a specific user
+        // Example: server sends to /user/{email}/queue/notifications
+        registry.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // ✅ Endpoint để frontend kết nối WebSocket
+        // ✅ WebSocket handshake endpoint
+        // SockJS fallback ensures support on all browsers
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS(); // fallback nếu browser không hỗ trợ WS
+                .setAllowedOriginPatterns("*")  // allow all origins (you can restrict later)
+                .withSockJS();
     }
 }

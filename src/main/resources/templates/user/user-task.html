@@ -1,25 +1,151 @@
-<div class="p-6">
-    <h1 class="text-xl font-semibold mb-4">My Tasks</h1>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tasks – DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
 
-    <h2 class="text-lg font-medium mt-4 mb-2">Assigned to Me</h2>
-    <ul>
-        <li th:each="t : ${assignedTasks}">
-            <span th:text="${t.title}"></span>
-            <small th:text="${t.status}"></small>
-        </li>
-    </ul>
+<body class="bg-slate-50 text-slate-800 font-[Inter]">
 
-    <h2 class="text-lg font-medium mt-4 mb-2">Followed Tasks</h2>
-    <ul>
-        <li th:each="t : ${followedTasks}">
-            <span th:text="${t.title}"></span>
-        </li>
-    </ul>
+<!-- ✅ Header -->
+<div th:replace="fragments/header :: header"></div>
 
-    <h2 class="text-lg font-medium mt-4 mb-2">Created by Me</h2>
-    <ul>
-        <li th:each="t : ${createdTasks}">
-            <span th:text="${t.title}"></span>
-        </li>
-    </ul>
+<!-- ✅ Layout -->
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+
+    <!-- ✅ Main Content -->
+    <main class="flex-1 p-8">
+        <!-- ===== Page Header ===== -->
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-semibold text-gray-800">My Tasks</h1>
+
+            <!-- Filter & Sort Form -->
+            <form method="get" th:action="@{/user/view/tasks}" class="flex items-center gap-3">
+
+                <!-- Status Filter -->
+                <select name="status"
+                        class="border px-3 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="ALL" th:selected="${status == 'ALL'}">All statuses</option>
+                    <option value="OPEN" th:selected="${status == 'OPEN'}">Open</option>
+                    <option value="IN_PROGRESS" th:selected="${status == 'IN_PROGRESS'}">In Progress</option>
+                    <option value="DONE" th:selected="${status == 'DONE'}">Done</option>
+                </select>
+
+                <!-- Sort Option -->
+                <select name="sortBy"
+                        class="border px-3 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="deadline" th:selected="${sortBy == 'deadline'}">Deadline</option>
+                    <option value="priority" th:selected="${sortBy == 'priority'}">Priority</option>
+                    <option value="project" th:selected="${sortBy == 'project'}">Project</option>
+                </select>
+
+                <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
+                    Apply
+                </button>
+            </form>
+        </div>
+
+        <!-- ===== Task Count ===== -->
+        <div class="mb-4 text-sm text-gray-600">
+            Showing <span th:text="${totalItems}">0</span> tasks
+        </div>
+
+        <!-- ===== Task Table ===== -->
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="min-w-full border-collapse">
+                <thead class="bg-gray-100">
+                <tr>
+                    <th class="text-left p-3 border-b font-semibold text-gray-700">Title</th>
+                    <th class="text-left p-3 border-b font-semibold text-gray-700">Project</th>
+                    <th class="text-left p-3 border-b font-semibold text-gray-700">Priority</th>
+                    <th class="text-left p-3 border-b font-semibold text-gray-700">Deadline</th>
+                    <th class="text-left p-3 border-b font-semibold text-gray-700">Status</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="task : ${tasks}" class="hover:bg-gray-50 transition">
+                    <!-- Title -->
+                    <td class="p-3 border-b">
+                        <a th:if="${task.projectId != null}"
+                           th:href="@{'/view/pm/project/board?projectId=' + ${task.projectId}}"x
+                           class="text-blue-600 hover:text-blue-800 font-medium underline-offset-2 hover:underline">
+                            <span th:text="${task.title}"></span>
+                        </a>
+                        <span th:if="${task.projectId == null}" th:text="${task.title}"></span>
+                    </td>
+
+                    <!-- Project -->
+                    <td class="p-3 border-b" th:text="${task.projectName} ?: '-'"></td>
+
+                    <!-- Priority with colored badge -->
+                    <td class="p-3 border-b">
+                        <span th:class="${'px-2 py-1 rounded text-xs font-medium ' +
+                                         (task.priority == 'HIGH' ? 'bg-red-100 text-red-800' :
+                                          task.priority == 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-green-100 text-green-800')}"
+                              th:text="${task.priority}">
+                        </span>
+                    </td>
+
+                    <!-- Deadline -->
+                    <td class="p-3 border-b" th:text="${task.deadline != null ? task.deadline : '-'}"></td>
+
+                    <!-- Status with colored badge -->
+                    <td class="p-3 border-b">
+                        <span th:class="${'px-2 py-1 rounded text-xs font-medium ' +
+                                         (task.status == 'DONE' ? 'bg-green-100 text-green-800' :
+                                          task.status == 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                                          'bg-gray-100 text-gray-800')}"
+                              th:text="${task.status}">
+                        </span>
+                    </td>
+                </tr>
+
+                <!-- No tasks -->
+                <tr th:if="${#lists.isEmpty(tasks)}">
+                    <td colspan="5" class="p-6 text-center text-gray-500">No tasks found</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ===== Pagination ===== -->
+        <div th:if="${totalPages > 1}" class="flex justify-center items-center mt-6 space-x-2">
+            <!-- Previous -->
+            <a th:if="${currentPage > 0}"
+               th:href="@{'/user/view/tasks?page=' + ${currentPage - 1} +
+                         '&size=10&sortBy=' + ${sortBy} + '&status=' + ${status}}"
+               class="px-3 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-1">
+                <i class="fas fa-chevron-left text-xs"></i> Previous
+            </a>
+
+            <!-- Page numbers -->
+            <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:href="@{'/user/view/tasks?page=' + ${i} +
+                             '&size=10&sortBy=' + ${sortBy} + '&status=' + ${status}}"
+                   th:class="${'px-3 py-2 border rounded-lg ' +
+                             (i == currentPage ? 'bg-blue-500 text-white' : 'hover:bg-gray-50')}">
+                    <span th:text="${i + 1}"></span>
+                </a>
+            </th:block>
+
+            <!-- Next -->
+            <a th:if="${currentPage < totalPages - 1}"
+               th:href="@{'/user/view/tasks?page=' + ${currentPage + 1} +
+                         '&size=10&sortBy=' + ${sortBy} + '&status=' + ${status}}"
+               class="px-3 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-1">
+                Next <i class="fas fa-chevron-right text-xs"></i>
+            </a>
+        </div>
+    </main>
 </div>
+
+</body>
+</html>
