@@ -49,10 +49,17 @@ public class ProjectRestController {
                 return ApiResponse.error("Không tìm thấy người dùng: " + email, 404);
             }
 
+            // ✅ Kiểm tra xem người dùng đã có project cùng tên chưa
+            boolean exists = projectService.existsByNameAndCreatedBy_UserId(request.getName(), creator.getUserId());
+            if (exists) {
+                return ApiResponse.error("Bạn đã tạo project này rồi!", 400);
+            }
+
+            // ✅ Nếu chưa có, tiếp tục tạo mới
             Project project = new Project();
             project.setName(request.getName());
             project.setDescription(request.getDescription());
-            project.setPriority(request.getPriority()); // ✅ thêm dòng này
+            project.setPriority(request.getPriority());
 
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
                 project.setStartDate(LocalDate.parse(request.getStartDate()));
@@ -69,7 +76,6 @@ public class ProjectRestController {
             e.printStackTrace();
             return ApiResponse.error("Đã xảy ra lỗi khi tạo project: " + e.getMessage());
         }
-
     }
 
     @GetMapping("/search")

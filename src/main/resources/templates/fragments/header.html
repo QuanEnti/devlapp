@@ -3,11 +3,13 @@
         class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
 >
     <!-- 🔹 Logo -->
-    <div class="flex items-center space-x-3 w-64 flex-shrink-0">
-        <img th:src="@{/photo/logo1.png}" alt="DevCollab Logo"
-             class="w-9 h-9 rounded-lg shadow-sm" />
-        <span class="text-2xl font-extrabold text-blue-700 tracking-wider">DevCollab</span>
-    </div>
+    <a th:href="@{/user/view/dashboard}">
+        <div class="flex items-center space-x-3 w-64 flex-shrink-0">
+            <img th:src="@{/photo/logo1.png}" alt="DevCollab Logo"
+                 class="w-9 h-9 rounded-lg shadow-sm" />
+            <span class="text-2xl font-extrabold text-blue-700 tracking-wider">DevCollab</span>
+        </div>
+    </a>
 
     <!-- 🔹 Search -->
     <div class="flex-grow flex justify-center mx-10">
