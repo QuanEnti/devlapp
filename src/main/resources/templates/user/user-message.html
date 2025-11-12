@@ -1,13 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>User Messaging - DevCollab</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
-    <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
-
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -69,15 +66,15 @@
         color: white;
       }
     </style>
-</head>
+  </head>
 
-<body class="bg-gray-50 font-sans">
-<!-- ✅ Header -->
-<div th:replace="fragments/header :: header"></div>
+  <body class="bg-gray-50 font-sans">
+    <!-- ✅ Header -->
+    <div th:replace="fragments/header :: header"></div>
 
-<div class="flex min-h-[calc(100vh-4rem)]">
-    <!-- ✅ Sidebar -->
-    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <div class="flex min-h-[calc(100vh-4rem)]">
+      <!-- ✅ Sidebar -->
+      <div th:replace="fragments/sidebar :: sidebar"></div>
 
       <!-- ✅ Main Chat -->
       <div class="flex-1 flex bg-gray-50">
@@ -112,11 +109,14 @@
               </div>
             </div>
 
-            <!-- Project container -->
-            <div id="projectList" class="flex-1 overflow-y-auto"></div>
-
-            <!-- Pagination controls -->
-            <div class="pagination text-center py-3 border-t bg-gray-50" id="paginationControls"></div>
+            <!-- Nếu không có project -->
+            <div
+              th:if="${projects == null or #lists.isEmpty(projects)}"
+              class="text-center text-gray-500 p-6 text-sm"
+            >
+              You have not joined any projects yet.
+            </div>
+          </div>
         </div>
 
         <!-- 🔹 Khu vực Chat -->
@@ -133,16 +133,25 @@
             class="messages-container p-6 space-y-4 bg-gray-50"
           ></div>
 
-            <div class="p-4 border-t bg-white flex items-center space-x-3">
-                <input id="messageInput" type="text" placeholder="Type your message..."
-                       class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" disabled />
-                <button id="sendBtn"
-                        class="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition"
-                        disabled>Send</button>
-            </div>
+          <div class="p-4 border-t bg-white flex items-center space-x-3">
+            <input
+              id="messageInput"
+              type="text"
+              placeholder="Type your message..."
+              class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled
+            />
+            <button
+              id="sendBtn"
+              class="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition"
+              disabled
+            >
+              Send
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-</div>
 
     <!-- ✅ JavaScript (giữ nguyên logic hoàn toàn) -->
     <script th:inline="javascript">
@@ -152,30 +161,17 @@
       const chatProjectName = document.getElementById("chatProjectName");
       let currentProjectId = null;
 
-    const username = /*[[${#strings.escapeJavaScript(username)}]]*/ "";
-    const userEmail = /*[[${#strings.escapeJavaScript(user.email)}]]*/ "";
+      const username = /*[[${#strings.escapeJavaScript(username)}]]*/ "";
+      const userEmail = /*[[${#strings.escapeJavaScript(user.email)}]]*/ "";
 
-    // ✅ Connect WebSocket
-    function connectWs() {
-        const socket = new SockJS("/ws");
-        stompClient = Stomp.over(socket);
-        stompClient.connect({}, () => console.log("✅ WebSocket connected"));
-    }
-    connectWs();
+      sendBtn.addEventListener("click", sendMessage);
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
 
-    // ✅ Fetch paginated project list
-    function loadProjects(page = 0) {
-        fetch(`/api/projects?page=${page}&size=9`)
-            .then(res => res.json())
-            .then(data => {
-                renderProjects(data.content);
-                renderPagination(data.number, data.totalPages);
-            })
-            .catch(err => {
-                console.error("Error loading projects:", err);
-                projectListDiv.innerHTML = "<p class='text-center text-gray-500 p-4'>Failed to load projects</p>";
-            });
-    }
+      function sendMessage() {
+        const text = input.value.trim();
+        if (!text || !currentProjectId) return;
 
         fetch("/api/messages/send", {
           method: "POST",
@@ -195,46 +191,20 @@
           .catch(console.error);
       }
 
-        projects.forEach(project => {
-            const item = document.createElement("div");
-            item.className = "chat-list-item px-4 py-3 cursor-pointer border-b hover:bg-gray-50";
-            item.innerHTML = `
-            <p class="font-semibold text-gray-800">${project.name}</p>
-            <p class="text-sm text-gray-500 truncate">${project.description || "No description"}</p>`;
-            item.addEventListener("click", () => loadMessages(project.projectId, item));
-            projectListDiv.appendChild(item);
-        });
-    }
-
-    // ✅ Render pagination controls
-    function renderPagination(current, total) {
-        paginationDiv.innerHTML = "";
-        totalPages = total;
-        currentPage = current;
-
-        if (total <= 1) return;
-
-        for (let i = 0; i < total; i++) {
-            const btn = document.createElement("button");
-            btn.textContent = i + 1;
-            btn.className = i === current ? "active" : "";
-            btn.addEventListener("click", () => loadProjects(i));
-            paginationDiv.appendChild(btn);
-        }
-    }
-
-    // ✅ Load chat messages (REST + WebSocket)
-    function loadMessages(projectId, element) {
+      function loadMessages(projectId, element) {
         currentProjectId = projectId;
         input.disabled = false;
         sendBtn.disabled = false;
 
-        document.querySelectorAll(".chat-list-item")
-            .forEach(el => el.classList.remove("chat-list-item-active"));
+        document
+          .querySelectorAll(".chat-list-item")
+          .forEach((el) => el.classList.remove("chat-list-item-active"));
         element.classList.add("chat-list-item-active");
 
-        chatProjectName.textContent = element.querySelector(".font-semibold").textContent;
-        chatBox.innerHTML = "<p class='text-center text-gray-500'>Loading messages...</p>";
+        chatProjectName.textContent =
+          element.querySelector("p.font-semibold").textContent;
+        chatBox.innerHTML =
+          "<p class='text-center text-gray-500'>Đang tải tin nhắn...</p>";
 
         fetch(`/api/messages/${projectId}`)
           .then((res) => res.json())
@@ -254,25 +224,7 @@
       }
       window.loadMessages = loadMessages;
 
-        if (subscription) subscription.unsubscribe();
-        subscription = stompClient.subscribe(`/topic/project.${projectId}`, message => {
-            const msg = JSON.parse(message.body);
-            appendMessage(msg.senderName, msg.content, msg.senderEmail, msg.senderAvatar);
-        });
-    }
-
-    // ✅ Send chat message
-    function sendMessage() {
-        const text = input.value.trim();
-        if (!text || !currentProjectId || !stompClient.connected) return;
-
-        const msg = { projectId: currentProjectId, content: text, senderEmail: userEmail };
-        stompClient.send(`/app/chat/${currentProjectId}`, {}, JSON.stringify(msg));
-        input.value = "";
-    }
-
-    // ✅ Append message to chat box
-    function appendMessage(senderName, content, senderEmail, avatarUrl) {
+      function appendMessage(senderName, content, senderEmail, avatarUrl) {
         const msgDiv = document.createElement("div");
         const isCurrentUser =
           senderEmail?.trim().toLowerCase() === userEmail?.trim().toLowerCase();
@@ -305,13 +257,7 @@
 
         chatBox.appendChild(msgDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    sendBtn.addEventListener("click", sendMessage);
-    input.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
-
-    // ✅ Initial load
-    loadProjects(0);
-</script>
-</body>
+      }
+    </script>
+  </body>
 </html>
