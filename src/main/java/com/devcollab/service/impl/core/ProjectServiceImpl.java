@@ -509,7 +509,14 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
                 ));
     }
 
-
+    @Override
+    public boolean existsByNameAndCreatedBy_UserId(String name, Long createdById) {
+        if (name == null || createdById == null) {
+            return false;
+        }
+        // normalize name to avoid case-sensitive duplicates
+        return projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserId(name.trim(), createdById);
+    }
 
 
 }

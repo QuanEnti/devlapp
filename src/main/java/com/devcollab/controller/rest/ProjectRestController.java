@@ -59,7 +59,7 @@ public class ProjectRestController {
             Project project = new Project();
             project.setName(request.getName());
             project.setDescription(request.getDescription());
-            project.setPriority(request.getPriority());
+            project.setPriority(request.getPriority()); // ✅ thêm dòng này
 
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
                 project.setStartDate(LocalDate.parse(request.getStartDate()));
