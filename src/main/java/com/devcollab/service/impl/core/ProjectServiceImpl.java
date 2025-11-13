@@ -46,7 +46,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
     private final ProjectAuthorizationService authz;
-
+    private final RoleRepository roleRepository;
     private final AppEventService appEventService;
     private final ActivityService activityService;
     private final NotificationService notificationService;
@@ -89,7 +89,17 @@ public class ProjectServiceImpl implements ProjectService {
         pm.setRoleInProject("PM");
         pm.setJoinedAt(LocalDateTime.now());
         projectMemberRepository.save(pm);
+        Role pmRole = roleRepository.findByName("ROLE_PM")
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy ROLE_PM trong hệ thống"));
 
+        boolean hasPmRole = creator.getRoles().stream()
+                .anyMatch(r -> r.getName().equals("ROLE_PM"));
+
+        if (!hasPmRole) {
+            creator.getRoles().clear();
+            creator.getRoles().add(pmRole);
+            userRepository.save(creator);
+        }
         String[] defaultCols = {"To-do", "In Progress", "Review", "Done"};
         for (int i = 0; i < defaultCols.length; i++) {
             BoardColumn col = new BoardColumn();
@@ -112,43 +122,46 @@ public class ProjectServiceImpl implements ProjectService {
     public Project updateProject(Long id, Project patch) {
         Project existing = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+        // ✅ Kiểm tra tên trùng (nếu có cập nhật)
         if (patch.getName() != null && !patch.getName().isBlank()) {
             String projectName = patch.getName().trim();
-
             boolean exists = projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserIdAndProjectIdNot(
                     projectName, existing.getCreatedBy().getUserId(), id
             );
-
             if (exists) {
                 throw new BadRequestException("Tên dự án bị trùng");
             }
-
             existing.setName(projectName);
         }
-
-        if (patch.getName() != null && !patch.getName().isBlank())
-            existing.setName(patch.getName());
+        // ✅ Cập nhật mô tả
         if (patch.getDescription() != null)
             existing.setDescription(patch.getDescription());
+        // ✅ Cập nhật Business Rule
+        if (patch.getBusinessRule() != null)
+            existing.setBusinessRule(patch.getBusinessRule());
+        // ✅ Cập nhật độ ưu tiên
         if (patch.getPriority() != null)
             existing.setPriority(patch.getPriority());
+        // ✅ Cập nhật visibility (nếu có)
         if (patch.getVisibility() != null)
             existing.setVisibility(patch.getVisibility());
+        // ✅ Cập nhật ngày bắt đầu
         if (patch.getStartDate() != null)
             existing.setStartDate(patch.getStartDate());
+        // ✅ Cập nhật ngày kết thúc (và kiểm tra hợp lệ)
         if (patch.getDueDate() != null) {
             if (existing.getStartDate() != null && patch.getDueDate().isBefore(existing.getStartDate())) {
                 throw new BadRequestException("Ngày kết thúc không hợp lệ");
             }
             existing.setDueDate(patch.getDueDate());
         }
-
         existing.setUpdatedAt(LocalDateTime.now());
         Project saved = projectRepository.save(existing);
-
+        // 🧩 Ghi log hoạt động
         activityService.log("PROJECT", saved.getProjectId(), "UPDATE", saved.getName());
         return saved;
     }
+
 
     @Override
     public List<Project> getProjectsByUser(Long userId) {
@@ -310,7 +323,7 @@ public class ProjectServiceImpl implements ProjectService {
     return new ProjectPerformanceDTO(labels, achieved, target);
 
 }
-   
+
 @Override
 public List<ProjectDTO> getTopProjectsByPm(String email, int limit) {
     Pageable pageable = PageRequest.of(0, limit);
@@ -359,7 +372,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
 
         authz.ensurePmOfProject(pmEmail, projectId);
-        
+
 
         if (!project.isAllowLinkJoin()) {
             String inviteLink = UUID.randomUUID().toString();
@@ -391,7 +404,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
 
         return project;
     }
-   
+
     @Override
     public ProjectMember joinProjectByLink(String inviteLink, Long userId) {
         Project project = projectRepository.findActiveSharedProject(inviteLink)
@@ -418,7 +431,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
 
         return newMember;
     }
-    
+
     public List<Project> getProjectsByUsername(String username) {
         // 1. Tìm User bằng username (email)
         User user = userRepository.findByEmail(username)
@@ -441,7 +454,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
     @Transactional(readOnly = true)
     public String getUserRoleInProject(Long projectId, Long userId) {
         return projectMemberRepository.findRoleInProject(projectId, userId)
-                .orElse("Member"); 
+                .orElse("Member");
     }
 
     @Transactional(readOnly = true)
@@ -508,9 +521,22 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
                         p.getPriority()
                 ));
     }
+    @Override
+    public boolean existsByNameAndCreatedBy_UserId(String name, Long createdById) {
+        if (name == null || createdById == null) {
+            return false;
+        }
+        // normalize name to avoid case-sensitive duplicates
+        return projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserId(name.trim(), createdById);
+    }
+    @Override
+    public long countAll(){
+        return projectRepository.count();
+    }
 
-
-
-
+    @Override
+    public long countByStatus(String status){
+        return projectRepository.countByStatus(status);
+    }
 }
 

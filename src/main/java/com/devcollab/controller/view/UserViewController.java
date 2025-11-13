@@ -71,9 +71,20 @@ public class UserViewController {
 
     // 🏠 Dashboard
     @GetMapping("/dashboard")
-    public String userDashboardPage() {
-        return "user/user-dashboard";
+    public String viewHome(Model model, Authentication auth) {
+        String email = getEmailFromAuthentication(auth);
+        User user = userService.getByEmail(email).orElse(null);
+        List<Project> activeProjects = projectService.getProjectsByUser(user.getUserId());
+        List<Task> myTasks = taskService.getTasksByUser(user);
+        List<Task> upcoming = taskService.findUpcomingDeadlines(user.getUserId());
+
+        model.addAttribute("user", user);
+        model.addAttribute("activeProjects", activeProjects);
+        model.addAttribute("myTasks", myTasks);
+        model.addAttribute("upcoming", upcoming);
+        return "user/home";
     }
+
 
     // ➕ Create Project Page
     @GetMapping("/create-project")

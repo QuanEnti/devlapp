@@ -129,6 +129,7 @@
         </div>
     </div>
 
+    <script src="/js/logout.js"></script>
     <!-- ✅ JavaScript -->
     <script th:inline="javascript">
         document.addEventListener("DOMContentLoaded", function () {
@@ -207,7 +208,7 @@
                                     .then(() => {
                                         if (n.referenceId) {
                                             if (n.type === "WARNING" || n.type === "BAN") {
-                                                window.location.href = `/view/report/${n.referenceId}`;
+                                                window.location.href = `${n.link}`;
                                             }else if(n.type ==="PROJECT_CREATED"){
                                                 window.location.href = `${n.link}`;
                                             } else {
@@ -248,7 +249,18 @@
             const searchDropdown = document.getElementById("searchDropdown");
             const searchResults = document.getElementById("searchResults");
 
+            function escapeHtml(unsafe) {
+                if (!unsafe) return "";
+                return unsafe.replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
             if (searchInput && searchDropdown && searchResults) {
+                let searchTimeout;
+
                 searchInput.addEventListener("focus", () => {
                     searchDropdown.classList.remove("hidden");
                     searchResults.innerHTML =
@@ -261,72 +273,41 @@
                     }
                 });
 
-                let searchTimeout;
                 searchInput.addEventListener("input", () => {
                     clearTimeout(searchTimeout);
                     const query = searchInput.value.trim();
-
-                    if (query.length < 2) {
+                    if (query.length < 1) {
                         searchResults.innerHTML =
                             "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
                         return;
                     }
 
                     searchTimeout = setTimeout(() => {
-                        fetch(`/api/search?query=${encodeURIComponent(query)}`)
-                            .then((res) => res.json())
-                            .then((data) => {
-                                if (!data || data.length === 0) {
+                        fetch("/api/search?query=" + encodeURIComponent(query))
+                            .then(res => res.json())
+                            .then(data => {
+                                if (!Array.isArray(data) || data.length === 0) {
                                     searchResults.innerHTML =
                                         "<p class='p-4 text-gray-500 text-sm text-center'>Không có kết quả</p>";
                                     return;
                                 }
 
-                                searchResults.innerHTML = data.map(item => `
-                                    <div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition"
-                                         onclick="window.location.href='/view/project/${item.projectId}'">
-                                        <p class="text-sm font-medium text-gray-800">${this.escapeHtml(item.name)}</p>
-                                        <p class="text-xs text-gray-500">${item.description ? this.escapeHtml(item.description) : ""}</p>
-                                    </div>
-                                `).join("");
+                                searchResults.innerHTML = data.map(function(item) {
+                                    return '' +
+                                        '<div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition" ' +
+                                        '     onclick="window.location.href=\'/view/pm/project/board?projectId=' + item.projectId + '\'">' +
+                                        '  <p class="text-sm font-semibold text-gray-800">' + escapeHtml(item.name) + '</p>' +
+                                        '  <p class="text-xs text-gray-500 truncate">' + escapeHtml(item.description || "") + '</p>' +
+                                        '  <p class="text-[11px] text-gray-400 mt-0.5">Status: ' + (item.status || "") + '</p>' +
+                                        '</div>';
+                                }).join("");
                             })
-                            .catch(() => {
+                            .catch(err => {
+                                console.error("Search error:", err);
                                 searchResults.innerHTML =
                                     "<p class='p-4 text-gray-500 text-sm text-center'>Không thể tải kết quả</p>";
                             });
                     }, 300);
-                });
-            }
-
-            // Utility function to escape HTML
-            function escapeHtml(unsafe) {
-                return unsafe
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            }
-
-            // --- Logout ---
-            const logoutBtn = document.getElementById("logoutBtn");
-            if (logoutBtn) {
-                logoutBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    fetch("/api/auth/logout", { method: "POST", credentials: "include" })
-                        .then(() => {
-                            // Clear cookies
-                            document.cookie = "AUTH_TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                            document.cookie = "REFRESH_TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-                            // Clear localStorage
-                            localStorage.removeItem("AUTH_TOKEN");
-                            localStorage.removeItem("REFRESH_TOKEN");
-
-                            // Redirect to login page
-                            window.location.href = "/view/signin";
-                        })
-                        .catch(err => console.error("Logout error:", err));
                 });
             }
         });

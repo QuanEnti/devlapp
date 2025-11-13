@@ -119,6 +119,7 @@ public class UserReportServiceImpl implements UserReportService {
          n.setMessage("⚠️ Admin Warning: " + message);
          n.setStatus("unread");
          n.setCreatedAt(java.time.LocalDateTime.now());
+         n.setLink("view/user-report/"+ id);
          notificationRepo.save(n);
 
         // // Ghi log hoạt động
@@ -158,6 +159,7 @@ public class UserReportServiceImpl implements UserReportService {
          n.setMessage("🚫 Your account has been banned due to violation of community guidelines.");
          n.setStatus("unread");
          n.setCreatedAt(java.time.LocalDateTime.now());
+        n.setLink("view/user-report/"+ id);
          notificationRepo.save(n);
 
         // // Log

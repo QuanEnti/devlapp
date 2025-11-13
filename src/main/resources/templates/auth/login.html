@@ -146,24 +146,25 @@
 
           const data = await res.json();
           console.log('Login response:', data);
-
+          if (res.status === 403 && data.error === 'ACCOUNT_BANNED') {
+              localStorage.clear();
+              msg.style.color = 'red';
+              msg.textContent = data.message || 'Tài khoản của bạn đã bị khóa.';
+              setTimeout(() => {
+                  window.location.href = data.redirect || '/view/ban';
+              }, 1200);
+              return;
+          }
           if (res.ok && data.status === 'SUCCESS') {
               msg.style.color = 'green';
               msg.textContent = 'Đăng nhập thành công!';
-
-              // ✅ Lưu token vào localStorage để các trang khác có thể dùng
-              if (data.token) {
-                  localStorage.setItem('token', data.token);
-                  console.log('✅ Token saved to localStorage:', data.token);
-              }
-
-              // ✅ Lưu thông tin user (tùy chọn)
+              // Continue with your redirect logic
+              if (data.token) localStorage.setItem('token', data.token);
               if (data.user) {
                   localStorage.setItem('userEmail', data.user.email);
                   localStorage.setItem('userName', data.user.name);
               }
 
-              // ✅ Xác định trang redirect
               const roles = data.user?.roles || [];
               if (roles.includes('ROLE_ADMIN')) {
                   setTimeout(() => window.location.href = '/admin/dashboard', 800);
@@ -171,6 +172,7 @@
                   setTimeout(() => window.location.href = '/user/view/dashboard', 800);
               }
           }
+
 
           else if (data.status === 'VERIFY_REQUIRED') {
               msg.style.color = 'orange';

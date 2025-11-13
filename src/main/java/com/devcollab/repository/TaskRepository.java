@@ -192,5 +192,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     ORDER BY completedTasks DESC
 """, nativeQuery = true)
     List<Object[]> findMemberPerformanceByProject(@Param("projectId") Long projectId);
+    @Query("""
+    SELECT t FROM Task t
+    WHERE t.assignee.id = :userId
+      AND t.deadline IS NOT NULL
+      AND t.status <> 'DONE'
+      AND t.deadline >= CURRENT_TIMESTAMP
+    ORDER BY t.deadline ASC
+""")
+    List<Task> findTopUpcoming(@Param("userId") Long userId, Pageable pageable);
 }
 

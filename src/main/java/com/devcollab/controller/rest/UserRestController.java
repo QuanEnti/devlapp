@@ -1,6 +1,7 @@
 package com.devcollab.controller.rest;
 
 import com.devcollab.domain.User;
+import com.devcollab.dto.AdminUserDTO;
 import com.devcollab.dto.UserDTO;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.service.core.UserService;
@@ -31,11 +32,23 @@ public class UserRestController {
         this.cloudinary = cloudinary;
     }
 
-    @GetMapping
-    public List<UserDTO> getAllUsers() {
-        System.out.println("DEBUG: getAllUsers called");
-        return userService.getAll().stream().map(this::toDto).toList();
+    @GetMapping()
+    public List<AdminUserDTO> getAllUsersForAdmin() {
+        List<User> users = userService.getAll();
+        users.forEach(u -> System.out.printf(
+                " - ID: %d | Email: %s | Status: %s | Premium: %s | Expiry: %s%n",
+                u.getUserId(),
+                u.getEmail(),
+                u.getStatus(),
+                u.isPremium(),
+                u.getPremiumExpiry()
+        ));
+
+        return users.stream()
+                .map(AdminUserDTO::fromEntity)
+                .toList();
     }
+
 
     @GetMapping("/{id}")
     public UserDTO getUser(@PathVariable Long id) {
@@ -86,15 +99,42 @@ public class UserRestController {
             throw e;
         }
     }
-
-    @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
-        System.out.println("DEBUG: inactive User called with id=" + id);
+    @PostMapping("/{id}/toggle-ban")
+    public ResponseEntity<?> toggleBan(@PathVariable Long id) {
+        System.out.println("DEBUG: toggleBan called with id=" + id);
         try {
-            userService.inactivate(id);
+            User user = userService.getById(id)
+                    .orElseThrow(() -> new RuntimeException("User not found id=" + id));
+
+            String currentStatus = user.getStatus() != null ? user.getStatus().toLowerCase() : "active";
+            String newStatus;
+            String action;
+
+            // If user is currently banned or suspended, unban them (set to active)
+            if ("banned".equals(currentStatus) || "suspended".equals(currentStatus)) {
+                newStatus = "active";
+                action = "unbanned";
+            } else {
+                // If user is active/verified, ban them
+                newStatus = "banned";
+                action = "banned";
+            }
+            System.out.println("newStat"+newStatus);
+            user.setStatus(newStatus);
+            user.setUpdatedAt(LocalDateTime.now());
+            userService.update(id, user);
+
+            return ResponseEntity.ok().body(Map.of(
+                    "message", "User " + action + " successfully",
+                    "status", "success",
+                    "newStatus", newStatus
+            ));
         } catch (Exception e) {
             e.printStackTrace();
-            throw e;
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Failed to toggle ban status",
+                    "message", e.getMessage()
+            ));
         }
     }
 

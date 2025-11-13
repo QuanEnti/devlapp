@@ -1,460 +1,507 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Create Project - DevCollab</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* Sidebar full height */
-      .sidebar {
-        height: calc(100vh - 4rem);
-        top: 4rem;
-        transition: all 0.3s ease;
-      }
-
-      /* Card project style */
-      .project-card-item {
-        border: 1px solid #e5e7eb;
-        transition: transform 0.2s, box-shadow 0.2s;
-        cursor: pointer;
-      }
-      .project-card-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      }
-
-      /* Avatar style */
-      .avatar {
-        width: 28px;
-        height: 28px;
-        object-fit: cover;
-        border: 2px solid white;
-        box-shadow: 0 0 0 1px #e5e7eb;
-      }
-
-      /* Sidebar active styles */
-      .sidebar-item-active {
-        background-color: #eff6ff;
-        color: #2563eb;
-        font-weight: 600;
-        border-right: 4px solid #2563eb;
-      }
-      .sidebar-item {
-        color: #4b5563;
-        transition: background-color 0.15s;
-        border-right: 4px solid transparent;
-      }
-      .sidebar-item:hover {
-        background-color: #f9fafb;
-        color: #1f2937;
-      }
-
-      /* Form input style */
-      .form-input {
-        border: 1px solid #d1d5db;
-        border-radius: 0.5rem;
-        padding: 0.75rem;
-        width: 100%;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-      }
-      .form-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-5px);
+        .form-input {
+            @apply w-full border-2 border-gray-400 rounded-lg bg-white text-gray-800 outline-none
+            px-5 py-3  /* 👈 padding hợp lý để con trỏ không dính sát viền */
+            focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150;
         }
-        to {
-          opacity: 1;
-          transform: translateY(0);
+
+
+        /* Giữ border luôn hiển thị rõ */
+        input.form-input,
+        textarea.form-input {
+            border-color: #9ca3af; /* gray-400 */
+            border-width: 2px;
         }
-      }
-      .animate-fadeIn {
-        animation: fadeIn 0.2s ease-in-out;
-      }
+
+
+        /* Làm rộng tối đa */ #project-name, #project-description, #business-rule {  width: 100%; }
+
+
+        /* Input name */
+        #project-name {
+            min-height: 45px;
+            border-radius: 0.5rem;
+            padding-left: 1rem !important; /* 👈 padding trái để con trỏ không dính sát border */
+            padding-right: 1rem !important; /* 👈 padding phải */
+            padding-top: 0.75rem !important; /* 👈 padding trên */
+            padding-bottom: 0.75rem !important; /* 👈 padding dưới */
+        }
+
+
+        /* Textarea description */
+        #project-description {
+            min-height: 150px;
+            resize: vertical;
+            border-radius: 0.75rem; /* rounded-lg */
+            padding-left: 1rem !important; /* 👈 padding trái để con trỏ không dính sát border */
+            padding-right: 1rem !important; /* 👈 padding phải */
+            padding-top: 1rem !important; /* 👈 padding trên để con trỏ không dính sát mép trên */
+            padding-bottom: 1rem !important; /* 👈 padding dưới */
+        }
+
+
+        /* Textarea business rule */
+        #business-rule {
+            min-height: 150px;
+            resize: vertical;
+            border-radius: 0.75rem; /* rounded-lg */
+            padding-left: 1rem !important; /* 👈 padding trái để con trỏ không dính sát border */
+            padding-right: 1rem !important; /* 👈 padding phải */
+            padding-top: 1rem !important; /* 👈 padding trên để con trỏ không dính sát mép trên */
+            padding-bottom: 1rem !important; /* 👈 padding dưới */
+        }
     </style>
-  </head>
 
-  <body class="bg-gray-50 font-sans">
-    <div th:replace="fragments/header :: header"></div>
 
-    <div class="flex min-h-[calc(100vh-4rem)]">
-      <div th:replace="fragments/sidebar :: sidebar"></div>
+</head>
 
-      <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">
-          Create New Project
-        </h1>
 
-        <div
-          class="bg-white p-8 rounded-2xl shadow-lg border border-gray-200 max-w-4xl mx-auto relative"
-        >
-          <form id="createProjectForm" novalidate>
-            <div class="mb-5">
-              <label
-                for="project-name"
-                class="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Project Name
-              </label>
-              <input
-                type="text"
-                id="project-name"
-                name="project-name"
-                placeholder="Enter project name"
-                class="form-input"
-                required
-              />
-              <small
-                id="name-error"
-                class="text-red-500 text-sm hidden"
-              ></small>
+<body class="bg-gray-50 font-sans">
+<div th:replace="fragments/header :: header"></div>
+
+
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+
+
+    <!-- Main Content -->
+    <main class="flex-1 p-10 overflow-y-auto">
+        <div class="max-w-7xl mx-auto w-[90%]">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                Create New Project
+            </h1>
+            <p class="text-gray-500 mb-10">
+                Set up your project details, timeline and priorities.
+            </p>
+
+
+            <!-- Main Card -->
+            <div
+                    class="bg-white p-12 rounded-2xl shadow-lg border border-gray-200 fadeIn"
+            >
+                <form id="createProjectForm" class="space-y-10">
+
+
+                    <!-- Project Info Section -->
+                    <div
+                            class="border border-gray-200 bg-gray-50 rounded-xl p-8 hover:shadow-sm transition"
+                    >
+                        <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b border-gray-300 pb-2">
+                            Project Information
+                        </h2>
+
+
+                        <div class="space-y-6">
+                            <!-- Project Name -->
+                            <div>
+                                <label
+                                        for="project-name"
+                                        class="block text-sm font-semibold text-gray-700 mb-2"
+                                >Project Name</label
+                                >
+                                <input
+                                        type="text"
+                                        id="project-name"
+                                        name="project-name"
+                                        placeholder="Enter project name"
+                                        class="form-input text-base bg-white border-black"
+                                        required
+                                />
+                            </div>
+
+
+                            <!-- Description -->
+                            <div>
+                                <label
+                                        for="project-description"
+                                        class="block text-sm font-semibold text-gray-700 mb-2"
+                                >Description</label
+                                >
+                                <textarea
+                                        id="project-description"
+                                        name="project-description"
+                                        rows="5"
+                                        placeholder="Briefly describe your project"
+                                        class="form-input resize-none text-base bg-white border-black"
+                                ></textarea>
+                            </div>
+
+
+                            <!-- Business Rule -->
+                            <div>
+                                <label
+                                        for="business-rule"
+                                        class="block text-sm font-semibold text-gray-700 mb-2"
+                                >Business Rule</label
+                                >
+                                <textarea
+                                        id="business-rule"
+                                        name="business-rule"
+                                        rows="5"
+                                        placeholder="Enter business rules for your project"
+                                        class="form-input resize-none text-base bg-white border-black"
+                                ></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Settings Section -->
+                    <div
+                            class="border border-gray-200 bg-gray-50 rounded-xl p-8 hover:shadow-sm transition"
+                    >
+                        <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b border-gray-300 pb-2">
+                            Settings
+                        </h2>
+
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+                            <!-- Priority -->
+                            <div>
+                                <label
+                                        class="block text-sm font-semibold text-gray-700 mb-3"
+                                >Priority</label
+                                >
+                                <div class="flex flex-wrap gap-4">
+                                    <label
+                                            class="flex items-center gap-2 cursor-pointer px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                                    >
+                                        <input
+                                                type="radio"
+                                                name="priority"
+                                                value="Low"
+                                                class="text-green-500 focus:ring-green-500"
+                                        />
+                                        <span class="text-green-600 font-medium">Low</span>
+                                    </label>
+
+
+                                    <label
+                                            class="flex items-center gap-2 cursor-pointer px-4 py-2 border border-blue-400 rounded-lg bg-blue-50"
+                                    >
+                                        <input
+                                                type="radio"
+                                                name="priority"
+                                                value="Normal"
+                                                checked
+                                                class="text-blue-500 focus:ring-blue-500"
+                                        />
+                                        <span class="text-blue-600 font-medium">Normal</span>
+                                    </label>
+
+
+                                    <label
+                                            class="flex items-center gap-2 cursor-pointer px-4 py-2 border border-red-400 rounded-lg hover:bg-red-50"
+                                    >
+                                        <input
+                                                type="radio"
+                                                name="priority"
+                                                value="High"
+                                                class="text-red-500 focus:ring-red-500"
+                                        />
+                                        <span class="text-red-600 font-medium">High</span>
+                                    </label>
+                                </div>
+                            </div>
+
+
+                            <!-- Date Range -->
+                            <div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Start Date -->
+                                    <div>
+                                        <label
+                                                for="startDate"
+                                                class="block text-sm font-semibold text-gray-700 mb-2"
+                                        >Start Date</label
+                                        >
+                                        <input
+                                                type="date"
+                                                id="startDate"
+                                                name="startDate"
+                                                class="form-input text-base bg-white rounded-lg"
+                                        />
+                                    </div>
+                                    <!-- End Date -->
+                                    <div>
+                                        <label for="endDate" class="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                                        <input type="date" id="endDate" name="endDate" class="form-input text-base bg-white rounded-lg"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Submit -->
+                    <div class="flex justify-end pt-8 border-t border-gray-200">
+                        <button
+                                type="submit"
+                                id="create-btn"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all duration-150 shadow-md hover:scale-[1.03]"
+                        >
+                            <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-5 w-5"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                            >
+                                <path
+                                        fill-rule="evenodd"
+                                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                        clip-rule="evenodd"
+                                />
+                            </svg>
+                            <span>Create Project</span>
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <div class="mb-5">
-              <label
-                for="project-description"
-                class="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Description
-              </label>
-              <textarea
-                id="project-description"
-                name="project-description"
-                rows="4"
-                placeholder="Briefly describe your project"
-                class="form-input resize-none"
-              ></textarea>
-              <small
-                id="desc-error"
-                class="text-red-500 text-sm hidden"
-              ></small>
-            </div>
-
-            <div class="mb-6">
-              <label
-                for="priority"
-                class="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Priority
-              </label>
-              <select id="priority" name="priority" class="form-input bg-white">
-                <option value="Low">Low</option>
-                <option value="Normal" selected>Normal</option>
-                <option value="High">High</option>
-              </select>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label
-                  for="startDate"
-                  class="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  id="startDate"
-                  name="startDate"
-                  class="form-input bg-white"
-                />
-                <small
-                  id="start-error"
-                  class="text-red-500 text-sm hidden"
-                ></small>
-              </div>
-
-              <div>
-                <label
-                  for="endDate"
-                  class="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  id="endDate"
-                  name="endDate"
-                  class="form-input bg-white"
-                />
-                <small
-                  id="end-error"
-                  class="text-red-500 text-sm hidden"
-                ></small>
-              </div>
-            </div>
-
-            <div class="flex justify-end pt-4 border-t border-gray-200">
-              <button
-                type="submit"
-                class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold text-base shadow-md hover:bg-blue-700 transition flex items-center space-x-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <span>Create Project</span>
-              </button>
-            </div>
-          </form>
         </div>
-      </main>
-    </div>
-    <div th:replace="fragments/chatbox :: chatbox"></div>
-    <script th:src="@{/js/chatbox.js}"></script>
-    <script th:inline="javascript">
+    </main>
+</div>
+
+
+<!-- Toast -->
+<div
+        id="toast"
+        class="hidden fixed top-6 right-6 px-4 py-2 rounded-lg shadow-lg text-white font-medium fadeIn z-50"
+></div>
+
+
+<!-- giữ nguyên logic -->
+<script th:src="@{/js/chatbox.js}"></script>
+<script th:inline="javascript">
+    (function () {
         const isPremium = /*[[${isPremium}]]*/ false;
-      (function () {
-        console.log("DOM Ready - isPremium value:", isPremium);
-        // ====== 1. DOM Elements ======
-        const form = document.getElementById("createProjectForm");
-        const nameInput = document.getElementById("project-name");
         const descInput = document.getElementById("project-description");
-        const priorityInput = document.getElementById("priority");
-        const startInput = document.getElementById("startDate");
-        const endInput = document.getElementById("endDate");
+        const businessInput = document.getElementById("business-rule");
+        let typingTimer, currentSuggestion = "";
+        const TYPING_DELAY = 1500;
 
-        // ====== 2. Hàm hiển thị và xóa lỗi ======
-        function showError(id, message) {
-          const el = document.getElementById(id);
-          el.textContent = message;
-          el.classList.remove("hidden");
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.remove("hidden");
+            toast.className =
+                "fixed top-6 right-6 px-4 py-2 rounded-lg shadow-lg text-white font-medium fadeIn z-50 " +
+                (type === "success" ? "bg-green-500" : "bg-red-500");
+            setTimeout(() => toast.classList.add("hidden"), 2500);
         }
 
-        function clearError(id) {
-          const el = document.getElementById(id);
-          el.textContent = "";
-          el.classList.add("hidden");
-        }
+        if (isPremium && businessInput) {
+            let businessTimer, currentBizSuggestion = "";
+            const BIZ_DELAY = 1500;
 
-        function clearAllErrors() {
-          ["name-error", "desc-error", "start-error", "end-error"].forEach(
-            (id) => {
-              const el = document.getElementById(id);
-              el.textContent = "";
-              el.classList.add("hidden");
-            }
-          );
-        }
-
-        // ====== 3. Xử lý ngày tháng ======
-        const today = new Date();
-        const pad = (n) => String(n).padStart(2, "0");
-        const todayStr = `${today.getFullYear()}-${pad(
-          today.getMonth() + 1
-        )}-${pad(today.getDate())}`;
-
-        if (startInput) {
-          startInput.setAttribute("min", todayStr);
-          startInput.addEventListener("change", function () {
-            if (endInput) {
-              const minDate = this.value || todayStr;
-              endInput.setAttribute("min", minDate);
-              // Nếu end date đã có giá trị và nhỏ hơn start date mới, thì re-validate nó
-              if (endInput.value) {
-                validateEndDate();
-              }
-            }
-          });
-        }
-
-        if (endInput) endInput.setAttribute("min", todayStr);
-
-        // ====== 4. Các hàm Validation riêng lẻ ======
-        function validateName() {
-          const name = nameInput.value.trim();
-          if (!name) {
-            showError("name-error", "Vui lòng nhập tên dự án.");
-            return false;
-          }
-          if (name.length < 5) {
-            showError("name-error", "Tên dự án phải từ 5 ký tự trở lên.");
-            return false;
-          }
-          clearError("name-error");
-          return true;
-        }
-
-        function validateDescription() {
-          const description = descInput.value.trim();
-          if (!description || description.length < 5) {
-            showError("desc-error", "Mô tả phải từ 5 ký tự trở lên.");
-            return false;
-          }
-          clearError("desc-error");
-          return true;
-        }
-
-        function validateStartDate() {
-          const startDate = startInput.value;
-          if (!startDate) {
-            showError("start-error", "Vui lòng chọn Start Date.");
-            return false;
-          }
-          if (startDate < todayStr) {
-            showError("start-error", "Start Date phải từ hôm nay trở đi.");
-            return false;
-          }
-          clearError("start-error");
-          return true;
-        }
-
-        function validateEndDate() {
-          const startDate = startInput.value;
-          const endDate = endInput.value;
-          if (!endDate) {
-            showError("end-error", "Vui lòng chọn End Date.");
-            return false;
-          }
-          // Chỉ kiểm tra nếu startDate cũng có giá trị
-          if (startDate && endDate < startDate) {
-            showError("end-error", "End Date phải sau Start Date.");
-            return false;
-          }
-          clearError("end-error");
-          return true;
-        }
-
-        // ====== 5. AI Suggestion (giữ nguyên logic cũ) ======
-        let typingTimer;
-        let currentSuggestion = "";
-        const TYPING_DELAY = 1500; // 1.5s
-
-        // AI suggestion (giữ nguyên logic cũ)
-        if (isPremium && descInput) {
-          descInput.addEventListener("input", () => {
-            clearTimeout(typingTimer);
-            const text = descInput.value.trim();
-            if (text.length < 5) return;
-            typingTimer = setTimeout(() => getAISuggestion(text), TYPING_DELAY);
-          });
-
-          descInput.addEventListener("keydown", (e) => {
-            if (e.key === "/") {
-              e.preventDefault();
-              if (currentSuggestion) {
-                descInput.value = currentSuggestion;
-                removePopup();
-                validateDescription(); // Validate luôn sau khi chèn
-              }
-            } else if (e.key === "Escape") removePopup();
-          });
-        } else if (!isPremium) {
-            console.log("⚠️ AI Suggestion disabled: not a premium user");
-        }
-
-        async function getAISuggestion(text) {
-          try {
-            const res = await fetch("/api/ai/suggest-description", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ input: text }),
+            businessInput.addEventListener("input", () => {
+                clearTimeout(businessTimer);
+                const text = businessInput.value.trim();
+                if (text.length < 5) return;
+                businessTimer = setTimeout(() => getBusinessRuleSuggestion(text), BIZ_DELAY);
             });
-            const result = await res.json();
-            currentSuggestion = result.suggestion || "";
-            showSuggestionPopup(currentSuggestion);
-          } catch (err) {
-            console.error("Lỗi AI:", err);
-          }
+
+            businessInput.addEventListener("keydown", (e) => {
+                if (e.key === "/") {
+                    e.preventDefault();
+                    if (currentBizSuggestion) {
+                        businessInput.value = currentBizSuggestion;
+                        removePopup();
+                    }
+                } else if (e.key === "Escape") removePopup();
+            });
+
+            async function getBusinessRuleSuggestion(text) {
+                try {
+                    const response = await fetch("/api/ai/suggest-business-rule", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            input: businessInput.value.trim(),
+                            projectName: document.getElementById("project-name").value.trim(),
+                            description: document.getElementById("project-description").value.trim()
+                        })
+                    });
+                    const result = await response.json();
+                    currentBizSuggestion = result.suggestion || "";
+                    showSuggestionPopup(currentBizSuggestion);
+                } catch (err) {
+                    console.error("Lỗi gọi API AI:", err);
+                }
+            }
         }
+        async function getAISuggestion(text) {
+            try {
+                const response = await fetch("/api/ai/suggest-description", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ input: text }),
+                });
+                const result = await response.json();
+                currentSuggestion = result.suggestion || "";
+                showSuggestionPopup(currentSuggestion);
+            } catch (err) {
+                console.error("Lỗi gọi API AI:", err);
+            }
+        }
+
 
         function showSuggestionPopup(suggestion) {
-          removePopup();
-          if (!suggestion) return;
-          const popup = document.createElement("div");
-          popup.id = "ai-suggestion-popup";
-          popup.innerHTML = `
-        <div class="p-3">
-          <strong class="text-blue-600">💡 AI Suggestion:</strong>
-          <p class="mt-2 text-gray-700">${suggestion}</p>
-          <small class="text-gray-400 block mt-2">(Nhấn / để chèn, Esc để hủy)</small>
-        </div>`;
-          popup.className =
-            "absolute bg-white border border-gray-300 rounded-lg shadow-md w-96 animate-fadeIn";
-          popup.style.left = descInput.offsetLeft + "px";
-          popup.style.top = descInput.offsetTop + descInput.offsetHeight + "px";
-          popup.style.zIndex = "1000";
-          descInput.parentElement.appendChild(popup);
+            removePopup();
+            if (!suggestion) return;
+            const popup = document.createElement("div");
+            popup.id = "ai-suggestion-popup";
+            popup.innerHTML = `
+           <div class="p-3">
+             <strong class="text-blue-600">💡 AI Suggestion:</strong>
+             <p class="mt-2 text-gray-700">${suggestion}</p>
+             <small class="text-gray-400 block mt-2">(Nhấn / để chèn, Esc để hủy)</small>
+           </div>`;
+            popup.className =
+                "absolute bg-white border border-gray-300 rounded-lg shadow-md w-96 fadeIn";
+            popup.style.left = descInput.offsetLeft + "px";
+            popup.style.top =
+                descInput.offsetTop + descInput.offsetHeight + "px";
+            popup.style.zIndex = "1000";
+            descInput.parentElement.appendChild(popup);
         }
+
 
         function removePopup() {
-          const popup = document.getElementById("ai-suggestion-popup");
-          if (popup) popup.remove();
+            const popup = document.getElementById("ai-suggestion-popup");
+            if (popup) popup.remove();
         }
 
-        // ====== 6. Gắn Event Listener cho Live Validation ======
-        // Sự kiện 'blur' kích hoạt khi người dùng click ra ngoài
-        if (nameInput) nameInput.addEventListener("blur", validateName);
-        if (descInput) descInput.addEventListener("blur", validateDescription);
-        // Sự kiện 'change' kích hoạt khi giá trị ngày thay đổi
-        if (startInput) startInput.addEventListener("change", validateStartDate);
-        if (endInput) endInput.addEventListener("change", validateEndDate);
 
-        // ====== 7. Xử lý Submit Form (đã refactor) ======
-        if (form) {
-          form.addEventListener("submit", async function (e) {
+        if (isPremium && descInput) {
+            descInput.addEventListener("input", () => {
+                clearTimeout(typingTimer);
+                const text = descInput.value.trim();
+                if (text.length < 5) return;
+                typingTimer = setTimeout(() => getAISuggestion(text), TYPING_DELAY);
+            });
+
+
+            descInput.addEventListener("keydown", (e) => {
+                if (e.key === "/") {
+                    e.preventDefault();
+                    if (currentSuggestion) {
+                        descInput.value = currentSuggestion;
+                        removePopup();
+                    }
+                } else if (e.key === "Escape") removePopup();
+            });
+        }
+
+
+        const startInput = document.getElementById("startDate");
+        const endInput = document.getElementById("endDate");
+        const pad = (n) => String(n).padStart(2, "0");
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+
+        startInput?.setAttribute("min", todayStr);
+        endInput?.setAttribute("min", todayStr);
+
+
+        startInput?.addEventListener("change", function () {
+            if (endInput) {
+                endInput.setAttribute("min", this.value || todayStr);
+                if (endInput.value && endInput.value < this.value)
+                    endInput.value = "";
+            }
+        });
+
+
+        const form = document.getElementById("createProjectForm");
+        const btn = document.getElementById("create-btn");
+
+
+        form.addEventListener("submit", async function (e) {
             e.preventDefault();
-            clearAllErrors(); // Xóa lỗi cũ trước khi validate lại
+            btn.disabled = true;
+            btn.innerHTML =
+                "<svg class='animate-spin h-5 w-5 mr-2 text-white' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'><circle class='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' stroke-width='4'></circle><path class='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z'></path></svg>Creating...";
 
-            // Chạy tất cả các hàm validate
-            const isNameValid = validateName();
-            const isDescValid = validateDescription();
-            const isStartValid = validateStartDate();
-            const isEndValid = validateEndDate();
 
-            // Nếu một trong các trường không hợp lệ, dừng lại
-            if (
-              !isNameValid ||
-              !isDescValid ||
-              !isStartValid ||
-              !isEndValid
-            ) {
-              return;
+            const name = document.getElementById("project-name").value.trim();
+            const description = descInput.value.trim();
+            const priority = document.querySelector("input[name='priority']:checked").value;
+            const startDate = startInput?.value || "";
+            const endDate = endInput?.value || "";
+            const businessRule = businessInput.value.trim();
+
+
+            if (!name) {
+                showToast("Vui lòng nhập tên dự án.", "error");
+                btn.disabled = false;
+                btn.innerHTML = "<span>Create Project</span>";
+                return;
             }
 
-            // Gửi dữ liệu khi hợp lệ
-            const data = {
-              name: nameInput.value.trim(),
-              description: descInput.value.trim(),
-              priority: priorityInput.value,
-              startDate: startInput.value,
-              endDate: endInput.value,
-            };
+
+            if (startDate && startDate < todayStr) {
+                showToast("Start Date phải >= hôm nay.", "error");
+                return;
+            }
+
+
+            if (endDate && endDate < (startDate || todayStr)) {
+                showToast("End Date phải >= Start Date.", "error");
+                return;
+            }
+
+            const data = { name, description, businessRule, priority, startDate: startDate || null, endDate: endDate || null };
+
 
             try {
-              const res = await fetch("/api/projects/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-              });
-              const result = await res.json();
+                const response = await fetch("/api/projects/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+                const result = await response.json();
+                if (result.status === "success" || result.success) {
+                    showToast("✅ Tạo project thành công!");
 
-              if (result.status === "success" || result.success) {
-                window.location.href = "/user/view/view-all-projects";
-              } else {
-                showError("name-error", result.message || "Có lỗi xảy ra!");
-              }
+                    // 🔹 Redirect to project detail page
+                    const projectId = result.projectId || result.data?.projectId;
+                    if (projectId) {
+                        setTimeout(() => {
+                            window.location.href = `/view/pm/project/detail?projectId=${projectId}`;
+                        }, 1200);
+                    } else {
+                        // fallback if ID missing
+                        setTimeout(() => {
+                            window.location.href = "/user/view/view-all-projects";
+                        }, 1200);
+                    }
+                }
+                else {
+                    showToast(result.message || "Lỗi không xác định.", "error");
+                }
             } catch (err) {
-              console.error(err);
-              showError("name-error", "🚨 Không thể kết nối server!");
+                console.error(err);
+                showToast("🚨 Lỗi khi tạo project.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = "<span>Create Project</span>";
             }
-          });
-        }
-      })();
-    </script>
-  </body>
+        });
+    })();
+
+</script>
+</body>
+
+<div th:replace="fragments/chatbox :: chatbox"></div>
+<script th:src="@{/js/chatbox.js}"></script>
 </html>
+

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -94,17 +95,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+//    private void handleJwtError(HttpServletRequest request, HttpServletResponse response,
+//            String error, String message, int statusCode)
+//            throws IOException {
+//        if (request.getRequestURI().startsWith("/api/")) {
+//            response.setStatus(statusCode);
+//            response.setContentType("application/json");
+//            response.getWriter().write("{\"error\":\"" + error + "\",\"message\":\"" + message + "\"}");
+//        } else {
+//            System.out.println("⚠️ " + error + " at " + request.getRequestURI());
+//            response.setStatus(HttpServletResponse.SC_OK);
+//        }
+//    }
     private void handleJwtError(HttpServletRequest request, HttpServletResponse response,
-            String error, String message, int statusCode)
+                                String error, String message, int statusCode)
             throws IOException {
-        if (request.getRequestURI().startsWith("/api/")) {
+
+        String path = request.getRequestURI();
+        ResponseCookie clearAccess = ResponseCookie.from("AUTH_TOKEN", "")
+                .path("/")
+                .maxAge(0)
+                .httpOnly(true)
+                .sameSite("Lax")
+                .build();
+        ResponseCookie clearRefresh = ResponseCookie.from("REFRESH_TOKEN", "")
+                .path("/")
+                .maxAge(0)
+                .httpOnly(true)
+                .sameSite("Lax")
+                .build();
+        response.addHeader("Set-Cookie", clearAccess.toString());
+        response.addHeader("Set-Cookie", clearRefresh.toString());
+        if (path.startsWith("/api/")) {
             response.setStatus(statusCode);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"" + error + "\",\"message\":\"" + message + "\"}");
-        } else {
-            System.out.println("⚠️ " + error + " at " + request.getRequestURI());
-            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write(
+                    "{\"error\":\"" + error + "\",\"message\":\"" + message + "\"}"
+            );
+            return;
         }
+        System.out.println("⚠️ " + error + " at " + path);
+        response.setStatus(HttpServletResponse.SC_FOUND);
+        response.setHeader("Location", "/view/signin?expired=true");
     }
 
     private String extractJwtFromRequest(HttpServletRequest request) {

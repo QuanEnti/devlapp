@@ -14,9 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -161,5 +159,18 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
         result.put("payment_status", order.getPaymentStatus());
         return result;
+    }
+    @Override
+    public List<Map<String, Object>> getRevenueByMonth() {
+        List<Map<String, Object>> revenue = new ArrayList<>();
+        List<Object[]> raw = orderRepo.sumRevenueByMonth();
+
+        for (Object[] row : raw) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("month", row[0]);  // e.g. "2025-11"
+            item.put("total", row[1]);
+            revenue.add(item);
+        }
+        return revenue;
     }
 }

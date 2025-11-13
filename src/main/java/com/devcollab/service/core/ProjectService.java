@@ -69,4 +69,6 @@ public interface ProjectService {
     Map<String, Object> getMetrics(Long projectId);
     Page<ProjectMember> getProjectsByUserSorted(User user, String role, Pageable pageable);
     Page<ProjectSummaryDTO> getProjectsByUserPaginated(String email, int page, int size);
+    long countAll();
+    long countByStatus(String status);
 }

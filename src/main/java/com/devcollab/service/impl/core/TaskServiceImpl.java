@@ -646,17 +646,9 @@ public class TaskServiceImpl implements TaskService {
             default         -> taskRepository.findUserTasksOrderByDeadline(user, pageable);
         };
     }
-
-
-
-
-    private Sort getSort(String sortBy) {
-        return switch (sortBy.toLowerCase()) {
-            case "priority" -> Sort.by("priority").ascending();
-            case "project" -> Sort.by("project.name").ascending();
-            case "deadline" -> Sort.by("deadline").ascending();
-            default -> Sort.by("deadline").ascending();
-        };
+    @Override
+    public List<Task> findUpcomingDeadlines(Long userId) {
+        return taskRepository.findTopUpcoming(userId, PageRequest.of(0, 5));
     }
 
 }

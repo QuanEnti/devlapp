@@ -5,6 +5,9 @@ import com.devcollab.domain.User;
 import com.devcollab.dto.ProjectSummaryDTO;
 import com.devcollab.dto.request.ProjectCreateRequestDTO;
 import com.devcollab.dto.response.ApiResponse;
+import com.devcollab.dto.response.ProjectResponseDTO;
+import com.devcollab.exception.BadRequestException;
+import com.devcollab.exception.NotFoundException;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.UserService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -60,6 +64,7 @@ public class ProjectRestController {
             project.setName(request.getName());
             project.setDescription(request.getDescription());
             project.setPriority(request.getPriority());
+            project.setBusinessRule(request.getBusinessRule());
 
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
                 project.setStartDate(LocalDate.parse(request.getStartDate()));
@@ -132,6 +137,63 @@ public class ProjectRestController {
                                                    @RequestParam(defaultValue = "9") int size) {
         String email = getEmailFromAuthentication(auth);
         return projectService.getProjectsByUserPaginated(email, page, size);
+    }
+
+    @PutMapping("/{projectId}")
+    public ApiResponse<ProjectResponseDTO> updateProject(
+            @PathVariable Long projectId,
+            @RequestBody ProjectCreateRequestDTO request,
+            Authentication authentication) {
+        String email = getEmailFromAuthentication(authentication);
+        if (email == null) {
+            return ApiResponse.error("Bạn chưa đăng nhập", 401);
+        }
+
+        try {
+            User editor = userService.getByEmail(email).orElse(null);
+            if (editor == null) {
+                return ApiResponse.error("Không tìm thấy người dùng: " + email, 404);
+            }
+
+            Project existing = projectService.getById(projectId);
+            // ✅ Chỉ người tạo project được phép chỉnh sửa
+            if (!Objects.equals(existing.getCreatedBy().getUserId(), editor.getUserId())) {
+                return ApiResponse.error("Bạn không có quyền chỉnh sửa project này!", 403);
+            }
+            // ✅ Tạo bản patch object để cập nhật
+            Project patch = new Project();
+            patch.setName(request.getName());
+            patch.setDescription(request.getDescription());
+            patch.setBusinessRule(request.getBusinessRule());
+            patch.setPriority(request.getPriority());
+            if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
+                patch.setStartDate(LocalDate.parse(request.getStartDate()));
+            }
+            if (request.getEndDate() != null && !request.getEndDate().isEmpty()) {
+                patch.setDueDate(LocalDate.parse(request.getEndDate()));
+            }
+
+            Project updated = projectService.updateProject(projectId, patch);
+            ProjectResponseDTO dto = new ProjectResponseDTO(
+                    updated.getProjectId(),
+                    updated.getName(),
+                    updated.getDescription(),
+                    updated.getBusinessRule(),
+                    updated.getPriority(),
+                    updated.getStatus(),
+                    updated.getVisibility(),
+                    updated.getStartDate(),
+                    updated.getDueDate(),
+                    updated.getCreatedBy() != null ? updated.getCreatedBy().getEmail() : null
+            );
+            return ApiResponse.success("Cập nhật project thành công", dto);
+
+        } catch (BadRequestException | NotFoundException e ) {
+            return ApiResponse.error(e.getMessage(), 400);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.error("Đã xảy ra lỗi khi cập nhật project: " + e.getMessage());
+        }
     }
 
 

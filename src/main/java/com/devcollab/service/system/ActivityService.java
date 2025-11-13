@@ -34,5 +34,6 @@ public interface ActivityService {
     List<Activity> getAllActivities();
     public Page<Activity> getPaginatedActivities(Pageable pageable);
     void logWithActor(Long actorId, String entityType, Long entityId, String action, String data);
+    Page<Activity> searchActivities(String user, String action, String entityType, Pageable pageable);
 
 }

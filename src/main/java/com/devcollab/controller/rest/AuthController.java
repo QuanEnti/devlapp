@@ -9,10 +9,7 @@ import com.devcollab.dto.response.CheckEmailResponseDTO;
 import com.devcollab.dto.response.ErrorResponseDTO;
 import com.devcollab.repository.UserRepository;
 import com.devcollab.service.impl.core.UserServiceImpl;
-import com.devcollab.service.system.AuthService;
-import com.devcollab.service.system.JwtService;
-import com.devcollab.service.system.MailService;
-import com.devcollab.service.system.OtpService;
+import com.devcollab.service.system.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,10 +17,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
@@ -51,6 +53,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final AuthService authService;
+    private final UserRoleService roleService;
 
     @PostMapping("/check-email")
     public ResponseEntity<?> checkEmail(@Valid @RequestBody CheckEmailRequestDTO request) {
@@ -85,7 +88,7 @@ public class AuthController {
     public ResponseEntity<?> login(
             @Valid @RequestBody LoginRequestDTO request,
             @RequestParam(value = "redirect", required = false) String redirect,
-            jakarta.servlet.http.HttpServletRequest servletRequest) {
+            HttpServletRequest servletRequest) {
 
         String email = request.getEmail();
         String password = request.getPassword();
@@ -94,6 +97,17 @@ public class AuthController {
         if (user == null) {
             return ResponseEntity.status(404)
                     .body(new ErrorResponseDTO("NOT_FOUND", "Không tìm thấy tài khoản"));
+        }
+        String status = user.getStatus() != null ? user.getStatus().toLowerCase() : "unknown";
+        System.out.println("Current User status"+status);
+        if ("banned".equals(status) || "suspended".equals(status)) {
+            // Return JSON response with redirect information
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(
+                            "error", "ACCOUNT_BANNED",
+                            "message", "Tài khoản của bạn đã bị khóa bởi quản trị viên.",
+                            "redirect", "/view/ban"
+                    ));
         }
 
         if ("google".equalsIgnoreCase(user.getProvider())) {
@@ -118,14 +132,14 @@ public class AuthController {
 
         // ✅ Thiết lập SecurityContext (giữ login session chuẩn Spring Security)
         var userDetails = userService.loadUserByUsername(email);
-        var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+        var auth = new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities());
-        var context = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
-        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+        SecurityContextHolder.setContext(context);
 
         servletRequest.getSession(true).setAttribute(
-                org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                 context);
 
         // ✅ Truyền redirect để quay lại trang mời sau khi login
@@ -155,7 +169,8 @@ public class AuthController {
         res.put("user", Map.of(
                 "roles", roles,
                 "name", user.getName(),
-                "email", user.getEmail()
+                "email", user.getEmail(),
+                "status",user.getStatus()
         ));
         res.put("status", "SUCCESS");
         res.put("message", message);
@@ -173,14 +188,14 @@ public class AuthController {
         }
         res.put("redirect", redirectPath);
         return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.SET_COOKIE, accessCookie.toString())
-                .header(org.springframework.http.HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(res);
     }
 
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequestDTO request,
-            jakarta.servlet.http.HttpServletRequest servletRequest) {
+            HttpServletRequest servletRequest) {
         String email = request.getEmail();
         String otp = request.getOtp();
         String mode = request.getMode();
@@ -198,16 +213,35 @@ public class AuthController {
                             "/view/reset-password"));
         }
 
-        userService.markVerified(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email: " + email));
+
+        String currentStatus = user.getStatus() != null ? user.getStatus().toLowerCase() : "unknown";
+        if ("banned".equals(currentStatus) || "suspended".equals(currentStatus)) {
+            // Return JSON response with redirect information
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(
+                            "error", "ACCOUNT_BANNED",
+                            "message", "Tài khoản của bạn đã bị khóa bởi quản trị viên.",
+                            "redirect", "/view/ban"
+                    ));
+        }
+
+        // ✅ Only mark verified if not banned or suspended
+        if (!"verified".equals(currentStatus)) {
+            userService.markVerified(email);
+            log.info("[AuthController] User {} marked as verified after OTP", email);
+        }
+
         var userDetails = userService.loadUserByUsername(email);
-        var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+        var auth = new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities());
-        var context = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
-        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+        SecurityContextHolder.setContext(context);
 
         servletRequest.getSession(true).setAttribute(
-                org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                 context);
 
         return issueTokensAndRedirect(email, "local", "Xác minh email thành công");
@@ -259,7 +293,7 @@ public class AuthController {
         newUser.setUpdatedAt(LocalDateTime.now());
         newUser.setLastSeen(LocalDateTime.now());
         userService.save(newUser);
-
+        roleService.assignDefaultRole(newUser);
         sendOtp(email, "Register");
         return ResponseEntity.ok(new AuthResponseDTO(
                 "Mã OTP đã được gửi đến email của bạn", "OTP_SENT", "otp", null, email, "/view/verify-otp"));
@@ -358,7 +392,7 @@ public class AuthController {
                     .httpOnly(true).secure(false).path("/").maxAge(15 * 60).sameSite("Lax").build();
 
             return ResponseEntity.ok()
-                    .header(org.springframework.http.HttpHeaders.SET_COOKIE, newAccessCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, newAccessCookie.toString())
                     .body(new AuthResponseDTO("Access token mới đã được cấp.", "TOKEN_REFRESHED", "local",
                             newAccessToken, email, null));
 
@@ -391,8 +425,8 @@ public class AuthController {
                 .httpOnly(true).secure(false).path("/").maxAge(7 * 24 * 60 * 60).sameSite("Lax").build();
 
         return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.SET_COOKIE, accessCookie.toString())
-                .header(org.springframework.http.HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(new AuthResponseDTO(message, "SUCCESS", provider, accessToken, email, "user/view/dashboard"));
     }
 
@@ -420,7 +454,7 @@ public class AuthController {
 
         // Xóa session và context bảo mật
         request.getSession().invalidate();
-        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        SecurityContextHolder.clearContext();
 
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
@@ -437,6 +471,11 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "No authenticated user"));
             }
+            if ("banned".equalsIgnoreCase(currentUser.getStatus()) || "suspended".equalsIgnoreCase(currentUser.getStatus())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "ACCOUNT_BANNED", "message", "Tài khoản của bạn đã bị khóa bởi quản trị viên."));
+            }
+
 
             // ✅ Lấy roles riêng, không chạm UserDTO
             Optional<User> userOpt = userRepository.findByEmailFetchRoles(currentUser.getEmail());

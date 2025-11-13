@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Project Report Detail – DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+
+<body class="bg-gray-50 font-sans">
+
+<!-- ✅ Header -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="flex min-h-[calc(100vh-4rem)]">
+
+    <!-- ✅ Sidebar -->
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+
+    <!-- ✅ Main content -->
+    <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
+
+        <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow p-8 border border-gray-200">
+
+            <!-- Title -->
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-flag text-blue-600"></i>
+                    Project Report Detail
+                </h1>
+            </div>
+
+            <!-- Report Summary Grid -->
+            <div class="grid grid-cols-2 gap-8">
+
+                <!-- Left Info Column -->
+                <div class="space-y-3 text-sm">
+
+                    <p>
+                        <span class="font-semibold text-gray-600">📄 Report ID:</span>
+                        <span class="text-gray-800" th:text="${report.reportId}">#001</span>
+                    </p>
+
+                    <p>
+                        <span class="font-semibold text-gray-600">👤 Reporter:</span>
+                        <span class="text-gray-800" th:text="${report.reporterName}">John Doe</span>
+                    </p>
+
+                    <p>
+                        <span class="font-semibold text-gray-600">📌 Project:</span>
+                        <span class="text-gray-800" th:text="${report.projectName}">Project ABC</span>
+                    </p>
+
+                    <p>
+                        <span class="font-semibold text-gray-600">🕒 Created at:</span>
+                        <span th:text="${#dates.format(report.createdAt, 'yyyy-MM-dd HH:mm')}"
+                              class="text-gray-800">2025-11-03 09:20</span>
+                    </p>
+
+                    <p>
+                        <span class="font-semibold text-gray-600">📋 Status:</span>
+                        <span class="font-medium"
+                              th:text="${report.status}"
+                              th:classappend="${report.status == 'pending'} ? 'text-yellow-600' :
+                                  (${report.status == 'reviewed'} ? 'text-blue-600' : 'text-green-600')">
+                        </span>
+                    </p>
+
+                    <p>
+                        <span class="font-semibold text-gray-600">📎 Proof link:</span>
+                        <span class="text-gray-800" th:text="${report.proofUrl}">No proof</span>
+                    </p>
+
+                </div>
+
+                <!-- Right Summary Card -->
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-5">
+
+                    <h3 class="text-blue-700 font-semibold mb-2">🧾 Summary</h3>
+
+                    <p class="text-gray-700 leading-relaxed" th:text="${report.reason}">
+                        Suspicious activity related to project sharing.
+                    </p>
+
+                    <div th:if="${report.proofUrl}" class="mt-4">
+                        <p class="font-medium text-gray-600 mb-1">📎 Attached Proof:</p>
+                        <a th:href="${report.proofUrl}" target="_blank"
+                           class="text-blue-600 hover:underline flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-paperclip"></i> View proof file
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Details Section -->
+            <div class="mt-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                    <i class="fa-regular fa-file-lines text-blue-500"></i>
+                    Detailed Description
+                </h3>
+
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 text-sm text-gray-700 leading-relaxed">
+                    <p th:text="${report.details}">
+                        The project contains inappropriate content and violates community guidelines.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Admin Action Section -->
+            <div class="mt-8 border-t pt-6" th:if="${report.actionTaken}">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-gavel text-purple-600"></i>
+                    Action Taken
+                </h3>
+
+                <div class="bg-purple-50 border border-purple-100 rounded-xl p-5 text-sm text-gray-700 leading-relaxed">
+
+                    <p th:text="${report.actionTaken}">
+                        Project archived due to policy violation.
+                    </p>
+
+                    <p class="mt-2 text-xs text-gray-500">
+                        Reviewed at:
+                        <span th:text="${#dates.format(report.reviewedAt, 'yyyy-MM-dd HH:mm')}">
+                            2025-11-03 12:00
+                        </span>
+                    </p>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

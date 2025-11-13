@@ -1,0 +1,292 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > PaymentOrderServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.devcollab.service.impl.core</a>
+</div>
+
+<h1>Coverage Summary for Class: PaymentOrderServiceImpl (com.devcollab.service.impl.core)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">PaymentOrderServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/81)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.devcollab.service.impl.core;
+&nbsp;
+&nbsp;import com.devcollab.domain.PaymentOrder;
+&nbsp;import com.devcollab.domain.User;
+&nbsp;import com.devcollab.repository.ActivityRepository;
+&nbsp;import com.devcollab.repository.PaymentOrderRepository;
+&nbsp;import com.devcollab.repository.UserRepository;
+&nbsp;import com.devcollab.service.core.PaymentOrderService;
+&nbsp;import com.devcollab.service.system.ActivityService;
+&nbsp;import com.devcollab.service.system.NotificationService;
+&nbsp;import jakarta.transaction.Transactional;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.time.Instant;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;@Transactional
+&nbsp;public class PaymentOrderServiceImpl implements PaymentOrderService {
+&nbsp;
+&nbsp;    private final PaymentOrderRepository orderRepo;
+&nbsp;    private final UserRepository userRepo;
+&nbsp;    private final ActivityRepository activityRepo;
+&nbsp;    private final ActivityService activityService;
+&nbsp;    private final NotificationService notificationService;
+&nbsp;
+&nbsp;    /** ✅ 1. Tạo đơn hàng */
+&nbsp;    @Override
+&nbsp;    public Map&lt;String, Object&gt; createOrder(Map&lt;String, Object&gt; body, String userEmail) {
+<b class="nc">&nbsp;        Map&lt;String, Object&gt; res = new HashMap&lt;&gt;();</b>
+&nbsp;        try {
+<b class="nc">&nbsp;            BigDecimal total = new BigDecimal(body.get(&quot;total&quot;).toString());</b>
+<b class="nc">&nbsp;            String plan = body.getOrDefault(&quot;plan&quot;, &quot;Pro&quot;).toString();</b>
+&nbsp;
+<b class="nc">&nbsp;            PaymentOrder order = new PaymentOrder();</b>
+<b class="nc">&nbsp;            order.setTotal(total);</b>
+<b class="nc">&nbsp;            order.setName(&quot;Upgrade Plan: &quot; + plan);</b>
+<b class="nc">&nbsp;            order.setPaymentStatus(&quot;Unpaid&quot;);</b>
+<b class="nc">&nbsp;            order.setCreatedAt(Instant.now());</b>
+&nbsp;
+<b class="nc">&nbsp;            if (userEmail != null) {</b>
+<b class="nc">&nbsp;                userRepo.findByEmail(userEmail).ifPresent(order::setUser);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            orderRepo.save(order);</b>
+&nbsp;
+<b class="nc">&nbsp;            res.put(&quot;success&quot;, true);</b>
+<b class="nc">&nbsp;            res.put(&quot;orderId&quot;, order.getId());</b>
+<b class="nc">&nbsp;            res.put(&quot;redirectUrl&quot;, &quot;/payment/checkout?id=&quot; + order.getId());</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            res.put(&quot;success&quot;, false);</b>
+<b class="nc">&nbsp;            res.put(&quot;error&quot;, e.getMessage());</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return res;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** ✅ 2. Webhook từ SePay */
+&nbsp;    @Override
+&nbsp;    public Map&lt;String, Object&gt; handleWebhook(Map&lt;String, Object&gt; payload) {
+<b class="nc">&nbsp;        System.out.println(&quot;📩 Webhook nhận: &quot; + payload);</b>
+&nbsp;        try {
+<b class="nc">&nbsp;            String content = (String) payload.get(&quot;content&quot;);</b>
+<b class="nc">&nbsp;            if (content == null) return Map.of(&quot;success&quot;, false, &quot;message&quot;, &quot;No content&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;            String orderCode = null;</b>
+<b class="nc">&nbsp;            for (String word : content.split(&quot;\\s+&quot;)) {</b>
+<b class="nc">&nbsp;                if (word.startsWith(&quot;DH&quot;)) {</b>
+<b class="nc">&nbsp;                    orderCode = word.trim();</b>
+&nbsp;                    break;
+&nbsp;                }
+&nbsp;            }
+<b class="nc">&nbsp;            if (orderCode == null) return Map.of(&quot;success&quot;, false, &quot;message&quot;, &quot;Missing order code&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;            Long orderId = Long.parseLong(orderCode.substring(2));</b>
+<b class="nc">&nbsp;            Optional&lt;PaymentOrder&gt; optOrder = orderRepo.findById(orderId);</b>
+<b class="nc">&nbsp;            if (optOrder.isEmpty()) return Map.of(&quot;success&quot;, false, &quot;message&quot;, &quot;Order not found&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;            PaymentOrder order = optOrder.get();</b>
+<b class="nc">&nbsp;            order.setPaymentStatus(&quot;Paid&quot;);</b>
+<b class="nc">&nbsp;            orderRepo.save(order);</b>
+&nbsp;
+<b class="nc">&nbsp;            User user = null;</b>
+<b class="nc">&nbsp;            if (order.getUser() != null) {</b>
+<b class="nc">&nbsp;                user = userRepo.findById(order.getUser().getUserId()).orElse(null);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            if (user != null) {</b>
+<b class="nc">&nbsp;                user.setPremium(true);</b>
+<b class="nc">&nbsp;                Instant now = Instant.now();</b>
+<b class="nc">&nbsp;                Instant currentExpiry = user.getPremiumExpiry();</b>
+&nbsp;
+<b class="nc">&nbsp;                if (currentExpiry != null &amp;&amp; currentExpiry.isAfter(now)) {</b>
+&nbsp;                    // 🔹 Nếu user vẫn còn hạn, cộng thêm 30 ngày
+<b class="nc">&nbsp;                    user.setPremiumExpiry(currentExpiry.plusSeconds(30L * 24 * 60 * 60));</b>
+&nbsp;                } else {
+&nbsp;                    // 🔹 Nếu đã hết hạn hoặc chưa có, bắt đầu lại từ hôm nay
+<b class="nc">&nbsp;                    user.setPremiumExpiry(now.plusSeconds(30L * 24 * 60 * 60));</b>
+&nbsp;                }
+<b class="nc">&nbsp;                userRepo.save(user);</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            System.out.println(&quot;✅ Đơn hàng #&quot; + orderId + &quot; cập nhật Paid thành công&quot;);</b>
+<b class="nc">&nbsp;            return Map.of(&quot;success&quot;, true, &quot;message&quot;, &quot;Payment updated&quot;);</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            e.printStackTrace();</b>
+<b class="nc">&nbsp;            return Map.of(&quot;success&quot;, false, &quot;message&quot;, e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /** ✅ 3. Kiểm tra trạng thái thanh toán */
+&nbsp;    @Override
+&nbsp;    public Map&lt;String, Object&gt; checkPaymentStatus(Long orderId) {
+<b class="nc">&nbsp;        Map&lt;String, Object&gt; result = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        PaymentOrder order = orderRepo.findById(orderId).orElse(null);</b>
+&nbsp;
+<b class="nc">&nbsp;        if (order == null) {</b>
+<b class="nc">&nbsp;            result.put(&quot;payment_status&quot;, &quot;order_not_found&quot;);</b>
+<b class="nc">&nbsp;            return result;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (&quot;Paid&quot;.equalsIgnoreCase(order.getPaymentStatus()) &amp;&amp; order.getUser() != null) {</b>
+<b class="nc">&nbsp;            Long userId = order.getUser().getUserId();</b>
+&nbsp;
+<b class="nc">&nbsp;            userRepo.findById(userId).ifPresent(user -&gt; {</b>
+<b class="nc">&nbsp;                if (!user.isPremium()) {</b>
+<b class="nc">&nbsp;                    user.setPremium(true);</b>
+<b class="nc">&nbsp;                    userRepo.save(user);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;⭐ User &quot; + user.getEmail() + &quot; đã được đồng bộ Premium!&quot;);</b>
+&nbsp;                }
+&nbsp;
+&nbsp;                // 🔹 Chống duplicate log
+<b class="nc">&nbsp;                boolean alreadyLogged = activityRepo.existsByActor_UserIdAndEntityTypeAndEntityIdAndAction(</b>
+<b class="nc">&nbsp;                        user.getUserId(), &quot;PaymentOrder&quot;, order.getId(), &quot;payment_success&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;                if (!alreadyLogged) {</b>
+<b class="nc">&nbsp;                    activityService.logWithActor(</b>
+<b class="nc">&nbsp;                            user.getUserId(),</b>
+&nbsp;                            &quot;PaymentOrder&quot;,
+<b class="nc">&nbsp;                            order.getId(),</b>
+&nbsp;                            &quot;payment_success&quot;,
+<b class="nc">&nbsp;                            String.format(</b>
+&nbsp;                                    &quot;{\&quot;order_id\&quot;:%d,\&quot;amount\&quot;:%.2f,\&quot;plan\&quot;:\&quot;%s\&quot;,\&quot;message\&quot;:\&quot;Thanh toán thành công, nâng cấp Premium.\&quot;}&quot;,
+<b class="nc">&nbsp;                                    order.getId(),</b>
+<b class="nc">&nbsp;                                    order.getTotal(),</b>
+<b class="nc">&nbsp;                                    order.getName() != null ? order.getName() : &quot;Pro&quot;</b>
+&nbsp;                            )
+&nbsp;                    );
+&nbsp;
+<b class="nc">&nbsp;                    notificationService.notifyPaymentSuccess(user, order);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;✅ Đã tạo Activity log PAYMENT_SUCCESS cho user &quot; + user.getEmail());</b>
+&nbsp;                } else {
+<b class="nc">&nbsp;                    System.out.println(&quot;⚙️ Activity log PAYMENT_SUCCESS đã tồn tại, bỏ qua.&quot;);</b>
+&nbsp;                }
+&nbsp;            });
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        result.put(&quot;payment_status&quot;, order.getPaymentStatus());</b>
+<b class="nc">&nbsp;        return result;</b>
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public List&lt;Map&lt;String, Object&gt;&gt; getRevenueByMonth() {
+<b class="nc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; revenue = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        List&lt;Object[]&gt; raw = orderRepo.sumRevenueByMonth();</b>
+&nbsp;
+<b class="nc">&nbsp;        for (Object[] row : raw) {</b>
+<b class="nc">&nbsp;            Map&lt;String, Object&gt; item = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;            item.put(&quot;month&quot;, row[0]);  // e.g. &quot;2025-11&quot;</b>
+<b class="nc">&nbsp;            item.put(&quot;total&quot;, row[1]);</b>
+<b class="nc">&nbsp;            revenue.add(item);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return revenue;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-11-12 20:35</div>
+</div>
+</body>
+</html>

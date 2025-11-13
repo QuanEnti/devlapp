@@ -62,5 +62,6 @@ public interface TaskService {
     public List<MemberPerformanceDTO> getMemberPerformance(Long projectId);
     public List<Task> getTasksByUser(User user);
     public Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size, String status);
+    public List<Task> findUpcomingDeadlines(Long userId);
 }
 

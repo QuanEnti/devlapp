@@ -1,0 +1,327 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ProjectReportServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.devcollab.service.impl.core</a>
+</div>
+
+<h1>Coverage Summary for Class: ProjectReportServiceImpl (com.devcollab.service.impl.core)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ProjectReportServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/92)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.devcollab.service.impl.core;
+&nbsp;
+&nbsp;import com.devcollab.domain.Notification;
+&nbsp;import com.devcollab.domain.Project;
+&nbsp;import com.devcollab.domain.ProjectReport;
+&nbsp;import com.devcollab.domain.User;
+&nbsp;import com.devcollab.dto.ProjectReportDto;
+&nbsp;import com.devcollab.dto.request.ReportRequestDTO;
+&nbsp;import com.devcollab.exception.NotFoundException;
+&nbsp;import com.devcollab.repository.NotificationRepository;
+&nbsp;import com.devcollab.repository.ProjectReportRepository;
+&nbsp;import com.devcollab.repository.ProjectRepository;
+&nbsp;import com.devcollab.repository.UserRepository;
+&nbsp;import com.devcollab.service.core.ProjectReportService;
+&nbsp;import com.devcollab.service.system.ActivityService;
+&nbsp;import jakarta.transaction.Transactional;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import org.springframework.data.domain.*;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.time.Instant;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;@Transactional
+&nbsp;public class ProjectReportServiceImpl implements ProjectReportService {
+&nbsp;
+&nbsp;    private final ProjectReportRepository reportRepo;
+&nbsp;    private final ProjectRepository projectRepo;
+&nbsp;    private final UserRepository userRepo;
+&nbsp;    private final NotificationRepository notificationRepo;
+&nbsp;    private final ActivityService activityService;
+&nbsp;
+&nbsp;    /** ✅ Create new project report */
+&nbsp;    @Override
+&nbsp;    public void createProjectReport(ReportRequestDTO dto, String reporterEmail) {
+<b class="nc">&nbsp;        User reporter = userRepo.findByEmail(reporterEmail)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Reporter not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        Project project = projectRepo.findById(dto.getReportedId())</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Project not found&quot;));</b>
+&nbsp;
+&nbsp;        // Prevent self-report
+<b class="nc">&nbsp;        if (project.getCreatedBy().getUserId().equals(reporter.getUserId())) {</b>
+<b class="nc">&nbsp;            throw new IllegalArgumentException(&quot;You cannot report your own project.&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        ProjectReport report = new ProjectReport();</b>
+<b class="nc">&nbsp;        report.setReporter(reporter);</b>
+<b class="nc">&nbsp;        report.setProject(project);</b>
+<b class="nc">&nbsp;        report.setReason(dto.getReason());</b>
+<b class="nc">&nbsp;        report.setDetails(dto.getDetails());</b>
+<b class="nc">&nbsp;        report.setProofUrl(dto.getProofUrl());</b>
+<b class="nc">&nbsp;        report.setStatus(&quot;pending&quot;);</b>
+<b class="nc">&nbsp;        report.setCreatedAt(Instant.now());</b>
+&nbsp;
+<b class="nc">&nbsp;        reportRepo.save(report);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** 🟢 Get all project reports (paginated) */
+&nbsp;    @Override
+&nbsp;    public Map&lt;String, Object&gt; getAllReports(int page, int size) {
+<b class="nc">&nbsp;        if (page &lt; 0) page = 0;</b>
+<b class="nc">&nbsp;        if (size &lt;= 0 || size &gt; 100) size = 10;</b>
+&nbsp;
+<b class="nc">&nbsp;        Pageable pageable = PageRequest.of(page, size, Sort.by(&quot;createdAt&quot;).descending());</b>
+<b class="nc">&nbsp;        Page&lt;ProjectReport&gt; reportPage = reportRepo.findAll(pageable);</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;ProjectReportDto&gt; content = reportPage.getContent()</b>
+<b class="nc">&nbsp;                .stream()</b>
+<b class="nc">&nbsp;                .map(ProjectReportDto::new)</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;
+<b class="nc">&nbsp;        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        response.put(&quot;content&quot;, content);</b>
+<b class="nc">&nbsp;        response.put(&quot;currentPage&quot;, reportPage.getNumber());</b>
+<b class="nc">&nbsp;        response.put(&quot;totalItems&quot;, reportPage.getTotalElements());</b>
+<b class="nc">&nbsp;        response.put(&quot;totalPages&quot;, reportPage.getTotalPages());</b>
+<b class="nc">&nbsp;        return response;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** 🟡 Update project report (status, actionTaken) */
+&nbsp;    @Override
+&nbsp;    public ProjectReport updateReport(Long id, Map&lt;String, String&gt; body, User admin) {
+<b class="nc">&nbsp;        String status = body.get(&quot;status&quot;);</b>
+<b class="nc">&nbsp;        String actionTaken = body.get(&quot;actionTaken&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        ProjectReport report = reportRepo.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Project report not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        report.setStatus(status);</b>
+<b class="nc">&nbsp;        report.setActionTaken(actionTaken);</b>
+<b class="nc">&nbsp;        report.setReviewedAt(Instant.now());</b>
+<b class="nc">&nbsp;        reportRepo.save(report);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.logWithActor(</b>
+<b class="nc">&nbsp;                admin.getUserId(),</b>
+&nbsp;                &quot;ProjectReport&quot;,
+&nbsp;                id,
+&nbsp;                &quot;update&quot;,
+<b class="nc">&nbsp;                String.format(&quot;{\&quot;status\&quot;:\&quot;%s\&quot;,\&quot;actionTaken\&quot;:\&quot;%s\&quot;}&quot;, status, actionTaken)</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        return report;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** ⚠️ Send warning notification to project owner */
+&nbsp;    @Override
+&nbsp;    public void warnOwner(Long id, Map&lt;String, String&gt; body, User admin) {
+<b class="nc">&nbsp;        String message = body.get(&quot;message&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        ProjectReport report = reportRepo.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Report not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        Project project = projectRepo.findById(report.getProject().getProjectId())</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Project not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        User owner = project.getCreatedBy();</b>
+&nbsp;
+&nbsp;        // Update report
+<b class="nc">&nbsp;        report.setStatus(&quot;reviewed&quot;);</b>
+<b class="nc">&nbsp;        report.setActionTaken(&quot;Warning&quot;);</b>
+<b class="nc">&nbsp;        report.setReviewedAt(Instant.now());</b>
+<b class="nc">&nbsp;        reportRepo.save(report);</b>
+&nbsp;
+&nbsp;        // Send notification
+<b class="nc">&nbsp;        Notification n = new Notification();</b>
+<b class="nc">&nbsp;        n.setUser(owner);</b>
+<b class="nc">&nbsp;        n.setType(&quot;WARNING&quot;);</b>
+<b class="nc">&nbsp;        n.setReferenceId(id);</b>
+<b class="nc">&nbsp;        n.setMessage(&quot;⚠️ Admin Warning: &quot; + message);</b>
+<b class="nc">&nbsp;        n.setStatus(&quot;unread&quot;);</b>
+<b class="nc">&nbsp;        n.setCreatedAt(java.time.LocalDateTime.now());</b>
+<b class="nc">&nbsp;        notificationRepo.save(n);</b>
+&nbsp;
+&nbsp;        // Log action
+<b class="nc">&nbsp;        activityService.logWithActor(</b>
+<b class="nc">&nbsp;                admin.getUserId(),</b>
+&nbsp;                &quot;ProjectReport&quot;,
+&nbsp;                id,
+&nbsp;                &quot;warn&quot;,
+<b class="nc">&nbsp;                String.format(&quot;{\&quot;project\&quot;:\&quot;%s\&quot;,\&quot;message\&quot;:\&quot;%s\&quot;}&quot;, project.getName(), message)</b>
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    /** 🔴 Remove or ban a project */
+&nbsp;    @Override
+&nbsp;    public void removeProject(Long id, User admin) {
+<b class="nc">&nbsp;        ProjectReport report = reportRepo.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Report not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        Project project = projectRepo.findById(report.getProject().getProjectId())</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Project not found&quot;));</b>
+&nbsp;
+&nbsp;        // Mark project as removed/archived
+<b class="nc">&nbsp;        project.setStatus(&quot;Archived&quot;);</b>
+<b class="nc">&nbsp;        projectRepo.save(project);</b>
+&nbsp;
+&nbsp;        // Update report info
+<b class="nc">&nbsp;        report.setStatus(&quot;reviewed&quot;);</b>
+<b class="nc">&nbsp;        report.setActionTaken(&quot;Removed&quot;);</b>
+<b class="nc">&nbsp;        report.setReviewedAt(Instant.now());</b>
+<b class="nc">&nbsp;        reportRepo.save(report);</b>
+&nbsp;
+&nbsp;        // Send notification
+<b class="nc">&nbsp;        Notification n = new Notification();</b>
+<b class="nc">&nbsp;        n.setUser(project.getCreatedBy());</b>
+<b class="nc">&nbsp;        n.setType(&quot;BAN&quot;);</b>
+<b class="nc">&nbsp;        n.setReferenceId(id);</b>
+<b class="nc">&nbsp;        n.setMessage(&quot;🚫 Your project \&quot;&quot; + project.getName() + &quot;\&quot; has been removed due to violations.&quot;);</b>
+<b class="nc">&nbsp;        n.setStatus(&quot;unread&quot;);</b>
+<b class="nc">&nbsp;        n.setCreatedAt(java.time.LocalDateTime.now());</b>
+<b class="nc">&nbsp;        notificationRepo.save(n);</b>
+&nbsp;
+&nbsp;        // Log admin action
+<b class="nc">&nbsp;        activityService.logWithActor(</b>
+<b class="nc">&nbsp;                admin.getUserId(),</b>
+&nbsp;                &quot;ProjectReport&quot;,
+&nbsp;                id,
+&nbsp;                &quot;ban&quot;,
+<b class="nc">&nbsp;                String.format(&quot;{\&quot;project\&quot;:\&quot;%s\&quot;,\&quot;status\&quot;:\&quot;removed\&quot;}&quot;, project.getName())</b>
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    /** 🔍 Get single project report by ID */
+&nbsp;    @Override
+&nbsp;    public ProjectReportDto getReportById(Long id) {
+<b class="nc">&nbsp;        ProjectReport report = reportRepo.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Project report not found with id: &quot; + id));</b>
+&nbsp;
+<b class="nc">&nbsp;        return new ProjectReportDto(report);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** 📋 Optional: Get all reports submitted by specific user */
+&nbsp;    @Override
+&nbsp;    public List&lt;ProjectReportDto&gt; getReportsByUser(String email) {
+<b class="nc">&nbsp;        return reportRepo.findAll().stream()</b>
+<b class="nc">&nbsp;                .map(ProjectReportDto::new)</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public long countViolatedProjects() {
+<b class="nc">&nbsp;        long pending = reportRepo.countByStatus(&quot;pending&quot;);</b>
+<b class="nc">&nbsp;        long reviewed = reportRepo.countByStatus(&quot;reviewed&quot;);</b>
+<b class="nc">&nbsp;        return pending + reviewed;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-11-12 20:35</div>
+</div>
+</body>
+</html>

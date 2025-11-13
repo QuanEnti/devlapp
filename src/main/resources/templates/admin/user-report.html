@@ -2,107 +2,115 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Reported Users - DevCollab Admin</title>
+    <title>Reported Users – DevCollab Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <style>
-        body {
-            background-color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-        }
+        html, body { height: 100%; margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8fafc; }
+        .container-fluid { display: flex; height: 100vh; overflow: hidden; }
+
+        /* ===== Sidebar ===== */
         .sidebar {
+            width: 240px;
             background-color: #1e293b;
-            min-height: 100vh;
-            padding: 20px;
             color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px 20px;
+            position: fixed;
+            left: 0; top: 0; height: 100vh;
         }
-        .sidebar h2 {
-            font-size: 1.4rem;
-            margin-bottom: 1.5rem;
-        }
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-        .sidebar ul li {
-            margin-bottom: 1rem;
-        }
+        .sidebar h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar ul li { margin-bottom: 1rem; }
         .sidebar ul li a {
-            color: #cbd5e1;
-            text-decoration: none;
-            font-weight: 500;
+            color: #cbd5e1; text-decoration: none; display: flex; align-items: center;
+            padding: 8px 12px; border-radius: 8px; font-weight: 500;
+            transition: background .2s, transform .1s, color .2s;
         }
-        .sidebar ul li a.active,
-        .sidebar ul li a:hover {
-            color: #fff;
-            font-weight: 600;
-        }
+        .sidebar ul li a:hover { background: #334155; color: #fff; transform: translateX(3px); }
+        .sidebar ul li a.active { background: #3b82f6; color: #fff; }
+        .sidebar a i { margin-right: 10px; }
+        .logout-btn { color: #cbd5e1; text-decoration: none; padding: 8px 12px; border-radius: 8px; }
+        .logout-btn:hover { background: #334155; color: #fff; }
+
+        /* ===== Main Content ===== */
+        main { flex: 1; margin-left: 240px; padding: 30px; overflow-y: auto; }
+        .table td, .table th { vertical-align: middle; }
+        .badge { text-transform: capitalize; }
     </style>
 </head>
+
 <body>
 <div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <div th:replace="fragments/admin-sidebar :: adminSidebar"></div>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div>
+            <h2>DevCollab</h2>
+            <ul>
+                <li><a href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                <li><a href="/admin/manage"><i class="bi bi-people-fill"></i> User Management</a></li>
+                <li><a href="/admin/user-reports" class="active"><i class="bi bi-person-x-fill"></i> Reported Users</a></li>
+                <li><a href="/admin/project-reports"><i class="bi bi-flag-fill"></i> Reported Projects</a></li>
+                <li><a href="/admin/user-logs"><i class="bi bi-journal-text"></i> System Logs</a></li>
+            </ul>
+        </div>
+        <a id="logoutBtn" href="#" class="logout-btn d-flex align-items-center">
+            <i class="bi bi-box-arrow-right me-2"></i> Logout
+        </a>
+    </aside>
 
-        <!-- Main Content -->
-        <main class="col-10 p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h2>Reported Users</h2>
-                    <span class="text-muted">Manage reports and take actions on violations</span>
-                </div>
-
-                <!-- Sort options -->
-                <div class="d-flex align-items-center gap-2">
-                    <label class="form-label m-0">Sort by:</label>
-                    <select id="sortOption" class="form-select" style="width: 180px;" onchange="applySort()">
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="status_pending">Status: Pending</option>
-                        <option value="status_reviewed">Status: Reviewed</option>
-                        <option value="reporter">Reporter Name (A–Z)</option>
-                        <option value="reported">Reported Name (A–Z)</option>
-                    </select>
-                </div>
+    <!-- Main Content -->
+    <main>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2>Reported Users</h2>
+                <span class="text-muted">Manage user violation reports & take action</span>
             </div>
-
-            <!-- Report Table -->
-            <div class="table-responsive mt-3">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                    <tr>
-                        <th>ID</th>
-                        <th>Reporter</th>
-                        <th>Reported</th>
-                        <th>Reason</th>
-                        <th>Status</th>
-                        <th>Action Taken</th>
-                        <th>Created At</th>
-                        <th>Reviewed At</th>
-                        <th>Update</th>
-                    </tr>
-                    </thead>
-                    <tbody id="reportTable"></tbody>
-                </table>
+            <div class="d-flex align-items-center gap-2">
+                <label class="form-label m-0">Sort by:</label>
+                <select id="sortOption" class="form-select" style="width: 200px;" onchange="applySort()">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="status_pending">Status: Pending</option>
+                    <option value="status_reviewed">Status: Reviewed</option>
+                    <option value="reporter">Reporter Name (A–Z)</option>
+                    <option value="reported">Reported Name (A–Z)</option>
+                </select>
             </div>
+        </div>
 
-            <!-- ✅ Pagination controls -->
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <button class="btn btn-secondary btn-sm" id="prevBtn" onclick="changePage(-1)">Previous</button>
-                <span id="pageInfo" class="fw-bold"></span>
-                <button class="btn btn-secondary btn-sm" id="nextBtn" onclick="changePage(1)">Next</button>
-            </div>
-        </main>
-    </div>
+        <!-- Table -->
+        <div class="table-responsive mt-3">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>ID</th><th>Reporter</th><th>Reported</th><th>Reason</th><th>Status</th>
+                    <th>Action Taken</th><th>Created At</th><th>Reviewed At</th><th>Update</th>
+                </tr>
+                </thead>
+                <tbody id="reportTable"></tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <button class="btn btn-secondary btn-sm" id="prevBtn" onclick="changePage(-1)">Previous</button>
+            <span id="pageInfo" class="fw-bold"></span>
+            <button class="btn btn-secondary btn-sm" id="nextBtn" onclick="changePage(1)">Next</button>
+        </div>
+    </main>
 </div>
 
-<!-- 📦 MODAL -->
-<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+<!-- Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title" id="reportModalLabel">Report Details</h5>
+                <h5 class="modal-title">Report Details</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -116,13 +124,9 @@
                     <tr><th>Proof</th><td id="modalProof"></td></tr>
                     <tr><th>Created At</th><td id="modalCreatedAt"></td></tr>
                     <tr><th>Reviewed At</th><td id="modalReviewedAt"></td></tr>
+                    <tr><th>Status</th><td><span id="modalStatusView" class="badge fs-6 px-3 py-2 bg-secondary">Loading...</span></td></tr>
                     </tbody>
                 </table>
-
-                <div class="mt-3">
-                    <label class="form-label fw-semibold">Status</label>
-                    <p id="modalStatusView" class="badge fs-6 px-3 py-2 bg-secondary">Loading...</p>
-                </div>
 
                 <div class="mt-3">
                     <label>Action Taken</label>
@@ -133,7 +137,6 @@
                     </select>
                 </div>
 
-                <!-- Text area appears only for Warning -->
                 <div class="mt-3" id="warningCommentBox" style="display:none;">
                     <label>Warning Message</label>
                     <textarea id="warningMessage" class="form-control" placeholder="Write a warning message to the user..."></textarea>
@@ -147,185 +150,153 @@
     </div>
 </div>
 
-<!-- ====================== Script ====================== -->
 <script>
-    let reportsCache = [];
-    let selectedReportId = null;
-    let bootstrapModal;
-    let currentPage = 0;
-    let totalPages = 0;
-    document.addEventListener("DOMContentLoaded", () => loadReports(0));
-    // ------------------ LOAD REPORTS ------------------
-    async function loadReports(page = 0) {
-        // Ensure page is a number, not an event object
-        if (typeof page === 'object') {
-            page = 0;
+    // ===== Global State =====
+    let allReports = [], viewReports = [];
+    let currentPage = 0, totalPages = 1;
+    const pageSize = 10;
+    let selectedReportId = null, bootstrapModal;
+
+    document.addEventListener("DOMContentLoaded", () => loadAllReports());
+
+    // ===== Load All Reports (fetch all pages) =====
+    async function loadAllReports() {
+        try {
+            allReports = [];
+            let page = 0, total = 1;
+            do {
+                const res = await fetch(`/api/admin/reports?page=${page}&size=${pageSize}`);
+                if (!res.ok) break;
+                const data = await res.json();
+                const batch = data.content || [];
+                allReports = allReports.concat(batch);
+                total = data.totalPages || 1;
+                page++;
+            } while (page < total);
+            applySort(true);
+        } catch (err) {
+            console.error("❌ Failed to load reports:", err);
         }
-
-        const res = await fetch(`/api/admin/reports?page=${page}&size=10`);
-
-        if (!res.ok) {
-            console.error('Failed to load reports');
-            return;
-        }
-
-        const json = await res.json();
-
-        reportsCache = json.content;
-        currentPage = json.currentPage;
-        totalPages = json.totalPages;
-
-        renderReports(reportsCache);
-        updatePaginationControls();
     }
 
-
-    function updatePaginationControls() {
-        document.getElementById("pageInfo").innerText =
-            `Page ${currentPage + 1} of ${totalPages}`;
-        document.getElementById("prevBtn").disabled = currentPage === 0;
-        document.getElementById("nextBtn").disabled = currentPage >= totalPages - 1;
-    }
-
+    // ===== Pagination =====
     function changePage(delta) {
         const newPage = currentPage + delta;
-        if (newPage >= 0 && newPage < totalPages) {
-            loadReports(newPage);
-        }
+        if (newPage >= 0 && newPage < totalPages) renderPage(newPage);
     }
 
-    // ------------------ RENDER TABLE ------------------
-    function renderReports(data) {
-        const tbody = document.getElementById('reportTable');
-        if (!data.length) {
+    function renderPage(pageIndex) {
+        const tbody = document.getElementById("reportTable");
+        if (!viewReports.length) {
             tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">No reports found</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = data.map(r => `
-            <tr>
-                <td>${r.id}</td>
-                <td>${r.reporterName || '—'}</td>
-                <td>${r.reportedName || '—'}</td>
-                <td>${r.reason}</td>
-                <td>
-                    <span class="badge ${r.status === 'pending' ? 'bg-warning text-dark' :
-            r.status === 'reviewed' ? 'bg-info text-dark' : 'bg-success'}">${r.status}</span>
-                </td>
-                <td>${r.actionTaken || ''}</td>
-                <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
-                <td>${r.reviewedAt ? new Date(r.reviewedAt).toLocaleString() : '<span class="text-muted">—</span>'}</td>
-                <td><button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.id})">Update</button></td>
-            </tr>
-        `).join('');
+        totalPages = Math.max(1, Math.ceil(viewReports.length / pageSize));
+        currentPage = Math.min(pageIndex, totalPages - 1);
+        const start = currentPage * pageSize;
+        const pageData = viewReports.slice(start, start + pageSize);
+
+        tbody.innerHTML = pageData.map(r => `
+      <tr>
+        <td>${r.id}</td>
+        <td>${r.reporterName || '—'}</td>
+        <td>${r.reportedName || '—'}</td>
+        <td>${r.reason}</td>
+        <td><span class="badge ${r.status === 'pending' ? 'bg-warning text-dark' :
+            r.status === 'reviewed' ? 'bg-info text-dark' : 'bg-success'}">${r.status}</span></td>
+        <td>${r.actionTaken || ''}</td>
+        <td>${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
+        <td>${r.reviewedAt ? new Date(r.reviewedAt).toLocaleString() : '<span class="text-muted">—</span>'}</td>
+        <td><button class="btn btn-sm btn-outline-primary" onclick="openModal(${r.id})">Update</button></td>
+      </tr>
+    `).join('');
+
+        document.getElementById("pageInfo").textContent = `Page ${currentPage + 1} of ${totalPages}`;
+        document.getElementById("prevBtn").disabled = currentPage === 0;
+        document.getElementById("nextBtn").disabled = currentPage >= totalPages - 1;
     }
 
-    // ------------------ SORTING ------------------
-    function applySort() {
+    // ===== Sorting =====
+    function applySort(reset = false) {
         const sortBy = document.getElementById("sortOption").value;
-        let sorted = [...reportsCache];
+        viewReports = [...allReports];
 
         switch (sortBy) {
-            case "newest": sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); break;
-            case "oldest": sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); break;
-            case "status_pending": sorted.sort((a, b) => (a.status === 'pending' ? -1 : 1)); break;
-            case "status_reviewed": sorted.sort((a, b) => (a.status === 'reviewed' ? -1 : 1)); break;
-            case "reporter": sorted.sort((a, b) => (a.reporterName || '').localeCompare(b.reporterName || '')); break;
-            case "reported": sorted.sort((a, b) => (a.reportedName || '').localeCompare(b.reportedName || '')); break;
+            case "newest": viewReports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); break;
+            case "oldest": viewReports.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); break;
+            case "status_pending": viewReports.sort((a, b) => (a.status === 'pending' ? -1 : 1)); break;
+            case "status_reviewed": viewReports.sort((a, b) => (a.status === 'reviewed' ? -1 : 1)); break;
+            case "reporter": viewReports.sort((a, b) => (a.reporterName || '').localeCompare(b.reporterName || '')); break;
+            case "reported": viewReports.sort((a, b) => (a.reportedName || '').localeCompare(b.reportedName || '')); break;
         }
 
-        renderReports(sorted);
+        if (reset) currentPage = 0;
+        renderPage(currentPage);
     }
 
-    // ------------------ MODAL ------------------
+    // ===== Modal =====
     function openModal(id) {
-        const report = reportsCache.find(r => r.id === id);
-        if (!report) return;
-
+        const r = allReports.find(x => x.id === id);
+        if (!r) return;
         selectedReportId = id;
-        document.getElementById("modalId").innerText = report.id;
-        document.getElementById("modalReporter").innerText = report.reporterName || '—';
-        document.getElementById("modalReported").innerText = report.reportedName || '—';
-        document.getElementById("modalReason").innerText = report.reason;
-        document.getElementById("modalDetails").innerText = report.details || '—';
-        document.getElementById("modalProof").innerHTML = report.proofUrl
-            ? `<a href="${report.proofUrl}" target="_blank">View Proof</a>`
-            : '<span class="text-muted">No proof submitted</span>';
-        document.getElementById("modalCreatedAt").innerText = report.createdAt
-            ? new Date(report.createdAt).toLocaleString()
-            : '';
-        document.getElementById("modalReviewedAt").innerText = report.reviewedAt
-            ? new Date(report.reviewedAt).toLocaleString()
-            : '—';
 
-        const statusView = document.getElementById("modalStatusView");
-        statusView.textContent = report.status || "Unknown";
-        statusView.className = `badge fs-6 px-3 py-2 ${
-            report.status === 'pending' ? 'bg-warning text-dark' :
-                report.status === 'reviewed' ? 'bg-info text-dark' :
-                    'bg-secondary'
-        }`;
+        document.getElementById("modalId").innerText = r.id;
+        document.getElementById("modalReporter").innerText = r.reporterName || '—';
+        document.getElementById("modalReported").innerText = r.reportedName || '—';
+        document.getElementById("modalReason").innerText = r.reason;
+        document.getElementById("modalDetails").innerText = r.details || '—';
+        document.getElementById("modalProof").innerHTML = r.proofUrl ? `<a href="${r.proofUrl}" target="_blank">View Proof</a>` : '<span class="text-muted">No proof submitted</span>';
+        document.getElementById("modalCreatedAt").innerText = r.createdAt ? new Date(r.createdAt).toLocaleString() : '';
+        document.getElementById("modalReviewedAt").innerText = r.reviewedAt ? new Date(r.reviewedAt).toLocaleString() : '—';
+        const statusBadge = document.getElementById("modalStatusView");
+        statusBadge.textContent = r.status || 'Unknown';
+        statusBadge.className = `badge fs-6 px-3 py-2 ${r.status === 'pending' ? 'bg-warning text-dark' : r.status === 'reviewed' ? 'bg-info text-dark' : 'bg-success'}`;
 
         document.getElementById("actionTaken").value = '';
+        document.getElementById("warningCommentBox").style.display = 'none';
+        document.getElementById("warningMessage").value = '';
+
         bootstrapModal = new bootstrap.Modal(document.getElementById('reportModal'));
         bootstrapModal.show();
     }
 
-    // ------------------ SAVE CHANGES ------------------
+    // ===== Save Changes =====
     document.getElementById("saveChangesBtn").addEventListener("click", async () => {
-        const actionTaken = document.getElementById("actionTaken").value;
-        const warningMessage = document.getElementById("warningMessage").value.trim();
+        const action = document.getElementById("actionTaken").value;
+        const msg = document.getElementById("warningMessage").value.trim();
+        let res;
 
-        // 🟡 Case 1: Ban
-        if (actionTaken === "Ban") {
+        if (action === "Ban") {
             if (!confirm("⚠️ Are you sure you want to ban this user?")) return;
-            const res = await fetch(`/api/admin/reports/${selectedReportId}/ban`, { method: "PUT" });
-            if (res.ok) {
-                alert("✅ User has been banned.");
-                bootstrapModal.hide();
-                await loadReports();
-            } else alert("❌ Failed to ban user.");
-            return;
-        }
-
-        // 🟢 Case 2: Warning
-        if (actionTaken === "Warning") {
-            if (!warningMessage) return alert("Please enter a warning message.");
-            const res = await fetch(`/api/admin/reports/${selectedReportId}/warn`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: warningMessage })
+            res = await fetch(`/api/admin/reports/${selectedReportId}/ban`, { method: "PUT" });
+        } else if (action === "Warning") {
+            if (!msg) return alert("Please enter a warning message.");
+            res = await fetch(`/api/admin/reports/${selectedReportId}/warn`, {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ message: msg })
             });
-            if (res.ok) {
-                alert("✅ Warning sent.");
-                bootstrapModal.hide();
-                await loadReports();
-            } else alert("❌ Failed to send warning.");
-            return;
+        } else {
+            res = await fetch(`/api/admin/reports/${selectedReportId}`, {
+                method: "PUT", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ status: "reviewed", actionTaken: action })
+            });
         }
 
-        // 🟣 Default: Update status/action only
-        const res = await fetch(`/api/admin/reports/${selectedReportId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: "reviewed", actionTaken })
-        });
         if (res.ok) {
-            alert("✅ Report updated.");
+            alert("✅ Action completed successfully.");
             bootstrapModal.hide();
-            await loadReports();
-        } else alert("❌ Failed to update report.");
+            await loadAllReports();
+        } else alert("❌ Action failed.");
     });
 
-    // ------------------ ACTION CHANGE ------------------
+    // ===== Action dropdown handler =====
     function handleActionChange() {
-        const action = document.getElementById("actionTaken").value;
-        document.getElementById("warningCommentBox").style.display =
-            action === "Warning" ? "block" : "none";
+        const val = document.getElementById("actionTaken").value;
+        document.getElementById("warningCommentBox").style.display = val === "Warning" ? "block" : "none";
     }
-
-    document.addEventListener("DOMContentLoaded", loadReports);
 </script>
+
 <script src="/js/logout.js"></script>
 </body>
 </html>

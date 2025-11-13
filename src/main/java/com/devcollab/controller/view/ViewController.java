@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping("/view")
 public class ViewController {
+
     @GetMapping({ "/", "/home" })
     public String homePage(Authentication authentication, Model model) {
         if (authentication != null && authentication.isAuthenticated()) {
@@ -21,8 +22,10 @@ public class ViewController {
         }
         return "home";
     }
-
-
+    @GetMapping("/ban")
+    public String bannedPage() {
+        return "view/ban";
+    }
     @GetMapping("/signin")
     public String signinPage(
             @RequestParam(value = "redirect", required = false) String redirect,

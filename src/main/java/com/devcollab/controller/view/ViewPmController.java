@@ -2,6 +2,7 @@ package com.devcollab.controller.view;
 
 import com.devcollab.domain.Project;
 import com.devcollab.domain.ProjectMember;
+import com.devcollab.domain.User;
 import com.devcollab.dto.MemberPerformanceDTO;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.TaskService;
@@ -17,6 +18,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/view/pm")
@@ -84,7 +86,7 @@ public class ViewPmController {
 
         // ✅ Get current user's email
         String email = getEmailFromAuthentication(auth);
-
+        User user = userService.getByEmail(email).orElse(null);
         // ✅ Reuse existing ProjectService function to get role
         String roleInProject = projectService.getUserRoleInProjectByEmail(projectId, email);
 
@@ -94,7 +96,7 @@ public class ViewPmController {
         model.addAttribute("statusBreakdown", taskService.getPercentDoneByStatus(projectId));
         model.addAttribute("metrics", projectService.getMetrics(projectId));
         model.addAttribute("notifications", notificationService.findRecentByProject(projectId));
-
+        model.addAttribute("currentUser", user);
         return "pm/project-detail.html";
     }
 

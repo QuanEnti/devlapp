@@ -58,7 +58,17 @@ public class Project {
     private String inviteLink; 
 
     @Column(name = "allow_link_join", nullable = false)
-    private boolean allowLinkJoin = false; 
+    private boolean allowLinkJoin = false;
+    @Column(columnDefinition = "NVARCHAR(MAX)")
+    private String businessRule;
+
+    public String getBusinessRule() {
+        return businessRule;
+    }
+
+    public void setBusinessRule(String businessRule) {
+        this.businessRule = businessRule;
+    }
 
     public Project() {
     }

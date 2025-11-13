@@ -2,16 +2,18 @@ package com.devcollab.controller.rest;
 
 import com.devcollab.dto.request.ReportRequestDTO;
 import com.devcollab.service.core.UserReportService;
+import com.devcollab.service.core.ProjectReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 /**
  * Controller to handle user and project reporting actions.
- * Future-proofed for multiple report types.
+ * Supports both user and project reports.
  */
 @RestController
 @RequestMapping("/api/reports")
@@ -19,9 +21,16 @@ import java.util.Map;
 public class UserReportRestController {
 
     private final UserReportService userReportService;
-
+    private final ProjectReportService projectReportService; // 🔹 Add this line
+    private String getEmailFromAuthentication(Authentication auth) {
+        if (auth instanceof OAuth2AuthenticationToken oauthToken) {
+            var attributes = oauthToken.getPrincipal().getAttributes();
+            return (String) attributes.get("email");
+        }
+        return auth.getName(); // Local login
+    }
     /**
-     * ✅ Create a new report (User or Project in the future)
+     * ✅ Create a new report (User or Project)
      */
     @PostMapping
     public ResponseEntity<?> createReport(
@@ -29,9 +38,9 @@ public class UserReportRestController {
             Authentication auth) {
 
         try {
-            String reporterEmail = auth != null ? auth.getName() : "anonymous";
+            String reporterEmail = getEmailFromAuthentication(auth);
 
-            // Handle USER reports for now
+            // 🔹 USER report
             if ("user".equalsIgnoreCase(req.getType())) {
                 userReportService.createUserReport(req, reporterEmail);
                 return ResponseEntity.ok(Map.of(
@@ -39,21 +48,27 @@ public class UserReportRestController {
                         "message", "User report submitted successfully."
                 ));
             }
-
-            // 🔹 Future: handle project reports
+            // 🔹 PROJECT report
             if ("project".equalsIgnoreCase(req.getType())) {
-                // placeholder for future project reporting logic
+                projectReportService.createProjectReport(req, reporterEmail);
                 return ResponseEntity.ok(Map.of(
-                        "status", "pending",
-                        "message", "Project report functionality coming soon!"
+                        "status", "success",
+                        "message", "Project report submitted successfully."
                 ));
             }
 
+            // 🔸 Invalid type
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "error",
                     "message", "Invalid report type: " + req.getType()
             ));
 
+        } catch (IllegalArgumentException e) {
+            // Handle validation issues (like self-reporting)
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body(Map.of(

@@ -73,6 +73,7 @@ public class SecurityConfig {
                                                                 "/view/reset-password",
                                                                 "/view/password-reset-success",
                                                                 "/view/verify-otp",
+                                                                "/view/ban",
                                                                 "/join/**",
                                                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                                                 "/favicon.ico", "/webjars/**",
