@@ -1,4 +1,10 @@
-import { renderAvatar, showToast } from "./utils.js";
+import {
+  renderAvatar,
+  showToast,
+  getColorForId,
+  getInitials,
+  escapeHtml,
+} from "./utils.js";
 
 let debounceTimer;
 
@@ -127,12 +133,12 @@ export async function loadMembers(keyword = "") {
     listContainer.innerHTML = `
       ${
         cardMembers
-          ? `<div class="members-group"><h4 class="members-group__title">Card members</h4><div class="members-group__list">${cardMembers}</div></div>`
+          ? `<div class="members-group" data-group="card"><h4 class="members-group__title">Card members</h4><div class="members-group__list" data-list="card">${cardMembers}</div></div>`
           : ""
       }
       ${
         boardMembers
-          ? `<div class="members-group"><h4 class="members-group__title secondary">Board members</h4><div class="members-group__list">${boardMembers}</div></div>`
+          ? `<div class="members-group" data-group="board"><h4 class="members-group__title secondary">Board members</h4><div class="members-group__list" data-list="board">${boardMembers}</div></div>`
           : ""
       }
       ${
@@ -160,16 +166,17 @@ function renderMemberRow(member, isAssigned) {
   const rowAttrs = isAssigned
     ? 'data-action="assigned"'
     : 'data-action="assign"';
+  const userId = member.userId ?? member.id ?? "";
+  const displayName = member.name || member.fullName || "Unnamed";
+  const safeName = escapeHtml(displayName);
 
   return `
     <div class="member-row ${
       isAssigned ? "is-assigned" : ""
-    }" ${rowAttrs} data-user-id="${member.userId}">
+    }" ${rowAttrs} data-user-id="${userId}">
       <div class="member-row__avatar">${renderAvatar(member)}</div>
       <div class="member-row__info">
-        <span class="member-row__name" title="${member.name || ""}">${
-    member.name || "Unnamed"
-  }</span>
+        <span class="member-row__name" title="${safeName}">${safeName}</span>
       </div>
       ${
         isAssigned
@@ -177,7 +184,7 @@ function renderMemberRow(member, isAssigned) {
         class="member-row__btn is-remove"
         title="${title}"
         data-action="${action}"
-        data-user-id="${member.userId}"
+        data-user-id="${userId}"
       >
         <span aria-hidden="true">✕</span>
       </button>`
@@ -191,6 +198,8 @@ function renderMemberRow(member, isAssigned) {
  */
 function addMemberClickListeners(container) {
   container.querySelectorAll(".member-row").forEach((row) => {
+    if (row.dataset.listenerBound === "true") return;
+    row.dataset.listenerBound = "true";
     row.addEventListener("click", (e) => {
       const button = e.target.closest("button[data-action]");
       if (button) {
@@ -208,35 +217,165 @@ function addMemberClickListeners(container) {
   });
 }
 
+function ensureMembersGroupList(type) {
+  const container = document.getElementById("members-section");
+  if (!container) return null;
+
+  let group = container.querySelector(`.members-group[data-group="${type}"]`);
+  if (!group) {
+    const groupEl = document.createElement("div");
+    groupEl.className = "members-group";
+    groupEl.dataset.group = type;
+    const titleClass =
+      type === "card"
+        ? "members-group__title"
+        : "members-group__title secondary";
+    const titleText = type === "card" ? "Card members" : "Board members";
+    groupEl.innerHTML = `<h4 class="${titleClass}">${titleText}</h4><div class="members-group__list" data-list="${type}"></div>`;
+    if (type === "card") {
+      container.insertBefore(groupEl, container.firstChild || null);
+    } else {
+      container.appendChild(groupEl);
+    }
+    group = groupEl;
+  }
+
+  return group.querySelector(".members-group__list");
+}
+
+function extractMemberMeta(row) {
+  if (!row) return null;
+  const userIdRaw = row.dataset.userId;
+  const userId = userIdRaw ? Number(userIdRaw) : null;
+  const name =
+    row.querySelector(".member-row__name")?.textContent.trim() || "";
+  let avatarUrl = "";
+  const img = row.querySelector(".member-row__avatar img");
+  if (img) avatarUrl = img.getAttribute("src") || "";
+  const color = getColorForId(String(userId || name));
+  return { userId, name, avatarUrl, color };
+}
+
+function addMemberAvatarChip(meta) {
+  if (!meta || meta.userId == null) return;
+  const container = document.getElementById("members-avatars-inline");
+  if (!container) return;
+  const existing = container.querySelector(
+    `[data-member-id="${meta.userId}"]`
+  );
+  if (existing) return;
+
+  const chip = document.createElement("div");
+  chip.dataset.memberId = String(meta.userId);
+  chip.className =
+    "w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm cursor-pointer";
+  chip.style.backgroundColor =
+    meta.color || getColorForId(String(meta.userId));
+  chip.title = meta.name || "";
+  chip.textContent = getInitials(meta.name || "");
+  container.appendChild(chip);
+}
+
+function removeMemberAvatarChip(userId) {
+  const container = document.getElementById("members-avatars-inline");
+  if (!container) return;
+  const chip = container.querySelector(`[data-member-id="${userId}"]`);
+  if (chip) chip.remove();
+}
+
+function updateFollowerIdsArray(userId, shouldAdd) {
+  if (userId == null) return;
+  const numericId = Number(userId);
+  if (Number.isNaN(numericId)) return;
+  if (!Array.isArray(window.CURRENT_TASK_FOLLOWER_IDS)) {
+    window.CURRENT_TASK_FOLLOWER_IDS = [];
+  }
+  if (shouldAdd) {
+    if (!window.CURRENT_TASK_FOLLOWER_IDS.includes(numericId)) {
+      window.CURRENT_TASK_FOLLOWER_IDS.push(numericId);
+    }
+  } else {
+    window.CURRENT_TASK_FOLLOWER_IDS = window.CURRENT_TASK_FOLLOWER_IDS.filter(
+      (id) => Number(id) !== numericId
+    );
+  }
+}
+
+function insertMemberRow(targetList, memberObj, isAssigned) {
+  if (!targetList) return null;
+  const temp = document.createElement("div");
+  temp.innerHTML = renderMemberRow(memberObj, isAssigned).trim();
+  const newRow = temp.firstElementChild;
+  targetList.appendChild(newRow);
+  addMemberClickListeners(targetList);
+  return newRow;
+}
+
+function moveMemberRow(row, targetType, meta) {
+  if (!row || !meta) return null;
+  const sourceList = row.parentElement;
+  const targetList = ensureMembersGroupList(targetType);
+  if (!targetList) return null;
+
+  const memberObj = {
+    userId: meta.userId,
+    name: meta.name,
+    avatarUrl: meta.avatarUrl,
+  };
+
+  const newRow = insertMemberRow(targetList, memberObj, targetType === "card");
+  row.remove();
+
+  if (sourceList && sourceList.children.length === 0) {
+    const group = sourceList.closest(".members-group");
+    group?.remove();
+  }
+
+  const container = document.getElementById("members-section");
+  const emptyMsg = container?.querySelector(".members-empty");
+  if (emptyMsg && container.querySelector(".members-group")) {
+    emptyMsg.remove();
+  }
+
+  return newRow;
+}
+
 // ================== ASSIGN / UNASSIGN ==================
 export async function assignMember(userId, button) {
   const taskId = window.CURRENT_TASK_ID;
   if (!taskId) return;
 
-  const isButton = button?.tagName === "BUTTON";
-  if (isButton) {
-    button.disabled = true;
-  } else {
-    button?.classList.add("is-loading");
-  }
+  const row = button;
+  row?.classList.add("is-loading");
 
   try {
     const res = await fetch(`/api/tasks/${taskId}/assign/${userId}`, {
       method: "PUT",
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
-    if (!res.ok) throw new Error("Assign failed");
-    showToast("✅ Member added");
-    await loadMembers(document.getElementById("search-member-input").value); // Tải lại danh sách
-  } catch (err) {
-    console.error("❌ assignMember error:", err);
-    showToast("❌ Failed to assign member", "error");
-  } finally {
-    if (isButton) {
-      button.disabled = false;
-    } else {
-      button?.classList.remove("is-loading");
+    if (res.status === 403) {
+      const message = await res.text();
+      showToast(
+        (message && message.trim()) ||
+          "You do not have permission to assign members.",
+        "error"
+      );
+      return;
     }
+    if (!res.ok) {
+      throw new Error(`Assign failed (${res.status})`);
+    }
+
+    const meta = extractMemberMeta(row);
+    moveMemberRow(row, "card", meta);
+    addMemberAvatarChip(meta);
+    updateFollowerIdsArray(meta.userId, true);
+    showToast("Member added to this card", "success");
+  } catch (err) {
+    console.error(" assignMember error:", err);
+    showToast("Failed to assign member", "error");
+  } finally {
+    row?.classList.remove("is-loading");
   }
 }
 
@@ -245,18 +384,43 @@ export async function unassignMember(userId, button) {
   if (!taskId) return;
 
   button.disabled = true;
+  const row = button.closest(".member-row");
+  const meta = extractMemberMeta(row);
 
   try {
     const res = await fetch(`/api/tasks/${taskId}/unassign/${userId}`, {
       method: "PUT",
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
+<<<<<<< Updated upstream
     if (!res.ok) throw new Error("Unassign failed");
     showToast("✅ Member removed");
     await loadMembers(document.getElementById("search-member-input").value); // Tải lại danh sách
   } catch (err) {
     console.error("❌ unassignMember error:", err);
     showToast("❌ Failed to unassign member", "error");
+=======
+    if (res.status === 403) {
+      const message = await res.text();
+      showToast(
+        (message && message.trim()) ||
+          "You do not have permission to remove members.",
+        "error"
+      );
+      return;
+    }
+    if (!res.ok) {
+      throw new Error(`Unassign failed (${res.status})`);
+    }
+
+    moveMemberRow(row, "board", meta);
+    removeMemberAvatarChip(meta.userId);
+    updateFollowerIdsArray(meta.userId, false);
+    showToast("Member removed from this card", "success");
+  } catch (err) {
+    console.error(" unassignMember error:", err);
+    showToast("Failed to unassign member", "error");
+>>>>>>> Stashed changes
   } finally {
     button.disabled = false;
   }
