@@ -101,6 +101,7 @@ public class UserViewController {
 
             if (user != null) {
                 isPremium = user.isPremium( );
+                System.out.println("User is premium: " + isPremium);
             } else {
                 System.out.println("❌ User not found in database");
             }

@@ -64,7 +64,6 @@ public class ProjectRestController {
             project.setName(request.getName());
             project.setDescription(request.getDescription());
             project.setPriority(request.getPriority());
-            project.setBusinessRule(request.getBusinessRule());
 
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
                 project.setStartDate(LocalDate.parse(request.getStartDate()));

@@ -142,10 +142,8 @@ public class ProjectServiceImpl implements ProjectService {
         // ✅ Cập nhật độ ưu tiên
         if (patch.getPriority() != null)
             existing.setPriority(patch.getPriority());
-        // ✅ Cập nhật visibility (nếu có)
         if (patch.getVisibility() != null)
             existing.setVisibility(patch.getVisibility());
-        // ✅ Cập nhật ngày bắt đầu
         if (patch.getStartDate() != null)
             existing.setStartDate(patch.getStartDate());
         // ✅ Cập nhật ngày kết thúc (và kiểm tra hợp lệ)
@@ -157,7 +155,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
         existing.setUpdatedAt(LocalDateTime.now());
         Project saved = projectRepository.save(existing);
-        // 🧩 Ghi log hoạt động
+
         activityService.log("PROJECT", saved.getProjectId(), "UPDATE", saved.getName());
         return saved;
     }
@@ -323,7 +321,7 @@ public class ProjectServiceImpl implements ProjectService {
     return new ProjectPerformanceDTO(labels, achieved, target);
 
 }
-
+   
 @Override
 public List<ProjectDTO> getTopProjectsByPm(String email, int limit) {
     Pageable pageable = PageRequest.of(0, limit);
@@ -372,7 +370,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
 
         authz.ensurePmOfProject(pmEmail, projectId);
-
+        
 
         if (!project.isAllowLinkJoin()) {
             String inviteLink = UUID.randomUUID().toString();
@@ -404,7 +402,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
 
         return project;
     }
-
+   
     @Override
     public ProjectMember joinProjectByLink(String inviteLink, Long userId) {
         Project project = projectRepository.findActiveSharedProject(inviteLink)
@@ -431,7 +429,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
 
         return newMember;
     }
-
+    
     public List<Project> getProjectsByUsername(String username) {
         // 1. Tìm User bằng username (email)
         User user = userRepository.findByEmail(username)
@@ -454,7 +452,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
     @Transactional(readOnly = true)
     public String getUserRoleInProject(Long projectId, Long userId) {
         return projectMemberRepository.findRoleInProject(projectId, userId)
-                .orElse("Member");
+                .orElse("Member"); 
     }
 
     @Transactional(readOnly = true)
