@@ -108,7 +108,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             existing.setPreferredLanguage(patch.getPreferredLanguage());
         if (patch.getTimezone() != null)
             existing.setTimezone(patch.getTimezone());
-
+        if (patch.getStatus() != null)
+            existing.setStatus(patch.getStatus());
         existing.setUpdatedAt(LocalDateTime.now());
         User saved = userRepository.save(existing);
         appEventService.publishUserStatusChanged(saved);
@@ -174,17 +175,26 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public void markVerified(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
-            user.setStatus("verified");
-
+            String currentStatus = user.getStatus() != null ? user.getStatus().toLowerCase() : "unknown";
+            System.out.println("User Status: " + currentStatus);
+            // 🚫 Do NOT overwrite banned or suspended users
+            if ("banned".equals(currentStatus) || "suspended".equals(currentStatus)) {
+                return;
+            }
+            // ✅ Only set to verified if not already
+            if (!"verified".equals(currentStatus)) {
+                user.setStatus("verified");
+            }
+            // 🧩 Update provider if necessary
             if ("otp".equalsIgnoreCase(user.getProvider())) {
                 user.setProvider("local");
             }
-
             user.setUpdatedAt(LocalDateTime.now());
             user.setLastSeen(LocalDateTime.now());
             userRepository.save(user);
         });
     }
+
 
     @Override
     public void updatePassword(String email, String newPassword) {
@@ -236,4 +246,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public String encodePassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
     }
+    @Override
+    public long countByStatus(String status){
+        return   userRepository.countByStatus(status);
+    }
+
 }

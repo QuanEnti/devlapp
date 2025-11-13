@@ -13,7 +13,6 @@ public class SearchController {
 
     private final ProjectService projectService;
 
-    // Endpoint: /api/search?query=keyword
     @GetMapping("/search")
     public List<ProjectSearchResponseDTO> searchProjects(@RequestParam("query") String keyword) {
         return projectService.searchProjectsByKeyword(keyword);

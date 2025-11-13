@@ -71,7 +71,7 @@ public class UserReportServiceImpl implements UserReportService {
 
     /** 🟡 Cập nhật report */
     @Override
-    public UserReport updateReport(Long id, Map<String, String> body) {
+    public UserReport updateReport(Long id, Map<String, String> body,User admin) {
         String status = body.get("status");
         String actionTaken = body.get("actionTaken");
 
@@ -83,13 +83,13 @@ public class UserReportServiceImpl implements UserReportService {
         report.setReviewedAt(Instant.now());
         reportRepo.save(report);
 
-        // activityService.logWithActor(
-        //         1L, // admin ID (hoặc thay bằng ID người đang đăng nhập)
-        //         "UserReport",
-        //         id,
-        //         "update",
-        //         String.format("{\"status\":\"%s\",\"actionTaken\":\"%s\"}", status, actionTaken)
-        // );
+         activityService.logWithActor(
+                 admin.getUserId(), // admin ID (hoặc thay bằng ID người đang đăng nhập)
+                 "UserReport",
+                 id,
+                 "update",
+                 String.format("{\"status\":\"%s\",\"actionTaken\":\"%s\"}", status, actionTaken)
+         );
 
         return report;
     }
@@ -112,29 +112,29 @@ public class UserReportServiceImpl implements UserReportService {
         reportRepo.save(report);
 
         // // Gửi notification
-        // Notification n = new Notification();
-        // n.setUser(reported);
-        // n.setType("warning");
-        // n.setReferenceId(id);
-        // n.setContent("⚠️ Admin Warning: " + message);
-        // n.setStatus("unread");
-        // n.setCreatedAt(java.time.LocalDateTime.now());
-        // notificationRepo.save(n);
+         Notification n = new Notification();
+         n.setUser(reported);
+         n.setType("WARNING");
+         n.setReferenceId(id);
+         n.setMessage("⚠️ Admin Warning: " + message);
+         n.setStatus("unread");
+         n.setCreatedAt(java.time.LocalDateTime.now());
+         n.setLink("view/user-report/"+ id);
+         notificationRepo.save(n);
 
         // // Ghi log hoạt động
-        // activityService.logWithActor(
-        //         1L,
-        //         "UserReport",
-        //         id,
-        //         "warn",
-        //         String.format("{\"reportedUser\":\"%s\",\"message\":\"%s\"}",
-        //                 reported.getEmail(), message)
-        // );
+         activityService.logWithActor(reported.getUserId(),
+                 "UserReport",
+                 id,
+                 "warn",
+                 String.format("{\"reportedUser\":\"%s\",\"message\":\"%s\"}",
+                         reported.getEmail(), message)
+         );
     }
 
     /** 🔴 Ban user */
     @Override
-    public void banUser(Long id) {
+    public void banUser(Long id,User admin) {
         UserReport report = reportRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Report not found"));
 
@@ -152,24 +152,25 @@ public class UserReportServiceImpl implements UserReportService {
         reportRepo.save(report);
 
         // // Notification
-        // Notification n = new Notification();
-        // n.setUser(reported);
-        // n.setType("ban");
-        // n.setReferenceId(id);
-        // n.setContent("🚫 Your account has been banned due to violation of community guidelines.");
-        // n.setStatus("unread");
-        // n.setCreatedAt(java.time.LocalDateTime.now());
-        // notificationRepo.save(n);
+         Notification n = new Notification();
+         n.setUser(reported);
+         n.setType("BAN");
+         n.setReferenceId(id);
+         n.setMessage("🚫 Your account has been banned due to violation of community guidelines.");
+         n.setStatus("unread");
+         n.setCreatedAt(java.time.LocalDateTime.now());
+        n.setLink("view/user-report/"+ id);
+         notificationRepo.save(n);
 
         // // Log
-        // activityService.logWithActor(
-        //         1L,
-        //         "UserReport",
-        //         id,
-        //         "ban",
-        //         String.format("{\"reportedUser\":\"%s\",\"status\":\"banned\"}",
-        //                 reported.getEmail())
-        // );
+         activityService.logWithActor(
+                 admin.getUserId(),
+                 "UserReport",
+                 id,
+                 "ban",
+                 String.format("{\"reportedUser\":\"%s\",\"status\":\"banned\"}",
+                         reported.getEmail())
+         );
     }
     @Override
     public UserReportDto getReportById(Long id) {

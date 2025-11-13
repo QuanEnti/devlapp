@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${project.name} + ' – Project Detail'">Project Detail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 font-sans">
+<!-- 🔹 Shared header & sidebar -->
+<div th:replace="fragments/header :: header"></div>
+
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+
+    <main class="flex-1 p-8 space-y-8 overflow-y-auto">
+        <!-- 🔹 Action Buttons -->
+        <div class="flex flex-wrap gap-3">
+            <!-- Always visible -->
+            <a th:href="@{'/view/pm/project/board?projectId=' + ${project.projectId}}">
+                <button class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    Open Kanban Board
+                </button>
+            </a>
+
+            <a th:href="@{'/view/pm/project/members?projectId=' + ${project.projectId}}">
+                <button class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition">
+                    View Members
+                </button>
+            </a>
+
+            <!-- Only for PMs / Project Managers -->
+            <a th:if="${#strings.equalsIgnoreCase(roleInProject, 'PM') or #strings.equalsIgnoreCase(roleInProject, 'Project Manager')}"
+               th:href="@{'/view/pm/project/review?projectId=' + ${project.projectId}}">
+                <button class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                    Review Tasks
+                </button>
+            </a>
+
+            <a th:if="${#strings.equalsIgnoreCase(roleInProject, 'PM') or #strings.equalsIgnoreCase(roleInProject, 'Project Manager')}"
+               th:href="@{'/view/pm/project/performance?projectId=' + ${project.projectId}}">
+                <button class="bg-purple-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-purple-700 transition">
+                    View Performance
+                </button>
+            </a>
+            <button id="reportProjectBtn"
+                    th:if="${project.createdBy != null and currentUser != null and project.createdBy.userId != currentUser.userId}"
+                    class="bg-red-50 border border-red-200 text-red-600 px-5 py-2 rounded-lg font-semibold hover:bg-red-100 transition">
+                <i class="fa-solid fa-flag mr-2"></i> Report Project
+            </button>
+            <button th:if="${currentUser != null and project.createdBy != null and currentUser.userId == project.createdBy.userId}"
+                    id="editProjectBtn"
+                    class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg font-semibold transition">
+                ✏️ Edit Project
+            </button>
+
+        </div>
+
+
+        <!-- 🔹 Project Overview -->
+        <section class="bg-white p-6 rounded-2xl shadow">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2" th:text="${project.name}">Project Name</h1>
+            <p class="text-gray-600 mb-4" th:text="${project.description}">Project description...</p>
+
+            <div th:if="${project.businessRule != null}"
+                 class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-3-3v6m9 3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Business Rules
+                </h3>
+
+                <!-- Nếu có nội dung -->
+                <div class="text-gray-700 leading-relaxed whitespace-pre-line" th:text="${project.businessRule}">
+                    Các quy tắc nghiệp vụ sẽ hiển thị tại đây...
+                </div>
+            </div>
+
+            <!-- Nếu chưa có Business Rule -->
+            <div th:if="${project.businessRule == null}"
+                 class="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-5 mb-5 text-gray-500 italic text-sm">
+                No business rules have been defined for this project.
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-700">
+                <div><strong>Start:</strong> <span th:text="${project.startDate}">2025-01-01</span></div>
+                <div><strong>Due:</strong> <span th:text="${project.dueDate}">2025-12-31</span></div>
+                <div><strong>Status:</strong> <span th:text="${project.status}">Active</span></div>
+                <div><strong>Priority:</strong> <span th:text="${project.priority}">Normal</span></div>
+                <div><strong>Visibility:</strong> <span th:text="${project.visibility}">Private</span></div>
+                <div><strong>Created By:</strong> <span th:text="${project.createdBy.name}">doanchibinh132</span></div>
+            </div>
+        </section>
+
+        <!-- 🔹 Progress Overview -->
+        <section class="bg-white p-6 rounded-2xl shadow">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Progress Overview</h2>
+
+            <div class="grid sm:grid-cols-3 gap-4 text-center">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <p class="text-gray-600 text-sm mb-1">✅ Done</p>
+                    <p class="text-2xl font-bold text-green-600"
+                       th:text="${statusBreakdown['DONE'] != null ? statusBreakdown['DONE'] + '%' : '0%'}">0%</p>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <p class="text-gray-600 text-sm mb-1">🕒 In Progress</p>
+                    <p class="text-2xl font-bold text-yellow-600"
+                       th:text="${statusBreakdown['IN_PROGRESS'] != null ? statusBreakdown['IN_PROGRESS'] + '%' : '0%'}">0%</p>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <p class="text-gray-600 text-sm mb-1">📋 Open</p>
+                    <p class="text-2xl font-bold text-blue-600"
+                       th:text="${statusBreakdown['OPEN'] != null ? statusBreakdown['OPEN'] + '%' : '0%'}">0%</p>
+                </div>
+            </div>
+
+            <!-- Combined progress bar -->
+            <div class="mt-5">
+                <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden flex">
+                    <div class="bg-green-500 h-3"
+                         th:style="'width:' + (${statusBreakdown['DONE']} != null ? ${statusBreakdown['DONE']} : 0) + '%'"></div>
+                    <div class="bg-yellow-400 h-3"
+                         th:style="'width:' + (${statusBreakdown['IN_PROGRESS']} != null ? ${statusBreakdown['IN_PROGRESS']} : 0) + '%'"></div>
+                    <div class="bg-blue-400 h-3"
+                         th:style="'width:' + (${statusBreakdown['OPEN']} != null ? ${statusBreakdown['OPEN']} : 0) + '%'"></div>
+                </div>
+                <p class="text-xs text-slate-500 text-center mt-1"
+                   th:text="'Total Tasks: ' + ${statusBreakdown['total']}">Total Tasks: 0</p>
+            </div>
+        </section>
+
+        <!-- 🔹 Project Metrics -->
+        <section class="bg-white p-6 rounded-2xl shadow">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Project Metrics</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="p-4 bg-blue-50 rounded-xl text-center">
+                    <p class="text-2xl font-bold text-blue-700" th:text="${metrics.totalTasks}">0</p>
+                    <p class="text-sm text-gray-600">Total Tasks</p>
+                </div>
+                <div class="p-4 bg-green-50 rounded-xl text-center">
+                    <p class="text-2xl font-bold text-green-700" th:text="${metrics.completedTasks}">0</p>
+                    <p class="text-sm text-gray-600">Completed</p>
+                </div>
+                <div class="p-4 bg-red-50 rounded-xl text-center">
+                    <p class="text-2xl font-bold text-red-700" th:text="${metrics.overdueTasks}">0</p>
+                    <p class="text-sm text-gray-600">Overdue</p>
+                </div>
+                <div class="p-4 bg-yellow-50 rounded-xl text-center">
+                    <p class="text-2xl font-bold text-yellow-700" th:text="${metrics.activeTasks}">0</p>
+                    <p class="text-sm text-gray-600">In Progress</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 🔹 Recent Updates -->
+        <section class="bg-white p-6 rounded-2xl shadow">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Recent Updates</h2>
+            <ul class="divide-y divide-gray-200">
+                <li th:each="n : ${notifications}" class="py-3">
+                    <p class="text-gray-700">
+                        <span class="font-semibold text-blue-700" th:text="${n.actorName}">User</span>
+                        <span th:text="${n.title}">updated project</span>
+                    </p>
+                    <p class="text-sm text-gray-600 mt-1" th:text="${n.message}">Task 'UI Review' moved to Done</p>
+                    <p class="text-xs text-gray-500 mt-1"
+                       th:text="${#dates.format(n.created_at, 'dd MMM yyyy HH:mm')}">03 Nov 2025 09:30</p>
+                </li>
+            </ul>
+
+            <div th:if="${#lists.isEmpty(notifications)}"
+                 class="text-gray-500 text-sm mt-2 text-center italic">
+                No recent notifications yet.
+            </div>
+        </section>
+    </main>
+</div>
+<!-- ✏️ Edit Project Modal -->
+<div id="editProjectModal"
+     class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-white p-10 rounded-2xl w-[900px] max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 fadeIn">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
+            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-pen text-yellow-500"></i> Edit Project
+            </h2>
+            <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 transition">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+        </div>
+
+        <form id="editProjectForm" class="space-y-8">
+            <!-- 🔹 Row 1: Name + Priority -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Project Name</label>
+                    <input id="editName" type="text"
+                           class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-400 outline-none"
+                           th:value="${project.name}" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Priority</label>
+                    <select id="editPriority"
+                            class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-400 outline-none">
+                        <option th:selected="${project.priority == 'Low'}">Low</option>
+                        <option th:selected="${project.priority == 'Normal'}">Normal</option>
+                        <option th:selected="${project.priority == 'High'}">High</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 🔹 Row 2: Description -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+                <textarea id="editDesc" rows="4"
+                          class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-400 outline-none resize-y"
+                          placeholder="Describe your project..."
+                          th:text="${project.description}"></textarea>
+            </div>
+
+            <!-- 🔹 Row 3: Business Rules -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Business Rules</label>
+                <textarea id="editBiz" rows="5"
+                          class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-400 outline-none resize-y"
+                          placeholder="List your business rules here..."
+                          th:text="${project.businessRule}"></textarea>
+            </div>
+
+            <!-- 🔹 Row 4: Start & End Dates -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Start Date</label>
+                    <input id="editStart" type="date"
+                           th:value="${project.startDate}"
+                           class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-400 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">End Date</label>
+                    <input id="editEnd" type="date"
+                           th:value="${project.dueDate}"
+                           class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-blue-400 outline-none">
+                </div>
+            </div>
+
+            <!-- 🔹 Action Buttons -->
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button type="button"
+                        onclick="closeEditModal()"
+                        class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-6 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold shadow-md transition">
+                    💾 Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!-- 🔹 Report Project Modal -->
+<div id="reportProjectModal"
+     class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-2xl w-[420px] shadow-xl border border-slate-200">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-flag text-red-500"></i> Report Project
+            </h2>
+            <button onclick="closeReportProjectModal()" class="text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form id="reportProjectForm" class="space-y-4">
+            <div>
+                <label class="text-sm font-medium text-slate-600">Reason</label>
+                <input id="projectReason" type="text"
+                       placeholder="Enter reason (e.g., spam, inappropriate)"
+                       class="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:ring-2 focus:ring-blue-400 outline-none" required>
+            </div>
+
+            <div>
+                <label class="text-sm font-medium text-slate-600">Details</label>
+                <textarea id="projectDetails" rows="3"
+                          placeholder="Describe the issue..."
+                          class="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:ring-2 focus:ring-blue-400 outline-none resize-none"></textarea>
+            </div>
+
+            <div>
+                <label class="text-sm font-medium text-slate-600">Upload Proof (optional)</label>
+                <input id="projectFile" type="file"
+                       accept="image/*,.pdf,.docx"
+                       class="w-full mt-2 text-sm border rounded-lg px-2 py-2 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-sm file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="closeReportProjectModal()"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">
+                    Submit Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+<script>
+    const editProjectBtn = document.getElementById("editProjectBtn");
+    const editProjectModal = document.getElementById("editProjectModal");
+    const editProjectForm = document.getElementById("editProjectForm");
+    const projectId = new URLSearchParams(window.location.search).get("projectId");
+
+    if (editProjectBtn) {
+        editProjectBtn.addEventListener("click", () => {
+            editProjectModal.classList.remove("hidden");
+        });
+    }
+
+    function closeEditModal() {
+        editProjectModal.classList.add("hidden");
+    }
+
+    editProjectForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const data = {
+            name: document.getElementById("editName").value.trim(),
+            description: document.getElementById("editDesc").value.trim(),
+            businessRule: document.getElementById("editBiz").value.trim(),
+            priority: document.getElementById("editPriority").value.trim(),
+            startDate: document.getElementById("editStart").value,
+            endDate: document.getElementById("editEnd").value
+        };
+
+        try {
+            const res = await fetch(`/api/projects/${projectId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            const result = await res.json();
+            if (result.success || result.status === "success") {
+                alert("✅ Project updated successfully!");
+                closeEditModal();
+                location.reload();
+            } else {
+                alert("❌ " + (result.message || "Update failed"));
+            }
+        } catch (err) {
+            console.error("❌ Error updating project:", err);
+            alert("⚠️ Failed to connect to server.");
+        }
+    });
+</script>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    // const projectId = params.get("projectId");
+    const reportProjectBtn = document.getElementById("reportProjectBtn");
+    const reportProjectModal = document.getElementById("reportProjectModal");
+    const reportProjectForm = document.getElementById("reportProjectForm");
+
+    if (reportProjectBtn) {
+        reportProjectBtn.addEventListener("click", () => {
+            reportProjectModal.classList.remove("hidden");
+        });
+    }
+
+    function closeReportProjectModal() {
+        reportProjectModal.classList.add("hidden");
+    }
+
+    reportProjectForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const reason = document.getElementById("projectReason").value.trim();
+        const details = document.getElementById("projectDetails").value.trim();
+        const fileInput = document.getElementById("projectFile");
+        let proofUrl = null;
+
+        try {
+            // upload file if provided
+            if (fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+                const uploadRes = await fetch("/api/upload/avatar", { method: "POST", body: formData });
+                if (!uploadRes.ok) throw new Error("File upload failed");
+                proofUrl = await uploadRes.text();
+            }
+
+            const res = await fetch(`/api/reports`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    type: "project",       // ✅ must include type
+                    reportedId: projectId, // ✅ correct key for backend
+                    reason,
+                    details,
+                    proofUrl
+                })
+            });
+
+            if (!res.ok) throw new Error("Failed to submit project report");
+            alert("✅ Project report submitted successfully!");
+            closeReportProjectModal();
+            reportProjectForm.reset();
+        } catch (err) {
+            console.error("❌ Project report failed:", err.message);
+            alert("⚠️ " + err.message);
+        }
+    });
+</script>
+
+<div th:replace="fragments/chatbox :: chatbox"></div>
+<script th:src="@{/js/chatbox.js}"></script>
+</html>

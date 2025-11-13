@@ -3,9 +3,11 @@ package com.devcollab.service.impl.core;
 import com.devcollab.domain.*;
 import com.devcollab.dto.MemberDTO;
 import com.devcollab.dto.ProjectDTO;
+import com.devcollab.dto.ProjectSummaryDTO;
 import com.devcollab.dto.response.ProjectDashboardDTO;
 import com.devcollab.dto.response.ProjectPerformanceDTO;
 import com.devcollab.dto.response.ProjectSearchResponseDTO;
+import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
@@ -45,7 +47,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
     private final ProjectAuthorizationService authz;
-
+    private final RoleRepository roleRepository;
     private final AppEventService appEventService;
     private final ActivityService activityService;
     private final NotificationService notificationService;
@@ -55,6 +57,14 @@ public class ProjectServiceImpl implements ProjectService {
     public Project createProject(Project project, Long creatorId) {
         if (project == null || project.getName() == null || project.getName().isBlank()) {
             throw new BadRequestException("Tên dự án không được để trống");
+        }
+        String projectName = project.getName().trim();
+
+        // ✅ Check for duplicate (case-insensitive)
+        boolean exists =
+                projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserId(projectName, creatorId);
+        if (exists) {
+            throw new BadRequestException("Tên dự án bị trùng");
         }
         if (project.getStartDate() != null && project.getDueDate() != null
                 && project.getDueDate().isBefore(project.getStartDate())) {
@@ -83,6 +93,8 @@ public class ProjectServiceImpl implements ProjectService {
         pm.setRoleInProject("PM");
         pm.setJoinedAt(LocalDateTime.now());
         projectMemberRepository.save(pm);
+        Role pmRole = roleRepository.findByName("ROLE_PM")
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy ROLE_PM trong hệ thống"));
 
         // 🧱 Danh sách cột mặc định (thêm Backlog ở đầu)
         String[] defaultCols = {"Backlog", "To-do", "In Progress", "Review", "Done"};
@@ -116,17 +128,31 @@ public class ProjectServiceImpl implements ProjectService {
     public Project updateProject(Long id, Project patch) {
         Project existing = projectRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
-
-        if (patch.getName() != null && !patch.getName().isBlank())
-            existing.setName(patch.getName());
+        // ✅ Kiểm tra tên trùng (nếu có cập nhật)
+        if (patch.getName() != null && !patch.getName().isBlank()) {
+            String projectName = patch.getName().trim();
+            boolean exists =
+                    projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserIdAndProjectIdNot(
+                            projectName, existing.getCreatedBy().getUserId(), id);
+            if (exists) {
+                throw new BadRequestException("Tên dự án bị trùng");
+            }
+            existing.setName(projectName);
+        }
+        // ✅ Cập nhật mô tả
         if (patch.getDescription() != null)
             existing.setDescription(patch.getDescription());
+        // ✅ Cập nhật Business Rule
+        if (patch.getBusinessRule() != null)
+            existing.setBusinessRule(patch.getBusinessRule());
+        // ✅ Cập nhật độ ưu tiên
         if (patch.getPriority() != null)
             existing.setPriority(patch.getPriority());
         if (patch.getVisibility() != null)
             existing.setVisibility(patch.getVisibility());
         if (patch.getStartDate() != null)
             existing.setStartDate(patch.getStartDate());
+        // ✅ Cập nhật ngày kết thúc (và kiểm tra hợp lệ)
         if (patch.getDueDate() != null) {
             if (existing.getStartDate() != null
                     && patch.getDueDate().isBefore(existing.getStartDate())) {
@@ -134,13 +160,13 @@ public class ProjectServiceImpl implements ProjectService {
             }
             existing.setDueDate(patch.getDueDate());
         }
-
         existing.setUpdatedAt(LocalDateTime.now());
         Project saved = projectRepository.save(existing);
 
         activityService.log("PROJECT", saved.getProjectId(), "UPDATE", saved.getName());
         return saved;
     }
+
 
     @Override
     public List<Project> getProjectsByUser(Long userId) {
@@ -288,11 +314,13 @@ public class ProjectServiceImpl implements ProjectService {
 
     }
 
+
     @Override
     public List<ProjectDTO> getTopProjectsByPm(String email, int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         return projectRepository.findTopProjectsByPm(email, pageable);
     }
+
 
     @Override
     public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, String keyword) {
@@ -482,5 +510,72 @@ public class ProjectServiceImpl implements ProjectService {
         return getUserRoleInProject(projectId, user.getUserId());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectFilterDTO> getActiveProjectsForUser(Long userId) {
+        return projectRepository.findActiveProjectsByUser(userId);
+    }
+
+    @Override
+    public Map<String, Object> getProgress(Long projectId) {
+        try {
+            return projectRepository.getProjectProgress(projectId);
+        } catch (Exception e) {
+            System.err.println(
+                    "Error fetching progress for project " + projectId + ": " + e.getMessage());
+            return Map.of("percent_done_by_status", 0, "percent_done_by_checklist", 0);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getMetrics(Long projectId) {
+        try {
+            return projectRepository.getProjectMetrics(projectId);
+        } catch (Exception e) {
+            System.err.println(
+                    "Error fetching metrics for project " + projectId + ": " + e.getMessage());
+            return Map.of("totalTasks", 0, "completedTasks", 0, "overdueTasks", 0, "activeTasks",
+                    0);
+        }
+    }
+
+    @Override
+    public Page<ProjectMember> getProjectsByUserSorted(User user, String role, Pageable pageable) {
+        if ("manager".equalsIgnoreCase(role)) {
+            return projectMemberRepository.findByUserSortedByManager(user, pageable);
+        } else if ("member".equalsIgnoreCase(role)) {
+            return projectMemberRepository.findByUserSortedByMember(user, pageable);
+        } else {
+            return projectMemberRepository.findByUser(user, pageable);
+        }
+    }
+
+    @Override
+    public Page<ProjectSummaryDTO> getProjectsByUserPaginated(String email, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return projectRepository.findByUserEmail(email, pageable)
+                .map(p -> new ProjectSummaryDTO(p.getProjectId(), p.getName(), p.getDescription(),
+                        p.getStartDate(), p.getDueDate(), p.getStatus(), p.getPriority()));
+    }
+
+    @Override
+    public boolean existsByNameAndCreatedBy_UserId(String name, Long createdById) {
+        if (name == null || createdById == null) {
+            return false;
+        }
+        // normalize name to avoid case-sensitive duplicates
+        return projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserId(name.trim(),
+                createdById);
+    }
+
+    @Override
+    public long countAll() {
+        return projectRepository.count();
+    }
+
+    @Override
+    public long countByStatus(String status) {
+        return projectRepository.countByStatus(status);
+    }
 }
 

@@ -2,6 +2,7 @@
   th:fragment="header"
   class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
 >
+<<<<<<< HEAD
   <!-- 🔹 Logo -->
   <div class="flex items-center space-x-3 w-64 flex-shrink-0">
     <img
@@ -51,11 +52,76 @@
           <p class="p-4 text-gray-500 text-sm text-center">
             Nhập để bắt đầu tìm kiếm...
           </p>
+=======
+    <!-- 🔹 Logo -->
+    <a th:href="@{/user/view/dashboard}">
+        <div class="flex items-center space-x-3 w-64 flex-shrink-0">
+            <img th:src="@{/photo/logo1.png}" alt="DevCollab Logo"
+                 class="w-9 h-9 rounded-lg shadow-sm" />
+            <span class="text-2xl font-extrabold text-blue-700 tracking-wider">DevCollab</span>
+        </div>
+    </a>
+
+    <!-- 🔹 Search -->
+    <div class="flex-grow flex justify-center mx-10">
+        <div class="relative w-full max-w-xl">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" id="searchIcon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+
+            <input id="searchInput" type="text" placeholder="Search for anything..."
+                   class="border border-gray-200 rounded-full pl-12 pr-4 py-2 w-full
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                          bg-gray-50 text-sm shadow-sm"/>
+
+            <div id="searchDropdown"
+                 class="hidden absolute left-0 mt-3 w-full bg-white border border-gray-200
+                        rounded-xl shadow-lg z-30">
+                <div class="p-3 border-b bg-gray-50 font-semibold text-gray-700">Kết quả tìm kiếm</div>
+                <div id="searchResults" class="max-h-80 overflow-y-auto">
+                    <p class="p-4 text-gray-500 text-sm text-center">
+                        Nhập để bắt đầu tìm kiếm...
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔹 Right side -->
+    <div class="flex items-center space-x-6 flex-shrink-0">
+
+        <!-- 🔔 Notification -->
+        <div class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" id="notificationBell">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2
+                         2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214
+                         1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+
+            <span th:if="${unreadNotifications > 0}" th:text="${unreadNotifications}"
+                  class="absolute -top-1 -right-1 bg-red-500 text-white text-xs
+                         rounded-full px-1.5 py-0.5 font-semibold"></span>
+
+            <div id="notificationDropdown"
+                 class="hidden absolute right-0 mt-3 w-80 bg-white border border-gray-200
+                        rounded-xl shadow-lg z-30">
+                <div class="p-3 border-b bg-gray-50 font-semibold text-gray-700">Thông báo</div>
+                <div id="notificationList" class="max-h-80 overflow-y-auto">
+                    <p class="p-4 text-gray-500 text-sm text-center">Không có thông báo</p>
+                </div>
+            </div>
+>>>>>>> payment
         </div>
       </div>
     </div>
   </div>
 
+<<<<<<< HEAD
   <!-- 🔹 Right side -->
   <div class="flex items-center space-x-6 flex-shrink-0">
     <div class="relative">
@@ -206,12 +272,33 @@
                 <path
                   fill-rule="evenodd"
                   d="M10 2a1 1 0 01.894.553l1.382 2.802
+=======
+        <!-- 👤 User info -->
+        <div class="relative">
+            <div id="userMenuButton"
+                 class="flex items-center space-x-3 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition">
+                <div class="text-right leading-tight">
+                    <div class="flex items-center justify-end space-x-2">
+                        <span class="block text-sm font-semibold text-gray-800"
+                              th:text="${user != null ? user.name : 'User'}">User</span>
+
+                        <!-- 🏆 Premium -->
+                        <span th:if="${user != null && user.isPremium}"
+                              class="bg-yellow-400 text-white text-[11px] font-bold px-2 py-0.5
+                                     rounded-full shadow-sm flex items-center space-x-1"
+                              title="Tài khoản Premium">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                 viewBox="0 0 20 20" class="w-3.5 h-3.5">
+                                <path fill-rule="evenodd"
+                                      d="M10 2a1 1 0 01.894.553l1.382 2.802
+>>>>>>> payment
                                          3.09.45a1 1 0 01.554 1.707l-2.236
                                          2.18.528 3.078a1 1 0 01-1.45
                                          1.054L10 12.347l-2.762
                                          1.457a1 1 0 01-1.45-1.054l.528-3.078-2.236-2.18a1
                                          1 0 01.554-1.707l3.09-.45L9.106
                                          2.553A1 1 0 0110 2z"
+<<<<<<< HEAD
                   clip-rule="evenodd"
                 />
               </svg>
@@ -1031,3 +1118,228 @@
     })();
   </script>
 </header>
+=======
+                                      clip-rule="evenodd"/>
+                            </svg>
+                            <span>Premium</span>
+                        </span>
+
+                        <!-- 🆓 Free -->
+                        <span th:if="${user != null && !user.isPremium}"
+                              class="bg-gray-200 text-gray-600 text-[11px] font-medium px-2 py-0.5
+                                     rounded-full shadow-sm"
+                              title="Tài khoản miễn phí">Free</span>
+                    </div>
+
+                    <span class="block text-xs text-gray-500"
+                          th:text="${user != null ? user.email : ''}">user@email.com</span>
+                </div>
+
+                <!-- Avatar -->
+                <img th:src="${user != null && user.avatarUrl != null && !#strings.isEmpty(user.avatarUrl)
+                              ? user.avatarUrl : '/photo/default-avatar.png'}"
+                     class="rounded-full w-10 h-10 border-2 border-white shadow-lg object-cover"
+                     alt="User Avatar"/>
+            </div>
+
+            <!-- Dropdown -->
+            <div id="userDropdown"
+                 class="hidden absolute right-0 mt-3 w-44 bg-white border border-gray-200
+                        rounded-xl shadow-lg z-30">
+                <a href="/user/view/profile"
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-xl">
+                    👤 Profile
+                </a>
+                <a href="#" id="logoutBtn"
+                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-xl">
+                    🚪 Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/logout.js"></script>
+    <!-- ✅ JavaScript -->
+    <script th:inline="javascript">
+        document.addEventListener("DOMContentLoaded", function () {
+            // --- Notification ---
+            const bell = document.getElementById("notificationBell");
+            const notificationDropdown = document.getElementById("notificationDropdown");
+            const notificationList = document.getElementById("notificationList");
+
+            if (bell && notificationDropdown && notificationList) {
+                bell.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    notificationDropdown.classList.toggle("hidden");
+                    if (!notificationDropdown.classList.contains("hidden")) {
+                        loadNotifications();
+                    }
+                });
+
+                document.addEventListener("click", (e) => {
+                    if (!notificationDropdown.contains(e.target) && !bell.contains(e.target)) {
+                        notificationDropdown.classList.add("hidden");
+                    }
+                });
+            }
+
+            function loadNotifications() {
+                fetch("/api/notifications")
+                    .then((res) => res.json())
+                    .then((notifications) => {
+                        if (!notifications || notifications.length === 0) {
+                            notificationList.innerHTML =
+                                "<p class='p-4 text-gray-500 text-sm text-center'>Không có thông báo</p>";
+                            return;
+                        }
+                        notificationList.innerHTML = "";
+                        notifications.forEach((n) => {
+                            const item = document.createElement("div");
+                            item.className =
+                                "px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition";
+
+                            // 🔹 Xây phần nội dung thông báo
+                            let contentHtml = "";
+                            if (n.type === "WARNING" || n.type === "BAN") {
+                                contentHtml = `
+                                    <p class="text-sm font-medium text-gray-800">
+                                        ${n.title || "Thông báo mới"}
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        ${n.message || "Bạn bị báo cáo vi phạm. Nhấn để xem chi tiết."}
+                                    </p>
+                                `;
+                            } else {
+                                contentHtml = `
+                                    <p class="text-sm font-medium text-gray-800">
+                                        ${n.title || "Thông báo mới"}
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        ${n.message || "Bạn có thông báo mới"}
+                                    </p>
+                                `;
+                            }
+
+                            // 🔹 Gắn nội dung hoàn chỉnh
+                            item.innerHTML = `
+                        <div class="flex items-start justify-between">
+                            <div>${contentHtml}</div>
+                            ${
+                                n.status === "unread"
+                                    ? "<span class='bg-blue-500 w-2 h-2 rounded-full mt-1'></span>"
+                                    : ""
+                            }
+                            </div>
+                        `;
+
+                            item.addEventListener("click", () => {
+                                fetch(`/api/notifications/${n.notificationId}/read`, { method: "PUT" })
+                                    .then(() => {
+                                        if (n.referenceId) {
+                                            if (n.type === "WARNING" || n.type === "BAN") {
+                                                window.location.href = `${n.link}`;
+                                            }else if(n.type ==="PROJECT_CREATED"){
+                                                window.location.href = `${n.link}`;
+                                            } else {
+                                                window.location.href = `/view/pm/project/board?projectId=${n.referenceId}`;
+                                            }
+                                        } else {
+                                            notificationDropdown.classList.add("hidden");
+                                        }
+                                    })
+                                    .catch(err => console.error("Mark as read error:", err));
+                            });
+                            notificationList.appendChild(item);
+                        });
+                    })
+                    .catch(() => {
+                        notificationList.innerHTML =
+                            "<p class='p-4 text-gray-500 text-sm text-center'>Không thể tải thông báo</p>";
+                    });
+            }
+
+            // --- User Dropdown ---
+            const userBtn = document.getElementById("userMenuButton");
+            const userDropdown = document.getElementById("userDropdown");
+            if (userBtn && userDropdown) {
+                userBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle("hidden");
+                });
+                document.addEventListener("click", (e) => {
+                    if (!userDropdown.contains(e.target) && !userBtn.contains(e.target)) {
+                        userDropdown.classList.add("hidden");
+                    }
+                });
+            }
+
+            // --- Search ---
+            const searchInput = document.getElementById("searchInput");
+            const searchDropdown = document.getElementById("searchDropdown");
+            const searchResults = document.getElementById("searchResults");
+
+            function escapeHtml(unsafe) {
+                if (!unsafe) return "";
+                return unsafe.replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            if (searchInput && searchDropdown && searchResults) {
+                let searchTimeout;
+
+                searchInput.addEventListener("focus", () => {
+                    searchDropdown.classList.remove("hidden");
+                    searchResults.innerHTML =
+                        "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
+                });
+
+                document.addEventListener("click", (e) => {
+                    if (!searchDropdown.contains(e.target) && e.target !== searchInput) {
+                        searchDropdown.classList.add("hidden");
+                    }
+                });
+
+                searchInput.addEventListener("input", () => {
+                    clearTimeout(searchTimeout);
+                    const query = searchInput.value.trim();
+                    if (query.length < 1) {
+                        searchResults.innerHTML =
+                            "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
+                        return;
+                    }
+
+                    searchTimeout = setTimeout(() => {
+                        fetch("/api/search?query=" + encodeURIComponent(query))
+                            .then(res => res.json())
+                            .then(data => {
+                                if (!Array.isArray(data) || data.length === 0) {
+                                    searchResults.innerHTML =
+                                        "<p class='p-4 text-gray-500 text-sm text-center'>Không có kết quả</p>";
+                                    return;
+                                }
+
+                                searchResults.innerHTML = data.map(function(item) {
+                                    return '' +
+                                        '<div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition" ' +
+                                        '     onclick="window.location.href=\'/view/pm/project/board?projectId=' + item.projectId + '\'">' +
+                                        '  <p class="text-sm font-semibold text-gray-800">' + escapeHtml(item.name) + '</p>' +
+                                        '  <p class="text-xs text-gray-500 truncate">' + escapeHtml(item.description || "") + '</p>' +
+                                        '  <p class="text-[11px] text-gray-400 mt-0.5">Status: ' + (item.status || "") + '</p>' +
+                                        '</div>';
+                                }).join("");
+                            })
+                            .catch(err => {
+                                console.error("Search error:", err);
+                                searchResults.innerHTML =
+                                    "<p class='p-4 text-gray-500 text-sm text-center'>Không thể tải kết quả</p>";
+                            });
+                    }, 300);
+                });
+            }
+        });
+    </script>
+</header>
+>>>>>>> payment

@@ -1,0 +1,344 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TaskFollowerServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.devcollab.service.impl.core</a>
+</div>
+
+<h1>Coverage Summary for Class: TaskFollowerServiceImpl (com.devcollab.service.impl.core)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TaskFollowerServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/54)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/86)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.devcollab.service.impl.core;
+&nbsp;
+&nbsp;import com.devcollab.domain.Task;
+&nbsp;import com.devcollab.domain.TaskFollower;
+&nbsp;import com.devcollab.domain.User;
+&nbsp;import com.devcollab.dto.TaskFollowerDTO;
+&nbsp;import com.devcollab.exception.NotFoundException;
+&nbsp;import com.devcollab.repository.TaskFollowerRepository;
+&nbsp;import com.devcollab.repository.TaskRepository;
+&nbsp;import com.devcollab.repository.UserRepository;
+&nbsp;import com.devcollab.service.core.TaskFollowerService;
+&nbsp;import com.devcollab.service.system.ActivityService;
+&nbsp;import com.devcollab.service.system.NotificationService;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import lombok.extern.slf4j.Slf4j;
+&nbsp;import org.springframework.security.core.context.SecurityContextHolder;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+<b class="nc">&nbsp;@Slf4j</b>
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;public class TaskFollowerServiceImpl implements TaskFollowerService {
+&nbsp;
+&nbsp;    private final TaskFollowerRepository followerRepo;
+&nbsp;    private final TaskRepository taskRepo;
+&nbsp;    private final UserRepository userRepo;
+&nbsp;    private final NotificationService notificationService;
+&nbsp;    private final ActivityService activityService;
+&nbsp;
+&nbsp;    // =========================================================
+&nbsp;    // 🔹 Lấy danh sách follower trong 1 task
+&nbsp;    // =========================================================
+&nbsp;    @Override
+&nbsp;    @Transactional(readOnly = true)
+&nbsp;    public List&lt;TaskFollowerDTO&gt; getFollowersByTask(Long taskId) {
+<b class="nc">&nbsp;        return followerRepo.findByTask_TaskId(taskId)</b>
+<b class="nc">&nbsp;                .stream()</b>
+<b class="nc">&nbsp;                .map(TaskFollowerDTO::fromEntity)</b>
+<b class="nc">&nbsp;                .toList();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public boolean assignMember(Long taskId, Long userId) {
+<b class="nc">&nbsp;        if (followerRepo.existsByTask_TaskIdAndUser_UserId(taskId, userId)) {</b>
+<b class="nc">&nbsp;            log.warn(&quot;⚠️ User {} đã được gán vào task {}&quot;, userId, taskId);</b>
+<b class="nc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        Task task = taskRepo.findById(taskId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;❌ Task không tồn tại&quot;));</b>
+<b class="nc">&nbsp;        User addedUser = userRepo.findById(userId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;❌ User không tồn tại&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        followerRepo.saveAndFlush(new TaskFollower(task, addedUser));</b>
+<b class="nc">&nbsp;        log.info(&quot;✅ Đã gán user {} ({}) vào task {}&quot;, userId, addedUser.getName(), taskId);</b>
+&nbsp;
+&nbsp;        // 🧾 Xác định actor hiện tại
+<b class="nc">&nbsp;        User actor = getCurrentActor();</b>
+&nbsp;
+&nbsp;        // 🧾 Ghi activity (actor = người thao tác)
+<b class="nc">&nbsp;        activityService.log(</b>
+&nbsp;                &quot;TASK&quot;,
+&nbsp;                taskId,
+&nbsp;                &quot;ADD_MEMBER&quot;,
+<b class="nc">&nbsp;                &quot;{\&quot;user\&quot;:\&quot;&quot; + addedUser.getName() + &quot;\&quot;}&quot;,</b>
+&nbsp;                actor);
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            if (actor != null &amp;&amp; addedUser.getUserId().equals(actor.getUserId())) {</b>
+<b class="nc">&nbsp;                log.debug(&quot;ℹ️ Bỏ qua notify vì actor = target ({})&quot;, addedUser.getEmail());</b>
+<b class="nc">&nbsp;                return true;</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            String link = &quot;/projects/&quot; + task.getProject().getProjectId() + &quot;/tasks/&quot; + task.getTaskId();</b>
+<b class="nc">&nbsp;            String title = &quot;Được thêm vào công việc&quot;;</b>
+<b class="nc">&nbsp;            String message = &quot;đã thêm bạn vào công việc \&quot;&quot; + task.getTitle() + &quot;\&quot;&quot;;</b>
+&nbsp;
+&nbsp;            // 🔔 Gửi thông báo cho người vừa được thêm
+<b class="nc">&nbsp;            notificationService.createNotification(</b>
+&nbsp;                    addedUser,
+&nbsp;                    &quot;TASK_MEMBER_ADDED&quot;,
+<b class="nc">&nbsp;                    task.getTaskId(),</b>
+&nbsp;                    title,
+&nbsp;                    message,
+&nbsp;                    link,
+&nbsp;                    actor);
+&nbsp;
+&nbsp;            // (Tuỳ chọn) Gửi cho follower khác (ngoại trừ actor + addedUser)
+<b class="nc">&nbsp;            if (task.getFollowers() != null &amp;&amp; !task.getFollowers().isEmpty()) {</b>
+<b class="nc">&nbsp;                for (TaskFollower f : task.getFollowers()) {</b>
+<b class="nc">&nbsp;                    User follower = f.getUser();</b>
+<b class="nc">&nbsp;                    if (follower == null)</b>
+&nbsp;                        continue;
+<b class="nc">&nbsp;                    if (actor != null &amp;&amp; follower.getUserId().equals(actor.getUserId()))</b>
+&nbsp;                        continue;
+<b class="nc">&nbsp;                    if (follower.getUserId().equals(addedUser.getUserId()))</b>
+&nbsp;                        continue;
+&nbsp;
+<b class="nc">&nbsp;                    notificationService.createNotification(</b>
+&nbsp;                            follower,
+&nbsp;                            &quot;TASK_MEMBER_ADDED&quot;,
+<b class="nc">&nbsp;                            task.getTaskId(),</b>
+&nbsp;                            &quot;Cập nhật công việc&quot;,
+<b class="nc">&nbsp;                            &quot;đã thêm &quot; + addedUser.getName()</b>
+<b class="nc">&nbsp;                                    + &quot; vào công việc \&quot;&quot; + task.getTitle() + &quot;\&quot;&quot;,</b>
+&nbsp;                            link,
+&nbsp;                            actor);
+&nbsp;
+&nbsp;                }
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            log.info(&quot;📩 [Notification] Gửi TASK_MEMBER_ADDED cho {}&quot;, addedUser.getEmail());</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            log.error(&quot;⚠️ Lỗi khi gửi thông báo thêm member: {}&quot;, e.getMessage(), e);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public boolean unassignMember(Long taskId, Long userId) {
+<b class="nc">&nbsp;        if (!followerRepo.existsByTask_TaskIdAndUser_UserId(taskId, userId)) {</b>
+<b class="nc">&nbsp;            log.warn(&quot;⚠️ User {} không được gán trong task {}&quot;, userId, taskId);</b>
+<b class="nc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        Task task = taskRepo.findById(taskId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;❌ Task không tồn tại&quot;));</b>
+<b class="nc">&nbsp;        User removedUser = userRepo.findById(userId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;❌ User không tồn tại&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        followerRepo.deleteByTaskAndUser(taskId, userId);</b>
+<b class="nc">&nbsp;        log.info(&quot;🗑️ Đã bỏ gán user {} ({}) khỏi task {}&quot;, userId, removedUser.getName(), taskId);</b>
+&nbsp;
+&nbsp;        // 🧾 Xác định actor
+<b class="nc">&nbsp;        User actor = getCurrentActor();</b>
+&nbsp;
+&nbsp;        // 🧾 Ghi activity
+<b class="nc">&nbsp;        activityService.log(</b>
+&nbsp;                &quot;TASK&quot;,
+&nbsp;                taskId,
+&nbsp;                &quot;REMOVE_MEMBER&quot;,
+<b class="nc">&nbsp;                &quot;{\&quot;user\&quot;:\&quot;&quot; + removedUser.getName() + &quot;\&quot;}&quot;,</b>
+&nbsp;                actor);
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            if (actor != null &amp;&amp; removedUser.getUserId().equals(actor.getUserId())) {</b>
+<b class="nc">&nbsp;                log.debug(&quot;ℹ️ Bỏ qua notify vì actor = target ({})&quot;, removedUser.getEmail());</b>
+<b class="nc">&nbsp;                return true;</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            String link = &quot;/projects/&quot; + task.getProject().getProjectId() + &quot;/tasks/&quot; + task.getTaskId();</b>
+<b class="nc">&nbsp;            String title = &quot;Bị xóa khỏi công việc&quot;;</b>
+<b class="nc">&nbsp;            String message = &quot;đã xóa bạn khỏi công việc \&quot;&quot; + task.getTitle() + &quot;\&quot;&quot;;</b>
+&nbsp;
+<b class="nc">&nbsp;            notificationService.createNotification(</b>
+&nbsp;                    removedUser,
+&nbsp;                    &quot;TASK_MEMBER_REMOVED&quot;,
+<b class="nc">&nbsp;                    task.getTaskId(),</b>
+&nbsp;                    title,
+&nbsp;                    message,
+&nbsp;                    link,
+&nbsp;                    actor);
+&nbsp;            // (Tùy chọn) Gửi cho follower khác (ngoại trừ actor + removedUser)
+<b class="nc">&nbsp;            if (task.getFollowers() != null &amp;&amp; !task.getFollowers().isEmpty()) {</b>
+<b class="nc">&nbsp;                for (TaskFollower f : task.getFollowers()) {</b>
+<b class="nc">&nbsp;                    User follower = f.getUser();</b>
+<b class="nc">&nbsp;                    if (follower == null)</b>
+&nbsp;                        continue;
+<b class="nc">&nbsp;                    if (actor != null &amp;&amp; follower.getUserId().equals(actor.getUserId()))</b>
+&nbsp;                        continue;
+<b class="nc">&nbsp;                    if (follower.getUserId().equals(removedUser.getUserId()))</b>
+&nbsp;                        continue;
+&nbsp;
+<b class="nc">&nbsp;                    notificationService.createNotification(</b>
+&nbsp;                            follower,
+&nbsp;                            &quot;TASK_MEMBER_REMOVED&quot;,
+<b class="nc">&nbsp;                            task.getTaskId(),</b>
+&nbsp;                            &quot;Cập nhật công việc&quot;,
+<b class="nc">&nbsp;                            &quot;đã xóa &quot; + removedUser.getName()</b>
+<b class="nc">&nbsp;                                    + &quot; khỏi công việc \&quot;&quot; + task.getTitle() + &quot;\&quot;&quot;,</b>
+&nbsp;                            link,
+&nbsp;                            actor);
+&nbsp;
+&nbsp;                }
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            log.info(&quot;📩 [Notification] Gửi TASK_MEMBER_REMOVED cho {}&quot;, removedUser.getEmail());</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            log.error(&quot;⚠️ Lỗi khi gửi thông báo xóa member: {}&quot;, e.getMessage(), e);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * ✅ Helper: lấy actor hiện tại từ SecurityContext (dùng được cho cả OAuth2 và
+&nbsp;     * local login)
+&nbsp;     */
+&nbsp;    private User getCurrentActor() {
+&nbsp;        try {
+<b class="nc">&nbsp;            var auth = SecurityContextHolder.getContext().getAuthentication();</b>
+<b class="nc">&nbsp;            if (auth == null || !auth.isAuthenticated())</b>
+<b class="nc">&nbsp;                return null;</b>
+&nbsp;
+<b class="nc">&nbsp;            String email = null;</b>
+<b class="nc">&nbsp;            if (auth.getPrincipal() instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidc)</b>
+<b class="nc">&nbsp;                email = oidc.getEmail();</b>
+<b class="nc">&nbsp;            else if (auth.getPrincipal() instanceof org.springframework.security.oauth2.core.user.OAuth2User ou)</b>
+<b class="nc">&nbsp;                email = String.valueOf(ou.getAttributes().get(&quot;email&quot;));</b>
+<b class="nc">&nbsp;            else if (auth.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails ud)</b>
+<b class="nc">&nbsp;                email = ud.getUsername();</b>
+<b class="nc">&nbsp;            else if (auth.getPrincipal() instanceof String s)</b>
+<b class="nc">&nbsp;                email = s;</b>
+&nbsp;
+<b class="nc">&nbsp;            return (email != null) ? userRepo.findByEmail(email).orElse(null) : null;</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            log.error(&quot;⚠️ getCurrentActor() failed: {}&quot;, e.getMessage());</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-11-12 20:35</div>
+</div>
+</body>
+</html>

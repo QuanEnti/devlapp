@@ -1,194 +1,224 @@
-<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=" />
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8">
-  <title>Đăng nhập bằng mật khẩu - DevCollab</title>
-  <style>
-    body {
-      font-family: "Inter", Arial, sans-serif;
-      background: #f7f8fa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: #fff;
-      padding: 40px 50px;
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-      width: 400px;
-      text-align: center;
-      animation: fadeIn 0.4s ease;
-    }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    h2 { margin-bottom: 10px; }
-    p { color: #666; margin-bottom: 30px; }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 30px;
-      border: 1px solid #ddd;
-      font-size: 15px;
-      margin-bottom: 12px;
-      box-sizing: border-box;
-    }
-    button {
-      background: black;
-      color: white;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover { background: #333; }
-    .social-btn {
-      border: 1px solid #ccc;
-      background: #fff;
-      color: #333;
-    }
-    .social-btn:hover { background: #f5f5f5; }
-    .divider {
-      display: flex;
-      align-items: center;
-      margin: 20px 0;
-    }
-    .divider::before, .divider::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: #ccc;
-    }
-    .divider span {
-      margin: 0 10px;
-      color: #666;
-      font-size: 13px;
-    }
-    #msg {
-      font-size: 14px;
-      color: #444;
-      min-height: 18px;
-      margin-top: 10px;
-    }
-    a {
-      text-decoration: none;
-      font-size: 13px;
-      color: #555;
-    }
-    a:hover { text-decoration: underline; }
-    .spinner {
-      border: 2px solid #f3f3f3;
-      border-top: 2px solid #000;
-      border-radius: 50%;
-      width: 14px; height: 14px;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 6px;
-      animation: spin 0.6s linear infinite;
-    }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-    <h2>Nhập mật khẩu của bạn</h2>
-    <p>Bạn có thể đăng nhập bằng mật khẩu hoặc tài khoản Google.</p>
-
-    <input type="email" id="email" readonly>
-    <input type="password" id="password" placeholder="Mật khẩu">
-    <a href="/view/forgot-password">Bạn quên mật khẩu?</a>
-
-    <button id="loginBtn" type="button" onclick="login()">Tiếp tục</button>
-
-    <div class="divider"><span>HOẶC</span></div>
-
-    <button class="social-btn" onclick="window.location.href='/oauth2/authorization/google'">
-      Tiếp tục với Google
-    </button>
-    <button class="social-btn" disabled>Tiếp tục với Microsoft</button>
-    <button class="social-btn" disabled>Tiếp tục với Apple</button>
-
-    <p id="msg"></p>
-  </div>
-
-  <script>
-  if (document.cookie.includes("AUTH_TOKEN")) {
-    window.location.href = "/view/home";
-  }
-
-  const email = localStorage.getItem('email');
-  document.getElementById('email').value = email || '';
-  const msg = document.getElementById('msg');
-  const btn = document.getElementById('loginBtn');
-
-  async function login() {
-    const password = document.getElementById('password').value.trim();
-    msg.textContent = '';
-    msg.style.color = '#444';
-
-    if (!email || !password) {
-      msg.textContent = 'Vui lòng nhập đầy đủ thông tin.';
-      msg.style.color = 'red';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Đang đăng nhập...';
-
-    try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-          credentials: 'include'
-        });
-
-        const data = await res.json();
-        console.log('Login response:', data);
-
-       if (res.ok && data.status === 'SUCCESS') {
-          msg.style.color = 'green';
-          msg.textContent = 'Đăng nhập thành công!';
-          if (data.token) {
-            localStorage.setItem("token", data.token);
-            console.log("✅ Token saved:", data.token);
-          }
-
-          const roles = data.user?.roles || data.roles || [];
-          if (roles.includes('ADMIN')) {
-              setTimeout(() => window.location.href = '/admin/dashboard', 800);
-          }  else {
-              setTimeout(() => window.location.href = '/user/view/dashboard', 800);
-          }
-        }
-
-        else if (data.status === 'VERIFY_REQUIRED') {
-          msg.style.color = 'orange';
-
-          msg.textContent = 'Vui lòng xác minh email của bạn.';
-          localStorage.setItem('verify_mode', 'login');
-          setTimeout(() => window.location.href = '/view/verify-otp', 800);
-        } 
-        else if (data.error) {
-          msg.style.color = 'red';
-          msg.textContent = data.error;
-        } 
-        else {
-          msg.style.color = 'orange';
-          msg.textContent = 'Phản hồi không xác định từ máy chủ.';
-        }
-
-      } catch (err) {
-        console.error(' Lỗi:', err);
-        msg.textContent = 'Không thể kết nối máy chủ.';
-        msg.style.color = 'red';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Tiếp tục';
+  <head>
+    <meta charset="UTF-8" />
+    <title>Đăng nhập bằng mật khẩu - DevCollab</title>
+    <style>
+      body {
+        font-family: "Inter", Arial, sans-serif;
+        background: #f7f8fa;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
       }
-  }
-</script>
+      .container {
+        background: #fff;
+        padding: 40px 50px;
+        border-radius: 16px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        text-align: center;
+        animation: fadeIn 0.4s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      h2 {
+        margin-bottom: 10px;
+      }
+      p {
+        color: #666;
+        margin-bottom: 30px;
+      }
+      input,
+      button {
+        width: 100%;
+        padding: 12px;
+        border-radius: 30px;
+        border: 1px solid #ddd;
+        font-size: 15px;
+        margin-bottom: 12px;
+        box-sizing: border-box;
+      }
+      button {
+        background: black;
+        color: white;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      button:hover {
+        background: #333;
+      }
+      .social-btn {
+        border: 1px solid #ccc;
+        background: #fff;
+        color: #333;
+      }
+      .social-btn:hover {
+        background: #f5f5f5;
+      }
+      .divider {
+        display: flex;
+        align-items: center;
+        margin: 20px 0;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #ccc;
+      }
+      .divider span {
+        margin: 0 10px;
+        color: #666;
+        font-size: 13px;
+      }
+      #msg {
+        font-size: 14px;
+        color: #444;
+        min-height: 18px;
+        margin-top: 10px;
+      }
+      a {
+        text-decoration: none;
+        font-size: 13px;
+        color: #555;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .spinner {
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #000;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 6px;
+        animation: spin 0.6s linear infinite;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
 
-</body>
+  <body>
+    <div class="container">
+      <h2>Nhập mật khẩu của bạn</h2>
+      <p>Bạn có thể đăng nhập bằng mật khẩu hoặc tài khoản Google.</p>
+
+      <input type="email" id="email" readonly />
+      <input type="password" id="password" placeholder="Mật khẩu" />
+      <a href="/view/forgot-password">Bạn quên mật khẩu?</a>
+
+      <button id="loginBtn" type="button" onclick="login()">Tiếp tục</button>
+
+      <div class="divider"><span>HOẶC</span></div>
+
+      <button
+        class="social-btn"
+        onclick="window.location.href='/oauth2/authorization/google'"
+      >
+        Tiếp tục với Google
+      </button>
+      <button class="social-btn" disabled>Tiếp tục với Microsoft</button>
+      <button class="social-btn" disabled>Tiếp tục với Apple</button>
+
+      <p id="msg"></p>
+    </div>
+
+    <script>
+      if (document.cookie.includes("AUTH_TOKEN")) {
+        window.location.href = "/view/home";
+      }
+
+      const email = localStorage.getItem("email");
+      document.getElementById("email").value = email || "";
+      const msg = document.getElementById("msg");
+      const btn = document.getElementById("loginBtn");
+
+      async function login() {
+        const password = document.getElementById("password").value.trim();
+        msg.textContent = "";
+        msg.style.color = "#444";
+
+        if (!email || !password) {
+          msg.textContent = "Vui lòng nhập đầy đủ thông tin.";
+          msg.style.color = "red";
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Đang đăng nhập...';
+
+        try {
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+            credentials: "include",
+          });
+
+          const data = await res.json();
+          console.log("Login response:", data);
+
+          if (res.ok && data.status === "SUCCESS") {
+            msg.style.color = "green";
+            msg.textContent = "Đăng nhập thành công!";
+            if (data.token) {
+              localStorage.setItem("token", data.token);
+              console.log("✅ Token saved:", data.token);
+            }
+
+            const roles = data.user?.roles || data.roles || [];
+            if (roles.includes("ADMIN")) {
+              setTimeout(
+                () => (window.location.href = "/admin/dashboard"),
+                800
+              );
+            } else {
+              setTimeout(
+                () => (window.location.href = "/user/view/dashboard"),
+                800
+              );
+            }
+          } else if (data.status === "VERIFY_REQUIRED") {
+            msg.style.color = "orange";
+
+            msg.textContent = "Vui lòng xác minh email của bạn.";
+            localStorage.setItem("verify_mode", "login");
+            setTimeout(() => (window.location.href = "/view/verify-otp"), 800);
+          } else if (data.error) {
+            msg.style.color = "red";
+            msg.textContent = data.error;
+          } else {
+            msg.style.color = "orange";
+            msg.textContent = "Phản hồi không xác định từ máy chủ.";
+          }
+        } catch (err) {
+          console.error(" Lỗi:", err);
+          msg.textContent = "Không thể kết nối máy chủ.";
+          msg.style.color = "red";
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Tiếp tục";
+        }
+      }
+    </script>
+  </body>
 </html>

@@ -6,4 +6,5 @@ import lombok.Data;
 public class MessageRequestDTO {
     private Long projectId;
     private String content;
+    private String senderEmail;
 }

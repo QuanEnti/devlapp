@@ -168,9 +168,13 @@
 //}
 package com.devcollab.controller.rest;
 
+import com.devcollab.domain.User;
 import com.devcollab.domain.UserReport;
 import com.devcollab.service.core.UserReportService;
+import com.devcollab.service.core.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -181,7 +185,7 @@ import java.util.Map;
 public class AdminUserReportRestController {
 
     private final UserReportService userReportService;
-
+    private final UserService userService;
     /** 🟢 Get all reports (paginated) */
     @GetMapping
     public Map<String, Object> getAllReports(
@@ -190,11 +194,19 @@ public class AdminUserReportRestController {
     ) {
         return userReportService.getAllReports(page, size);
     }
-
+    private String getEmailFromAuthentication(Authentication auth) {
+        if (auth instanceof OAuth2AuthenticationToken oauthToken) {
+            var attributes = oauthToken.getPrincipal().getAttributes();
+            return (String) attributes.get("email");
+        }
+        return auth.getName(); // Local login
+    }
     /** 🟡 Update report */
     @PutMapping("/{id}")
-    public UserReport updateReport(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        return userReportService.updateReport(id, body);
+    public UserReport updateReport(@PathVariable Long id, @RequestBody Map<String, String> body, Authentication auth) {
+        String email =  getEmailFromAuthentication(auth);
+        User current = userService.getByEmail(email).orElse(null);
+        return userReportService.updateReport(id, body,current);
     }
 
     /** ⚠️ Warn user */
@@ -205,8 +217,10 @@ public class AdminUserReportRestController {
 
     /** 🔴 Ban user */
     @PutMapping("/{id}/ban")
-    public void banUser(@PathVariable Long id) {
-        userReportService.banUser(id);
+    public void banUser(@PathVariable Long id,Authentication auth) {
+        String email =  getEmailFromAuthentication(auth);
+        User current = userService.getByEmail(email).orElse(null);
+        userReportService.banUser(id,current);
     }
 }
 

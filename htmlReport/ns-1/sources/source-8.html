@@ -1,0 +1,305 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > UserReportServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.devcollab.service.impl.core</a>
+</div>
+
+<h1>Coverage Summary for Class: UserReportServiceImpl (com.devcollab.service.impl.core)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">UserReportServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    85.7%
+  </span>
+  <span class="absValue">
+    (6/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    86.9%
+  </span>
+  <span class="absValue">
+    (73/84)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.devcollab.service.impl.core;
+&nbsp;
+&nbsp;import com.devcollab.domain.Notification;
+&nbsp;import com.devcollab.domain.User;
+&nbsp;import com.devcollab.domain.UserReport;
+&nbsp;import com.devcollab.dto.UserReportDto;
+&nbsp;import com.devcollab.dto.request.ReportRequestDTO;
+&nbsp;import com.devcollab.exception.NotFoundException;
+&nbsp;import com.devcollab.repository.NotificationRepository;
+&nbsp;import com.devcollab.repository.UserReportRepository;
+&nbsp;import com.devcollab.repository.UserRepository;
+&nbsp;import com.devcollab.service.core.UserReportService;
+&nbsp;import com.devcollab.service.system.ActivityService;
+&nbsp;import jakarta.transaction.Transactional;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import org.springframework.data.domain.*;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.time.Instant;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;@Transactional
+&nbsp;public class UserReportServiceImpl implements UserReportService {
+&nbsp;
+&nbsp;    private final UserReportRepository reportRepo;
+&nbsp;    private final UserRepository userRepo;
+&nbsp;    private final NotificationRepository notificationRepo;
+&nbsp;    private final ActivityService activityService;
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void createUserReport(ReportRequestDTO dto, String reporterEmail) {
+<b class="fc">&nbsp;        User reporter = userRepo.findByEmail(reporterEmail)</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Reporter not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        User reported = userRepo.findById(dto.getReportedId())</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Reported user not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        UserReport report = new UserReport();</b>
+<b class="fc">&nbsp;        report.setReporter(reporter);</b>
+<b class="fc">&nbsp;        report.setReported(reported);</b>
+<b class="fc">&nbsp;        report.setReason(dto.getReason());</b>
+<b class="fc">&nbsp;        report.setDetails(dto.getDetails());</b>
+<b class="fc">&nbsp;        report.setProofUrl(dto.getProofUrl());</b>
+<b class="fc">&nbsp;        report.setStatus(&quot;pending&quot;);</b>
+<b class="fc">&nbsp;        report.setCreatedAt(Instant.now());</b>
+&nbsp;
+<b class="fc">&nbsp;        reportRepo.save(report);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** 🟢 Lấy danh sách report có phân trang */
+&nbsp;    @Override
+&nbsp;    public Map&lt;String, Object&gt; getAllReports(int page, int size) {
+<b class="nc">&nbsp;        if (page &lt; 0) page = 0;</b>
+<b class="nc">&nbsp;        if (size &lt;= 0 || size &gt; 100) size = 10;</b>
+&nbsp;
+<b class="nc">&nbsp;        Pageable pageable = PageRequest.of(page, size, Sort.by(&quot;createdAt&quot;).descending());</b>
+<b class="nc">&nbsp;        Page&lt;UserReportDto&gt; pageData = reportRepo.findAllWithUsers(pageable)</b>
+<b class="nc">&nbsp;                .map(UserReportDto::new);</b>
+&nbsp;
+<b class="nc">&nbsp;        Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        response.put(&quot;content&quot;, pageData.getContent());</b>
+<b class="nc">&nbsp;        response.put(&quot;currentPage&quot;, pageData.getNumber());</b>
+<b class="nc">&nbsp;        response.put(&quot;totalItems&quot;, pageData.getTotalElements());</b>
+<b class="nc">&nbsp;        response.put(&quot;totalPages&quot;, pageData.getTotalPages());</b>
+<b class="nc">&nbsp;        return response;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** 🟡 Cập nhật report */
+&nbsp;    @Override
+&nbsp;    public UserReport updateReport(Long id, Map&lt;String, String&gt; body,User admin) {
+<b class="fc">&nbsp;        String status = body.get(&quot;status&quot;);</b>
+<b class="fc">&nbsp;        String actionTaken = body.get(&quot;actionTaken&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        UserReport report = reportRepo.findById(id)</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Report not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        report.setStatus(status);</b>
+<b class="fc">&nbsp;        report.setActionTaken(actionTaken);</b>
+<b class="fc">&nbsp;        report.setReviewedAt(Instant.now());</b>
+<b class="fc">&nbsp;        reportRepo.save(report);</b>
+&nbsp;
+<b class="fc">&nbsp;         activityService.logWithActor(</b>
+<b class="fc">&nbsp;                 admin.getUserId(), // admin ID (hoặc thay bằng ID người đang đăng nhập)</b>
+&nbsp;                 &quot;UserReport&quot;,
+&nbsp;                 id,
+&nbsp;                 &quot;update&quot;,
+<b class="fc">&nbsp;                 String.format(&quot;{\&quot;status\&quot;:\&quot;%s\&quot;,\&quot;actionTaken\&quot;:\&quot;%s\&quot;}&quot;, status, actionTaken)</b>
+&nbsp;         );
+&nbsp;
+<b class="fc">&nbsp;        return report;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** ⚠️ Gửi cảnh báo cho user */
+&nbsp;    @Override
+&nbsp;    public void warnUser(Long id, Map&lt;String, String&gt; body) {
+<b class="fc">&nbsp;        String message = body.get(&quot;message&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        UserReport report = reportRepo.findById(id)</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Report not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        User reported = userRepo.findById(report.getReported().getUserId())</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Reported user not found&quot;));</b>
+&nbsp;
+&nbsp;        // Cập nhật trạng thái
+<b class="fc">&nbsp;        report.setStatus(&quot;reviewed&quot;);</b>
+<b class="fc">&nbsp;        report.setActionTaken(&quot;Warning&quot;);</b>
+<b class="fc">&nbsp;        report.setReviewedAt(Instant.now());</b>
+<b class="fc">&nbsp;        reportRepo.save(report);</b>
+&nbsp;
+&nbsp;        // // Gửi notification
+<b class="fc">&nbsp;         Notification n = new Notification();</b>
+<b class="fc">&nbsp;         n.setUser(reported);</b>
+<b class="fc">&nbsp;         n.setType(&quot;WARNING&quot;);</b>
+<b class="fc">&nbsp;         n.setReferenceId(id);</b>
+<b class="fc">&nbsp;         n.setMessage(&quot;⚠️ Admin Warning: &quot; + message);</b>
+<b class="fc">&nbsp;         n.setStatus(&quot;unread&quot;);</b>
+<b class="fc">&nbsp;         n.setCreatedAt(java.time.LocalDateTime.now());</b>
+<b class="fc">&nbsp;         notificationRepo.save(n);</b>
+&nbsp;
+&nbsp;        // // Ghi log hoạt động
+<b class="fc">&nbsp;         activityService.logWithActor(reported.getUserId(),</b>
+&nbsp;                 &quot;UserReport&quot;,
+&nbsp;                 id,
+&nbsp;                 &quot;warn&quot;,
+<b class="fc">&nbsp;                 String.format(&quot;{\&quot;reportedUser\&quot;:\&quot;%s\&quot;,\&quot;message\&quot;:\&quot;%s\&quot;}&quot;,</b>
+<b class="fc">&nbsp;                         reported.getEmail(), message)</b>
+&nbsp;         );
+&nbsp;    }
+&nbsp;
+&nbsp;    /** 🔴 Ban user */
+&nbsp;    @Override
+&nbsp;    public void banUser(Long id,User admin) {
+<b class="fc">&nbsp;        UserReport report = reportRepo.findById(id)</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Report not found&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        User reported = userRepo.findById(report.getReported().getUserId())</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Reported user not found&quot;));</b>
+&nbsp;
+&nbsp;        // Ban user
+<b class="fc">&nbsp;        reported.setStatus(&quot;banned&quot;);</b>
+<b class="fc">&nbsp;        userRepo.save(reported);</b>
+&nbsp;
+&nbsp;        // Cập nhật report
+<b class="fc">&nbsp;        report.setStatus(&quot;reviewed&quot;);</b>
+<b class="fc">&nbsp;        report.setActionTaken(&quot;Ban&quot;);</b>
+<b class="fc">&nbsp;        report.setReviewedAt(Instant.now());</b>
+<b class="fc">&nbsp;        reportRepo.save(report);</b>
+&nbsp;
+&nbsp;        // // Notification
+<b class="fc">&nbsp;         Notification n = new Notification();</b>
+<b class="fc">&nbsp;         n.setUser(reported);</b>
+<b class="fc">&nbsp;         n.setType(&quot;BAN&quot;);</b>
+<b class="fc">&nbsp;         n.setReferenceId(id);</b>
+<b class="fc">&nbsp;         n.setMessage(&quot;🚫 Your account has been banned due to violation of community guidelines.&quot;);</b>
+<b class="fc">&nbsp;         n.setStatus(&quot;unread&quot;);</b>
+<b class="fc">&nbsp;         n.setCreatedAt(java.time.LocalDateTime.now());</b>
+<b class="fc">&nbsp;         notificationRepo.save(n);</b>
+&nbsp;
+&nbsp;        // // Log
+<b class="fc">&nbsp;         activityService.logWithActor(</b>
+<b class="fc">&nbsp;                 admin.getUserId(),</b>
+&nbsp;                 &quot;UserReport&quot;,
+&nbsp;                 id,
+&nbsp;                 &quot;ban&quot;,
+<b class="fc">&nbsp;                 String.format(&quot;{\&quot;reportedUser\&quot;:\&quot;%s\&quot;,\&quot;status\&quot;:\&quot;banned\&quot;}&quot;,</b>
+<b class="fc">&nbsp;                         reported.getEmail())</b>
+&nbsp;         );
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public UserReportDto getReportById(Long id) {
+<b class="fc">&nbsp;        UserReport report = reportRepo.findById(id)</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Report not found with id: &quot; + id));</b>
+&nbsp;
+<b class="fc">&nbsp;        return new UserReportDto(report);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;UserReportDto&gt; getReportsByUser(String email) {
+&nbsp;        // optional - existing logic if needed
+<b class="fc">&nbsp;        return reportRepo.findAll().stream()</b>
+<b class="fc">&nbsp;                .map(UserReportDto::new)</b>
+<b class="fc">&nbsp;                .toList();</b>
+&nbsp;    }
+&nbsp;}
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-11-12 20:35</div>
+</div>
+</body>
+</html>

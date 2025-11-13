@@ -9,4 +9,5 @@ public class ProjectCreateRequestDTO {
     private String priority;   // thêm mới
     private String startDate;
     private String endDate;
+    private String businessRule;
 }

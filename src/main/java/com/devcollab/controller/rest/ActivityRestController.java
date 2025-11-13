@@ -22,7 +22,6 @@ public class ActivityRestController {
     private final ActivityService activityService;
     private final CommentService commentService;
     private final AuthService authService;
-
     // 🟩 Lấy toàn bộ activity + comment
     @GetMapping
     public Map<String, Object> getTaskActivity(@PathVariable Long taskId) {

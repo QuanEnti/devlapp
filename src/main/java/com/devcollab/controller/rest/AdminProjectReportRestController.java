@@ -119,8 +119,12 @@
 //}
 package com.devcollab.controller.rest;
 
+import com.devcollab.domain.User;
 import com.devcollab.service.core.ProjectReportService;
+import com.devcollab.service.core.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -132,6 +136,8 @@ public class AdminProjectReportRestController {
 
     private final ProjectReportService projectReportService;
 
+    private final UserService userService;
+
     /** 🟢 Lấy tất cả project reports (paginated) */
     @GetMapping
     public Map<String, Object> getAllReports(
@@ -139,16 +145,28 @@ public class AdminProjectReportRestController {
             @RequestParam(defaultValue = "10") int size) {
         return projectReportService.getAllReports(page, size);
     }
+    private String getEmailFromAuthentication(Authentication auth) {
+        if (auth instanceof OAuth2AuthenticationToken oauthToken) {
+            var attributes = oauthToken.getPrincipal().getAttributes();
+            return (String) attributes.get("email");
+        }
+        return auth.getName(); // Local login
+    }
 
     /** ⚠️ Gửi cảnh báo cho chủ dự án */
     @PostMapping("/{id}/warn")
-    public void warnOwner(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        projectReportService.warnOwner(id, body);
+    public void warnOwner(@PathVariable Long id, @RequestBody Map<String, String> body, Authentication auth) {
+        String email = getEmailFromAuthentication(auth);
+        User user = userService.getByEmail(email).orElse(null);
+        projectReportService.warnOwner(id, body,user);
     }
 
     /** 🔴 Xóa / Ban dự án */
     @PutMapping("/{id}/ban")
-    public void removeProject(@PathVariable Long id) {
-        projectReportService.removeProject(id);
+    public void removeProject(@PathVariable Long id,Authentication auth)
+    {
+        String email = getEmailFromAuthentication(auth);
+        User user = userService.getByEmail(email).orElse(null);
+        projectReportService.removeProject(id,user);
     }
 }

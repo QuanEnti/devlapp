@@ -136,6 +136,9 @@ public class NotificationRestController {
 
             String type = n.getType() != null ? n.getType().trim().toUpperCase() : "GENERAL";
             String title = n.getTitle() != null ? n.getTitle() : "Thông báo mới";
+//            if(type.equalsIgnoreCase("warning")|| type.equalsIgnoreCase("ban")){
+//                String message = n.getC();
+//            }
             String message = n.getMessage() != null ? n.getMessage() : "Bạn có thông báo mới.";
             String link = n.getLink() != null ? n.getLink() : "#";
             String projectName = "Không xác định";

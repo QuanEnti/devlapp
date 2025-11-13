@@ -80,7 +80,7 @@
 
   <script>
     if (document.cookie.includes("AUTH_TOKEN")) {
-      window.location.href = "/view/home";
+      window.location.href = "/user/view/dashboard";
     }
 
     const email = localStorage.getItem('email');
@@ -178,7 +178,7 @@
               window.location.href = '/view/reset-password';
             } else {
               console.log('🏠 Chuyển sang /view/home (mode thường)');
-              window.location.href = 'user/view/profile';
+              window.location.href = '/user/view/profile';
             }
 
             localStorage.removeItem('verify_mode');

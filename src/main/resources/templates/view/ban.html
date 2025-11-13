@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tài khoản bị tạm khóa - DevCollab</title>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background: #f8fafc;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .box {
+            background: white;
+            padding: 40px 50px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            max-width: 450px;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h2 { color: #dc2626; }
+        p { color: #555; margin: 15px 0 25px; }
+        a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h2>Tài khoản của bạn đã bị tạm khóa</h2>
+    <p>Chúng tôi phát hiện tài khoản của bạn vi phạm chính sách sử dụng DevCollab.<br>
+        Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ:</p>
+    <p>support@devcollab.com</p>
+    <a href="/view/signin">← Quay lại trang đăng nhập</a>
+</div>
+</body>
+</html>

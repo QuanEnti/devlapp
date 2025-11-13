@@ -454,6 +454,8 @@ public class NotificationServiceImpl implements NotificationService {
         n.setUser(user);
         n.setType("PAYMENT_SUCCESS");
         n.setReferenceId(order.getId());
+        n.setTitle("Payment Success");
+        n.setMessage("Your payment for order " + order.getName() + " was successful.");
         n.setStatus("unread");
         n.setCreatedAt(LocalDateTime.now());
         notificationRepository.save(n);
@@ -510,6 +512,17 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.deleteById(id);
     }
 
+    @Override
+    public List<Map<String, Object>> findRecentByProject(Long projectId) {
+        try {
+            return notificationRepository.findRecentByProject(projectId);
+        } catch (Exception e) {
+            System.err.println("Error fetching notifications for project " + projectId + ": "
+                    + e.getMessage());
+            return List.of();
+        }
+    }
+
     private String determinePriority(String type) {
         if (type == null)
             return "LOW";
@@ -561,5 +574,7 @@ public class NotificationServiceImpl implements NotificationService {
     private String mapIcon(String type) {
         return ICON_MAP.getOrDefault(type, "📢");
     }
+
+
 
 }

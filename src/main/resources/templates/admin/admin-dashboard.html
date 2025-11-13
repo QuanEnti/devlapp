@@ -1,162 +1,320 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard – DevCollab</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
     <style>
         body {
             background-color: #f8fafc;
             font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
         }
+
+        .container-fluid {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
         .sidebar {
+            width: 240px;
             background-color: #1e293b;
-            min-height: 100vh;
-            padding: 20px;
             color: #fff;
+            padding: 25px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100vh;              /* ✅ Fill entire viewport height */
+            position: fixed;            /* ✅ Stick to left edge */
+            top: 0;
+            left: 0;
         }
+
         .sidebar h2 {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
+            font-weight: 700;
             margin-bottom: 1.5rem;
         }
+
         .sidebar ul {
             list-style: none;
             padding: 0;
+            margin: 0;
+            flex-grow: 1;
         }
+
         .sidebar ul li {
             margin-bottom: 1rem;
         }
+
         .sidebar ul li a {
             color: #cbd5e1;
             text-decoration: none;
+            display: flex;
+            align-items: center;
             font-weight: 500;
+            border-radius: 8px;
+            padding: 8px 12px;
+            transition: background 0.2s, color 0.2s, transform 0.1s;
         }
-        .sidebar ul li a.active,
+
         .sidebar ul li a:hover {
+            background-color: #334155;
             color: #fff;
-            font-weight: 600;
+            transform: translateX(3px);
         }
+
+        .sidebar ul li a.active {
+            background-color: #3b82f6;
+            color: #fff;
+        }
+
+        .sidebar ul li a i {
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+
+        .logout-btn {
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: auto;
+        }
+
+        .logout-btn:hover {
+            background-color: #334155;
+            color: #fff;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            margin-left: 240px;        /* ✅ Prevent content overlap */
+        }
+
+        .header h1 {
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
         .card {
-            border: none;
-            border-radius: 12px;
+            border-radius: 16px;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+
+        .card p {
+            margin: 0;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
         .card h2 {
-            margin-top: 10px;
+            margin: 0;
             font-size: 2rem;
+            font-weight: 700;
         }
+
+        .blue { background: #3b82f6; }
+        .green { background: #10b981; }
+        .yellow { background: #fbbf24; color: #1e293b; }
+        .red { background: #ef4444; }
+
+        /* Charts */
+        .chart-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .performance {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .performance.small {
+            text-align: center;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .tag {
+            font-size: 0.85rem;
+            background-color: #e2e8f0;
+            color: #334155;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .status-summary {
+            margin-top: 15px;
+            font-size: 0.95rem;
+        }
+
+        .status-summary .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .dot.blue { background: #3b82f6; }
+        .dot.yellow { background: #fbbf24; }
     </style>
 </head>
+
 <body>
 <div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <div th:replace="fragments/admin-sidebar :: adminSidebar"></div>
+    <!-- ✅ Sidebar -->
+    <aside class="sidebar">
+        <h2>DevCollab</h2>
+        <ul>
+            <li><a href="/admin/dashboard" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+            <li><a href="/admin/manage"><i class="bi bi-people-fill"></i> User Management</a></li>
+            <li><a href="/admin/user-reports"><i class="bi bi-person-x-fill"></i> Reported Users</a></li>
+            <li><a href="/admin/project-reports"><i class="bi bi-flag-fill"></i> Reported Projects</a></li>
+            <li><a href="/admin/user-logs"><i class="bi bi-journal-text"></i> System Logs</a></li>
+        </ul>
+        <a id="logoutBtn" href="#" class="logout-btn"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
+    </aside>
 
-        <!-- Main Content -->
-        <main class="col-10 p-4">
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Dashboard</h2>
-                <div>
-                    <input type="text" class="form-control d-inline-block" style="width: 250px;" placeholder="Search for anything...">
-                    <span class="ms-3 fw-bold">Viet Name || Da Nang</span>
+    <!-- ✅ Main Content -->
+    <main>
+        <div class="header">
+            <h1>📊 Dashboard</h1>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="info-cards">
+            <div class="card blue">
+                <p>Total Users</p>
+                <h2 id="totalUsers">0</h2>
+            </div>
+            <div class="card green">
+                <p>Active Users</p>
+                <h2 id="activeUsers">0</h2>
+            </div>
+            <div class="card yellow">
+                <p>Projects</p>
+                <h2 id="totalProjects">0</h2>
+            </div>
+            <div class="card red">
+                <p>Violated Projects</p>
+                <h2 id="violatedProjects">0</h2>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-row">
+            <!-- Revenue Chart -->
+            <div class="performance">
+                <div class="chart-header">
+                    <h3>Revenue Overview</h3>
+                    <span class="tag">Last 6 Months</span>
                 </div>
+                <canvas id="revenueChart"></canvas>
             </div>
 
-            <!-- Info Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card shadow-sm text-center p-3">
-                        <h5 class="text-muted">Total Users</h5>
-                        <h2 id="totalUsers" class="fw-bold text-primary">0</h2>
-                    </div>
+            <!-- Project Breakdown -->
+            <div class="performance small">
+                <h3>Project Status Breakdown</h3>
+                <div class="donut-container">
+                    <canvas id="projectChart"></canvas>
                 </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm text-center p-3">
-                        <h5 class="text-muted">Active Users</h5>
-                        <h2 id="activeUsers" class="fw-bold text-success">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm text-center p-3">
-                        <h5 class="text-muted">Projects</h5>
-                        <h2 id="totalProjects" class="fw-bold text-warning">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm text-center p-3">
-                        <h5 class="text-muted">Violated Projects</h5>
-                        <h2 id="violatedProjects" class="fw-bold text-danger">0</h2>
-                    </div>
+                <div class="status-summary">
+                    <div><span class="dot blue"></span> Active: <b id="activeProjectsCount">0</b></div>
+                    <div><span class="dot yellow"></span> Archived: <b id="archivedProjectsCount">0</b></div>
                 </div>
             </div>
-
-            <!-- Chart -->
-            <div class="card shadow-sm p-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="mb-0">User Registrations</h5>
-                    <span class="badge bg-info text-dark">Last 6 Months</span>
-                </div>
-                <canvas id="userChart" height="120"></canvas>
-            </div>
-        </main>
-    </div>
+        </div>
+    </main>
 </div>
 
-<!-- Script -->
+<!-- JS -->
 <script>
-    let userChartInstance = null;
-
     async function loadDashboardData() {
-        try {
-            const response = await fetch('/api/admin/dashboard');
-            const data = await response.json();
+        const res = await fetch('/api/admin/dashboard');
+        const data = await res.json();
 
-            // Update cards
-            document.getElementById('totalUsers').innerText = data.totalUsers ?? 0;
-            document.getElementById('activeUsers').innerText = data.activeUsers ?? 0;
-            document.getElementById('totalProjects').innerText = data.totalProjects ?? 0;
-            document.getElementById('violatedProjects').innerText = data.violatedProjects ?? 0;
+        // Cards
+        document.getElementById('totalUsers').textContent = data.totalUsers ?? 0;
+        document.getElementById('activeUsers').textContent = data.activeUsers ?? 0;
+        document.getElementById('totalProjects').textContent = data.totalProjects ?? 0;
+        document.getElementById('violatedProjects').textContent = data.violatedProjects ?? 0;
+        document.getElementById('activeProjectsCount').textContent = data.activeProjects ?? 0;
+        document.getElementById('archivedProjectsCount').textContent = data.archivedProjects ?? 0;
 
-            // Chart (user registrations)
-            const labels = data.registrations.map(r => "Month " + r[0]);
-            const values = data.registrations.map(r => r[1]);
+        // Revenue chart
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'line',
+            data: {
+                labels: data.revenue.map(r => r.month),
+                datasets: [{
+                    label: 'Total Revenue (VND)',
+                    data: data.revenue.map(r => r.total),
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(34,197,94,0.2)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
 
-            const ctx = document.getElementById('userChart').getContext('2d');
-            if (userChartInstance) userChartInstance.destroy();
-
-            userChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label: 'Registrations',
-                        data: values,
-                        borderColor: 'rgba(54,162,235,1)',
-                        backgroundColor: 'rgba(54,162,235,0.2)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: true }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        } catch (err) {
-            console.error("Failed to load dashboard data", err);
-        }
+        // Project status chart
+        new Chart(document.getElementById('projectChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Archived'],
+                datasets: [{
+                    data: [data.activeProjects ?? 0, data.archivedProjects ?? 0],
+                    backgroundColor: ['#3b82f6', '#fbbf24']
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
     }
 
-    document.addEventListener("DOMContentLoaded", loadDashboardData);
+    document.addEventListener('DOMContentLoaded', loadDashboardData);
 </script>
+
 <script src="/js/logout.js"></script>
 </body>
 </html>

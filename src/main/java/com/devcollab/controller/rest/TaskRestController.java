@@ -1,23 +1,31 @@
 package com.devcollab.controller.rest;
 
 import com.devcollab.domain.Task;
+import com.devcollab.domain.User;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.TaskFollowerDTO;
 import com.devcollab.dto.UserDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.request.TaskDatesUpdateReq;
 import com.devcollab.dto.request.TaskQuickCreateReq;
+import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import com.devcollab.exception.NotFoundException;
+import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.TaskService;
 import com.devcollab.service.core.TaskFollowerService; // ✅ Thêm service cho member
+import com.devcollab.service.core.UserService;
 import com.devcollab.service.system.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +37,7 @@ public class TaskRestController {
     private final TaskService taskService;
     private final AuthService authService;
     private final TaskFollowerService taskFollowerService; // ✅ Thêm service cho assign/unassign
+    private final ProjectService projectService;
 
     // ====================== TASK CRUD ======================
 
@@ -47,6 +56,8 @@ public class TaskRestController {
         }
 
         UserDTO current = authService.getCurrentUser(auth);
+        System.out.println(current);
+        System.out.println(current.getUserId());
         if (current == null || current.getUserId() == null) {
             return ResponseEntity.status(401).build();
         }
@@ -190,4 +201,13 @@ public class TaskRestController {
 
 
 
+    @GetMapping("/user/projects")
+    public ResponseEntity<List<ProjectFilterDTO>> getUserProjects(Authentication auth) {
+        UserDTO current = authService.getCurrentUser(auth);
+        if (current == null  && current.getUserId() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<ProjectFilterDTO> projects = projectService.getActiveProjectsForUser(current.getUserId());
+        return ResponseEntity.ok(projects);
+    }
 }

@@ -128,25 +128,37 @@
         document.getElementById("nextBtn").disabled = currentPage >= totalPages - 1;
     }
 
-    function changePage(delta) {
+
+    async function changePage(delta) {
         const newPage = currentPage + delta;
-        if (newPage >= 0 && newPage < totalPages) loadLogs(newPage);
+        if (newPage < 0 || newPage >= totalPages) return;
+        applyFilter(newPage);
     }
 
     // --- Filter (client-side only) ---
-    function applyFilter() {
-        const userQuery = document.getElementById("searchUser").value.toLowerCase();
-        const actionQuery = document.getElementById("searchAction").value.toLowerCase();
+    async function applyFilter(page = 0) {
+        const user = document.getElementById("searchUser").value.trim();
+        const action = document.getElementById("searchAction").value.trim();
         const entityType = document.getElementById("entityTypeFilter").value;
+        const size = 10;
 
-        const filtered = logs.filter(log =>
-            (!userQuery || (log.actor?.name || "").toLowerCase().includes(userQuery)) &&
-            (!actionQuery || (log.action || "").toLowerCase().includes(actionQuery)) &&
-            (!entityType || log.entityType === entityType)
-        );
+        const params = new URLSearchParams({ user, action, entityType, page, size });
 
-        renderLogs(filtered);
+        try {
+            const res = await fetch(`/api/admin/logs/search?${params.toString()}`);
+            const json = await res.json();
+
+            logs = json.content || [];
+            totalPages = json.totalPages || 1;
+            currentPage = json.currentPage || 0;
+
+            renderLogs(logs);
+            updatePaginationControls();
+        } catch (err) {
+            console.error("Error applying filter:", err);
+        }
     }
+
 
     // --- Initial load ---
     loadLogs();

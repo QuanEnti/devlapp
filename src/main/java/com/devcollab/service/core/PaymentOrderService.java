@@ -1,5 +1,6 @@
 package com.devcollab.service.core;
 
+import java.util.List;
 import java.util.Map;
 
 public interface PaymentOrderService {
@@ -12,4 +13,5 @@ public interface PaymentOrderService {
 
     /** Kiểm tra trạng thái thanh toán */
     Map<String, Object> checkPaymentStatus(Long orderId);
+    List<Map<String, Object>> getRevenueByMonth();
 }
