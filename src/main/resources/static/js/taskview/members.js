@@ -247,8 +247,7 @@ function extractMemberMeta(row) {
   if (!row) return null;
   const userIdRaw = row.dataset.userId;
   const userId = userIdRaw ? Number(userIdRaw) : null;
-  const name =
-    row.querySelector(".member-row__name")?.textContent.trim() || "";
+  const name = row.querySelector(".member-row__name")?.textContent.trim() || "";
   let avatarUrl = "";
   const img = row.querySelector(".member-row__avatar img");
   if (img) avatarUrl = img.getAttribute("src") || "";
@@ -260,17 +259,14 @@ function addMemberAvatarChip(meta) {
   if (!meta || meta.userId == null) return;
   const container = document.getElementById("members-avatars-inline");
   if (!container) return;
-  const existing = container.querySelector(
-    `[data-member-id="${meta.userId}"]`
-  );
+  const existing = container.querySelector(`[data-member-id="${meta.userId}"]`);
   if (existing) return;
 
   const chip = document.createElement("div");
   chip.dataset.memberId = String(meta.userId);
   chip.className =
     "w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm cursor-pointer";
-  chip.style.backgroundColor =
-    meta.color || getColorForId(String(meta.userId));
+  chip.style.backgroundColor = meta.color || getColorForId(String(meta.userId));
   chip.title = meta.name || "";
   chip.textContent = getInitials(meta.name || "");
   container.appendChild(chip);
@@ -341,11 +337,11 @@ function moveMemberRow(row, targetType, meta) {
 }
 
 // ================== ASSIGN / UNASSIGN ==================
-export async function assignMember(userId, button) {
+export async function assignMember(userId, rowElement) {
   const taskId = window.CURRENT_TASK_ID;
   if (!taskId) return;
 
-  const row = button;
+  const row = rowElement;
   row?.classList.add("is-loading");
 
   try {
@@ -353,26 +349,34 @@ export async function assignMember(userId, button) {
       method: "PUT",
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
+
     if (res.status === 403) {
       const message = await res.text();
-      showToast(
+      const text =
         (message && message.trim()) ||
-          "You do not have permission to assign members.",
-        "error"
-      );
+        "You do not have permission to assign members.";
+      showToast(text, "error");
       return;
     }
+
     if (!res.ok) {
       throw new Error(`Assign failed (${res.status})`);
     }
 
     const meta = extractMemberMeta(row);
+    if (!meta) {
+      const keyword =
+        document.getElementById("search-member-input")?.value || "";
+      await loadMembers(keyword);
+      return;
+    }
+
     moveMemberRow(row, "card", meta);
     addMemberAvatarChip(meta);
     updateFollowerIdsArray(meta.userId, true);
     showToast("Member added to this card", "success");
   } catch (err) {
-    console.error(" assignMember error:", err);
+    console.error("assignMember error:", err);
     showToast("Failed to assign member", "error");
   } finally {
     row?.classList.remove("is-loading");
@@ -392,25 +396,25 @@ export async function unassignMember(userId, button) {
       method: "PUT",
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
-<<<<<<< Updated upstream
-    if (!res.ok) throw new Error("Unassign failed");
-    showToast("✅ Member removed");
-    await loadMembers(document.getElementById("search-member-input").value); // Tải lại danh sách
-  } catch (err) {
-    console.error("❌ unassignMember error:", err);
-    showToast("❌ Failed to unassign member", "error");
-=======
+
     if (res.status === 403) {
       const message = await res.text();
-      showToast(
+      const text =
         (message && message.trim()) ||
-          "You do not have permission to remove members.",
-        "error"
-      );
+        "You do not have permission to remove members.";
+      showToast(text, "error");
       return;
     }
+
     if (!res.ok) {
       throw new Error(`Unassign failed (${res.status})`);
+    }
+
+    if (!meta) {
+      const keyword =
+        document.getElementById("search-member-input")?.value || "";
+      await loadMembers(keyword);
+      return;
     }
 
     moveMemberRow(row, "board", meta);
@@ -418,9 +422,8 @@ export async function unassignMember(userId, button) {
     updateFollowerIdsArray(meta.userId, false);
     showToast("Member removed from this card", "success");
   } catch (err) {
-    console.error(" unassignMember error:", err);
+    console.error("unassignMember error:", err);
     showToast("Failed to unassign member", "error");
->>>>>>> Stashed changes
   } finally {
     button.disabled = false;
   }

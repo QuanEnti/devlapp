@@ -521,6 +521,7 @@ function renderMembersInModal(task) {
   if (!membersContainer) return;
 
   membersContainer.innerHTML = "";
+  const followerIds = [];
 
   if (
     task.assignees &&
@@ -529,7 +530,6 @@ function renderMembersInModal(task) {
   ) {
     task.assignees.forEach((assignee) => {
       const name = assignee.name || assignee.assigneeName || "?";
-      // Lấy 2 chữ cái đầu nếu có tên đầy đủ
       const nameParts = name.split(" ");
       const initials =
         nameParts.length > 1
@@ -545,6 +545,11 @@ function renderMembersInModal(task) {
       memberEl.style.backgroundColor = color;
       memberEl.title = name;
       memberEl.textContent = initials;
+      if (assignee.userId !== undefined && assignee.userId !== null) {
+        memberEl.dataset.memberId = String(assignee.userId);
+        const parsed = Number(assignee.userId);
+        if (!Number.isNaN(parsed)) followerIds.push(parsed);
+      }
       membersContainer.appendChild(memberEl);
     });
   } else if (task.assigneeName && task.assigneeName !== "Unassigned") {
@@ -562,8 +567,15 @@ function renderMembersInModal(task) {
       "w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm bg-teal-500 cursor-pointer";
     memberEl.title = name;
     memberEl.textContent = initials;
+    if (task.assigneeId != null) {
+      memberEl.dataset.memberId = String(task.assigneeId);
+      const parsed = Number(task.assigneeId);
+      if (!Number.isNaN(parsed)) followerIds.push(parsed);
+    }
     membersContainer.appendChild(memberEl);
   }
+
+  window.CURRENT_TASK_FOLLOWER_IDS = followerIds;
 }
 
 function renderLabelsInModal(task) {
@@ -2820,7 +2832,7 @@ async function syncShareUI(projectId) {
       copyLinkBtn.disabled = false;
       deleteLinkBtn.disabled = false;
     } else {
-      // 🔒 Khi link bị xóa → hiển thị “Create link”
+      // 🔒 Khi link bị xóa → hiển thị "Create link"
       hint.textContent = "🔒 Link sharing is disabled.";
       hint.className = "text-xs text-gray-500 mt-1 ml-5 italic";
       copyLinkBtn.textContent = "Create link";
