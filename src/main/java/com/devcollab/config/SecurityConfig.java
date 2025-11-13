@@ -24,34 +24,26 @@ public class SecurityConfig {
         @Bean
         @Order(1)
         public SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
-                http
-                                .securityMatcher("/api/**")
-                                .csrf(csrf -> csrf.disable())
-                                .sessionManagement(
-                                                sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                http.securityMatcher("/api/**").csrf(csrf -> csrf.disable())
+                                .sessionManagement(sess -> sess.sessionCreationPolicy(
+                                                SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth
                                                 // Các API public
-                                                .requestMatchers(
-                                                                "/api/auth/**",
-                                                                "/api/users/**",
-<<<<<<< HEAD
-                                                                "/api/admin/**",
-                                                                "api/payment/webhook",
-=======
+                                                .requestMatchers("/api/auth/**", "/api/users/**",
                                                                 "api/payment/webhook"
->>>>>>> payment
-                                                                // "/api/pm/public/**",
-                                                                )
-                                                .permitAll()
+                                                // "/api/pm/public/**",
+                                                ).permitAll()
                                                 // Admin-only APIs
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 // 🔹 Cho phép truy cập dashboard public nếu có
                                                 // .requestMatchers("/api/pm/project/*/dashboard").permitAll()
-                                                // 🔹 API join cần đăng nhập (Bearer hoặc cookie JWT)
+                                                // 🔹 API join cần đăng nhập (Bearer hoặc cookie
+                                                // JWT)
                                                 .requestMatchers("/api/tasks/**").authenticated()
-                                                .requestMatchers("/api/pm/invite/join/**").authenticated()
-                                                .anyRequest().authenticated())
-                                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                                                .requestMatchers("/api/pm/invite/join/**")
+                                                .authenticated().anyRequest().authenticated())
+                                .addFilterBefore(jwtFilter,
+                                                UsernamePasswordAuthenticationFilter.class)
                                 .formLogin(form -> form.disable())
                                 .logout(logout -> logout.disable());
 
@@ -61,52 +53,33 @@ public class SecurityConfig {
         @Bean
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
-                http
-<<<<<<< HEAD
-                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**", "/user/**",
-                                                "/settings/**")
-=======
-                                .securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**","/user/**","/admin/**")
->>>>>>> payment
-                                .csrf(csrf -> csrf.disable())
-                                .sessionManagement(
-                                                sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                                .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(
-                                                                "/", "/view/home", "/view/signin", "/view/login",
-                                                                "/view/register",
-                                                                "/view/forgot-password", "/view/reset-password",
-                                                                "/view/password-reset-success",
-<<<<<<< HEAD
-                                                                "/view/verify-otp", "/join/**", "/css/**", "/js/**",
-                                                                "/images/**", "/assets/**",
-                                                                "/favicon.ico", "/webjars/**", "/oauth2/**")
-                                                .permitAll()
-                                                .requestMatchers("/user/**", "/settings/**").authenticated()
-=======
-                                                                "/view/verify-otp",
-                                                                "/view/ban",
-                                                                "/join/**",
-                                                                "/css/**", "/js/**", "/images/**", "/assets/**",
-                                                                "/favicon.ico", "/webjars/**",
-                                                                "/oauth2/**")
-                                                .permitAll()
+                http.securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**",
+                                "/user/**", "/admin/**").csrf(csrf -> csrf.disable())
+                                .sessionManagement(sess -> sess.sessionCreationPolicy(
+                                                SessionCreationPolicy.IF_REQUIRED))
+                                .authorizeHttpRequests(auth -> auth.requestMatchers("/",
+                                                "/view/home", "/view/signin", "/view/login",
+                                                "/view/register", "/view/forgot-password",
+                                                "/view/reset-password",
+                                                "/view/password-reset-success", "/view/verify-otp",
+                                                "/view/ban", "/join/**", "/css/**", "/js/**",
+                                                "/images/**", "/assets/**", "/favicon.ico",
+                                                "/webjars/**", "/oauth2/**").permitAll()
                                                 .requestMatchers("/admin/**").hasRole("ADMIN")
                                                 .requestMatchers("/user/**").authenticated()
->>>>>>> payment
                                                 .anyRequest().authenticated())
-                                .oauth2Login(oauth -> oauth
-                                                .loginPage("/view/signin")
+                                .oauth2Login(oauth -> oauth.loginPage("/view/signin")
                                                 .successHandler(oAuth2SuccessHandler)
                                                 .failureUrl("/view/signin?error=oauth"))
-                                .formLogin(form -> form.disable())
-                                .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, e) -> {
-                                        String redirect = req.getRequestURI();
-                                        res.setStatus(HttpServletResponse.SC_FOUND);
-                                        res.setHeader("Location", "/view/signin?redirect=" + redirect);
-                                }))
-                                .logout(logout -> logout
-                                                .logoutUrl("/logout")
+                                .formLogin(form -> form.disable()).exceptionHandling(
+                                                ex -> ex.authenticationEntryPoint((req, res, e) -> {
+                                                        String redirect = req.getRequestURI();
+                                                        res.setStatus(HttpServletResponse.SC_FOUND);
+                                                        res.setHeader("Location",
+                                                                        "/view/signin?redirect="
+                                                                                        + redirect);
+                                                }))
+                                .logout(logout -> logout.logoutUrl("/logout")
                                                 .logoutSuccessUrl("/view/signin?logout")
                                                 .invalidateHttpSession(true)
                                                 .clearAuthentication(true)
@@ -121,7 +94,8 @@ public class SecurityConfig {
                                         }
                                         chain.doFilter(request, response);
                                 }, SecurityContextHolderAwareRequestFilter.class)
-                                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                                .addFilterBefore(jwtFilter,
+                                                UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
         }
