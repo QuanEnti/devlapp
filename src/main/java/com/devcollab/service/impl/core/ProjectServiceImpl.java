@@ -9,6 +9,7 @@ import com.devcollab.dto.response.ProjectSearchResponseDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
+import com.devcollab.service.core.JoinRequestService;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.event.AppEventService;
 import com.devcollab.service.system.ActivityService;
@@ -48,6 +49,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final AppEventService appEventService;
     private final ActivityService activityService;
     private final NotificationService notificationService;
+    private final JoinRequestService joinRequestService;
 
     @Override
     public Project createProject(Project project, Long creatorId) {
@@ -74,6 +76,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project saved = projectRepository.save(project);
 
+        // 🧑‍💼 Gán người tạo làm PM
         ProjectMember pm = new ProjectMember();
         pm.setProject(saved);
         pm.setUser(creator);
@@ -81,23 +84,33 @@ public class ProjectServiceImpl implements ProjectService {
         pm.setJoinedAt(LocalDateTime.now());
         projectMemberRepository.save(pm);
 
-        String[] defaultCols = {"To-do", "In Progress", "Review", "Done"};
+        // 🧱 Danh sách cột mặc định (thêm Backlog ở đầu)
+        String[] defaultCols = {"Backlog", "To-do", "In Progress", "Review", "Done"};
+        String[] defaultStatusCodes = {"BACKLOG", "OPEN", "IN_PROGRESS", "REVIEW", "DONE"};
+
         for (int i = 0; i < defaultCols.length; i++) {
             BoardColumn col = new BoardColumn();
             col.setProject(saved);
             col.setName(defaultCols[i]);
             col.setOrderIndex(i + 1);
             col.setIsDefault(true);
+            // ⚡ Nếu bạn đã thêm cột `status_code` trong bảng BoardColumn:
+            try {
+                // phản xạ an toàn — chỉ set nếu entity có cột này
+                BoardColumn.class.getDeclaredField("statusCode");
+                col.getClass().getMethod("setStatusCode", String.class).invoke(col,
+                        defaultStatusCodes[i]);
+            } catch (Exception ignored) {
+            }
             boardColumnRepository.save(col);
         }
 
-        // activityService.log("PROJECT", saved.getProjectId(), "CREATE",
-        // saved.getName());
+        // 🪶 Gửi sự kiện sau khi tạo project
         appEventService.publishProjectCreated(saved);
-        // notificationService.notifyProjectCreated(saved);
 
         return saved;
     }
+
 
     @Override
     public Project updateProject(Long id, Project patch) {
@@ -115,7 +128,8 @@ public class ProjectServiceImpl implements ProjectService {
         if (patch.getStartDate() != null)
             existing.setStartDate(patch.getStartDate());
         if (patch.getDueDate() != null) {
-            if (existing.getStartDate() != null && patch.getDueDate().isBefore(existing.getStartDate())) {
+            if (existing.getStartDate() != null
+                    && patch.getDueDate().isBefore(existing.getStartDate())) {
                 throw new BadRequestException("Ngày kết thúc không hợp lệ");
             }
             existing.setDueDate(patch.getDueDate());
@@ -134,8 +148,10 @@ public class ProjectServiceImpl implements ProjectService {
         List<ProjectMember> joined = projectMemberRepository.findByUser_UserId(userId);
 
         Map<Long, Project> all = new LinkedHashMap<>();
-        for (Project p : created) all.put(p.getProjectId(), p);
-        for (ProjectMember m : joined) all.put(m.getProject().getProjectId(), m.getProject());
+        for (Project p : created)
+            all.put(p.getProjectId(), p);
+        for (ProjectMember m : joined)
+            all.put(m.getProject().getProjectId(), m.getProject());
         return new ArrayList<>(all.values());
     }
 
@@ -146,14 +162,11 @@ public class ProjectServiceImpl implements ProjectService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User không tồn tại"));
 
-        boolean exists = projectMemberRepository.findByProject_ProjectId(projectId)
-                .stream()
+        boolean exists = projectMemberRepository.findByProject_ProjectId(projectId).stream()
                 .anyMatch(m -> m.getUser().getUserId().equals(userId));
         if (exists) {
-            return projectMemberRepository.findByProject_ProjectId(projectId)
-                    .stream()
-                    .filter(m -> m.getUser().getUserId().equals(userId))
-                    .findFirst().get();
+            return projectMemberRepository.findByProject_ProjectId(projectId).stream()
+                    .filter(m -> m.getUser().getUserId().equals(userId)).findFirst().get();
         }
 
         ProjectMember pm = new ProjectMember();
@@ -172,14 +185,11 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public void removeMember(Long projectId, Long userId) {
         List<ProjectMember> members = projectMemberRepository.findByProject_ProjectId(projectId);
-        ProjectMember target = members.stream()
-                .filter(m -> m.getUser().getUserId().equals(userId))
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException("Thành viên không tồn tại"));
+        ProjectMember target = members.stream().filter(m -> m.getUser().getUserId().equals(userId))
+                .findFirst().orElseThrow(() -> new NotFoundException("Thành viên không tồn tại"));
 
-        long pmCount = members.stream()
-                .filter(m -> "PM".equalsIgnoreCase(m.getRoleInProject()))
-                .count();
+        long pmCount =
+                members.stream().filter(m -> "PM".equalsIgnoreCase(m.getRoleInProject())).count();
         if ("PM".equalsIgnoreCase(target.getRoleInProject()) && pmCount <= 1) {
             throw new BadRequestException("Không thể xóa PM cuối cùng của dự án");
         }
@@ -229,27 +239,19 @@ public class ProjectServiceImpl implements ProjectService {
 
         long total = taskRepository.countByProject_ProjectId(projectId);
         long open = taskRepository.countByProject_ProjectIdAndStatus(projectId, "OPEN");
-        long inProgress = taskRepository.countByProject_ProjectIdAndStatus(projectId, "IN_PROGRESS");
+        long inProgress =
+                taskRepository.countByProject_ProjectIdAndStatus(projectId, "IN_PROGRESS");
         long review = taskRepository.countByProject_ProjectIdAndStatus(projectId, "REVIEW");
         long done = taskRepository.countByProject_ProjectIdAndStatus(projectId, "DONE");
         long overdue = taskRepository.countOverdue(projectId, LocalDateTime.now());
 
-        BigDecimal percentDone = total == 0
-                ? BigDecimal.ZERO
-                : BigDecimal.valueOf(done)
-                        .multiply(BigDecimal.valueOf(100))
+        BigDecimal percentDone = total == 0 ? BigDecimal.ZERO
+                : BigDecimal.valueOf(done).multiply(BigDecimal.valueOf(100))
                         .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
 
-        return ProjectDashboardDTO.builder()
-                .projectId(projectId)
-                .totalTasks(total)
-                .openTasks(open)
-                .inProgressTasks(inProgress)
-                .reviewTasks(review)
-                .doneTasks(done)
-                .overdueTasks(overdue)
-                .percentDone(percentDone)
-                .build();
+        return ProjectDashboardDTO.builder().projectId(projectId).totalTasks(total).openTasks(open)
+                .inProgressTasks(inProgress).reviewTasks(review).doneTasks(done)
+                .overdueTasks(overdue).percentDone(percentDone).build();
     }
 
     @Override
@@ -260,83 +262,80 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectPerformanceDTO getPerformanceData(Long projectId, String pmEmail) {
-    authz.ensurePmOfProject(pmEmail, projectId);
+        authz.ensurePmOfProject(pmEmail, projectId);
 
-    LocalDate today = LocalDate.now();
-    LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
-    LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
+        LocalDate today = LocalDate.now();
+        LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
+        LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
 
-    List<Object[]> results = taskRepository.countCompletedTasksPerDay(
-        projectId,
-        startOfWeek.atStartOfDay(),
-        endOfWeek.atTime(23, 59, 59)
-    );
+        List<Object[]> results = taskRepository.countCompletedTasksPerDay(projectId,
+                startOfWeek.atStartOfDay(), endOfWeek.atTime(23, 59, 59));
 
-    Map<String, Long> dayMap = new LinkedHashMap<>();
-    results.forEach(r -> dayMap.put((String) r[0], (Long) r[1]));
+        Map<String, Long> dayMap = new LinkedHashMap<>();
+        results.forEach(r -> dayMap.put((String) r[0], (Long) r[1]));
 
-    List<String> labels = List.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun");
-    List<Long> achieved = new ArrayList<>();
-    for (String d : labels) {
-        achieved.add(dayMap.getOrDefault(d, 0L));
-    }
-
-    long total = taskRepository.countByProject_ProjectId(projectId);
-    long targetPerDay = Math.max(1, total / 7);
-    List<Long> target = labels.stream().map(d -> targetPerDay).toList();
-
-    return new ProjectPerformanceDTO(labels, achieved, target);
-
-}
-   
-@Override
-public List<ProjectDTO> getTopProjectsByPm(String email, int limit) {
-    Pageable pageable = PageRequest.of(0, limit);
-    return projectRepository.findTopProjectsByPm(email, pageable);
-}
-
-@Override
-public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, String keyword) {
-    if (keyword == null || keyword.isBlank())
-        keyword = "";
-
-    Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
-    Page<ProjectDTO> projects = projectRepository.findAllProjectsByPm(email, keyword, pageable);
-
-    if (projects == null)
-        return Page.empty(pageable);
-
-    return projects.map(dto -> {
-        Long projectId = dto.getProjectId();
-        if (projectId == null) {
-            log.warn("⚠️ ProjectDTO missing projectId for {}", dto.getName());
-            return dto;
+        List<String> labels = List.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun");
+        List<Long> achieved = new ArrayList<>();
+        for (String d : labels) {
+            achieved.add(dayMap.getOrDefault(d, 0L));
         }
 
-        List<MemberDTO> allMembers = Optional.ofNullable(
-                projectMemberRepository.findMembersByProject(projectId)).orElse(Collections.emptyList());
+        long total = taskRepository.countByProject_ProjectId(projectId);
+        long targetPerDay = Math.max(1, total / 7);
+        List<Long> target = labels.stream().map(d -> targetPerDay).toList();
 
-        int totalMembers = allMembers.size();
+        return new ProjectPerformanceDTO(labels, achieved, target);
 
-        List<MemberDTO> topMembers = allMembers.stream()
-                .filter(m -> m.getAvatarUrl() != null)
-                .limit(4)
-                .toList();
+    }
 
-        dto.setMemberCount(totalMembers);
-        dto.setMemberAvatars(topMembers.stream().map(MemberDTO::getAvatarUrl).toList());
-        dto.setMemberNames(topMembers.stream().map(MemberDTO::getName).toList());
+    @Override
+    public List<ProjectDTO> getTopProjectsByPm(String email, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return projectRepository.findTopProjectsByPm(email, pageable);
+    }
 
-        return dto;
-    });
-}
+    @Override
+    public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, String keyword) {
+        if (keyword == null || keyword.isBlank())
+            keyword = "";
 
-  @Override
-    public Project enableShareLink(Long projectId, String pmEmail) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        Page<ProjectDTO> projects = projectRepository.findAllProjectsByPm(email, keyword, pageable);
+
+        if (projects == null)
+            return Page.empty(pageable);
+
+        return projects.map(dto -> {
+            Long projectId = dto.getProjectId();
+            if (projectId == null) {
+                log.warn("⚠️ ProjectDTO missing projectId for {}", dto.getName());
+                return dto;
+            }
+
+            List<MemberDTO> allMembers =
+                    Optional.ofNullable(projectMemberRepository.findMembersByProject(projectId))
+                            .orElse(Collections.emptyList());
+
+            int totalMembers = allMembers.size();
+
+            List<MemberDTO> topMembers =
+                    allMembers.stream().filter(m -> m.getAvatarUrl() != null).limit(4).toList();
+
+            dto.setMemberCount(totalMembers);
+            dto.setMemberAvatars(topMembers.stream().map(MemberDTO::getAvatarUrl).toList());
+            dto.setMemberNames(topMembers.stream().map(MemberDTO::getName).toList());
+
+            return dto;
+        });
+    }
+
+    @Override
+    public Project enableShareLink(Long projectId, String creatorEmail) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
 
-        authz.ensurePmOfProject(pmEmail, projectId);
+        // ✅ Ghi lại ai là người tạo link (có thể là PM hoặc Member)
+        project.setInviteCreatedBy(creatorEmail);
 
         boolean expired = project.getInviteExpiredAt() != null
                 && project.getInviteExpiredAt().isBefore(LocalDateTime.now());
@@ -357,6 +356,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
 
         return project;
     }
+
 
     @Override
     public Project disableShareLink(Long projectId, String pmEmail) {
@@ -404,30 +404,39 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
             project.setUpdatedAt(LocalDateTime.now());
             projectRepository.save(project);
 
-            // 🔔 Ghi log activity và thông báo cho PM
             activityService.log("PROJECT", project.getProjectId(), "AUTO_REGEN_LINK",
                     "Link cũ hết hạn hoặc đầy, hệ thống đã tự tạo link mới: " + newCode);
             notificationService.notifyProjectLinkRegenerated(project);
 
-            // ❌ Báo cho người join biết rằng link cũ đã hết hạn
             throw new BadRequestException(
                     "Liên kết mời đã hết hạn. Hệ thống đã tạo liên kết mới, vui lòng yêu cầu PM gửi lại.");
         }
 
-        if (expired) {
+        if (expired)
             throw new BadRequestException("Liên kết mời đã hết hạn!");
-        }
-        if (limitReached) {
+        if (limitReached)
             throw new BadRequestException(
                     "Liên kết này đã đạt giới hạn mời (" + project.getInviteMaxUses() + " người)!");
-        }
 
-        boolean exists = projectMemberRepository.existsByProject_ProjectIdAndUser_UserId(project.getProjectId(),
-                userId);
-        if (exists) {
+        boolean exists = projectMemberRepository
+                .existsByProject_ProjectIdAndUser_UserId(project.getProjectId(), userId);
+        if (exists)
             throw new BadRequestException("Bạn đã là thành viên của dự án này!");
+
+        // 🧩 Kiểm tra người tạo link là ai
+        String creatorEmail = project.getInviteCreatedBy();
+        boolean creatorIsPm =
+                projectMemberRepository.existsByProject_ProjectIdAndUser_EmailAndRoleInProjectIn(
+                        project.getProjectId(), creatorEmail, List.of("PM", "OWNER", "ADMIN"));
+
+        if (!creatorIsPm) {
+            // 🚫 Nếu không phải PM/Owner/Admin → tạo Join Request chờ duyệt
+            joinRequestService.createJoinRequest(project, user);
+            notificationService.notifyJoinRequestToPM(project, user);
+            throw new BadRequestException("Yêu cầu tham gia đã được gửi đến PM để phê duyệt.");
         }
 
+        // ✅ Nếu link do PM tạo → join trực tiếp
         ProjectMember newMember = new ProjectMember();
         newMember.setProject(project);
         newMember.setUser(user);
@@ -446,6 +455,7 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
         return newMember;
     }
 
+
     public List<Project> getProjectsByUsername(String username) {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new NotFoundException("User không tồn tại"));
@@ -457,15 +467,12 @@ public Page<ProjectDTO> getAllProjectsByPm(String email, int page, int size, Str
     public List<ProjectSearchResponseDTO> searchProjectsByKeyword(String keyword) {
         List<Project> projects = projectRepository
                 .findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
-        return projects.stream()
-                .map(ProjectSearchResponseDTO::new)
-                .toList();
+        return projects.stream().map(ProjectSearchResponseDTO::new).toList();
     }
 
     @Transactional(readOnly = true)
     public String getUserRoleInProject(Long projectId, Long userId) {
-        return projectMemberRepository.findRoleInProject(projectId, userId)
-                .orElse("Member"); 
+        return projectMemberRepository.findRoleInProject(projectId, userId).orElse("Member");
     }
 
     @Transactional(readOnly = true)

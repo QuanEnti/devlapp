@@ -27,8 +27,7 @@ public class ProjectMemberRestController {
     // 🟢 Lấy danh sách thành viên trong 1 project (ai cũng xem được nếu là member)
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<MemberDTO> getMembers(
-            @RequestParam Long projectId,
+    public List<MemberDTO> getMembers(@RequestParam Long projectId,
             @RequestParam(defaultValue = "200") int limit,
             @RequestParam(required = false) String keyword) {
         return projectMemberService.getMembersByProject(projectId, limit, keyword);
@@ -45,33 +44,27 @@ public class ProjectMemberRestController {
     // 🧩 Danh sách tất cả members có trong các project (phân trang)
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole('PM','ADMIN')")
-    public ResponseEntity<?> getAllMembers(
-            @RequestParam(defaultValue = "0") int page,
+    public ResponseEntity<?> getAllMembers(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword) {
 
         Page<MemberDTO> members = projectMemberService.getAllMembers(page, size, keyword);
-        return ResponseEntity.ok(Map.of(
-                "content", members.getContent(),
-                "totalPages", members.getTotalPages(),
-                "totalElements", members.getTotalElements(),
-                "currentPage", members.getNumber()));
+        return ResponseEntity.ok(Map.of("content", members.getContent(), "totalPages",
+                members.getTotalPages(), "totalElements", members.getTotalElements(), "currentPage",
+                members.getNumber()));
     }
 
-    // 🔥 Xóa 1 member khỏi project (phân quyền theo project)
     @DeleteMapping("/{projectId}/members/{userId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> removeMemberFromProject(
-            @PathVariable Long projectId,
-            @PathVariable Long userId,
-            Authentication auth) {
+    public ResponseEntity<?> removeMemberFromProject(@PathVariable Long projectId,
+            @PathVariable Long userId, Authentication auth) {
         try {
             String requesterEmail = extractEmail(auth);
-            boolean removed = projectMemberService.removeMemberFromProject(projectId, userId, requesterEmail);
+            boolean removed =
+                    projectMemberService.removeMemberFromProject(projectId, userId, requesterEmail);
 
-            return ResponseEntity.ok(Map.of(
-                    "message", "Xóa thành viên khỏi dự án thành công!",
-                    "status", removed));
+            return ResponseEntity.ok(
+                    Map.of("message", "Xóa thành viên khỏi dự án thành công!", "status", removed));
 
         } catch (NotFoundException e) {
             return ResponseEntity.status(404).body(Map.of("message", e.getMessage()));
@@ -84,45 +77,38 @@ public class ProjectMemberRestController {
         }
     }
 
-    // ❌ Xóa user khỏi tất cả project mà PM sở hữu
     @DeleteMapping("/remove-user/{userId}")
     @PreAuthorize("hasAnyRole('PM','ADMIN')")
-    public ResponseEntity<?> removeUserFromAllProjects(
-            @PathVariable Long userId,
+    public ResponseEntity<?> removeUserFromAllProjects(@PathVariable Long userId,
             Authentication auth) {
         try {
             String pmEmail = extractEmail(auth);
             boolean removed = projectMemberService.removeUserFromAllProjectsOfPm(pmEmail, userId);
-            return ResponseEntity.ok(Map.of(
-                    "message", removed
-                            ? "Đã xóa thành viên khỏi tất cả dự án bạn quản lý!"
-                            : "Không có dự án nào chứa thành viên này!",
-                    "status", removed));
+            return ResponseEntity
+                    .ok(Map.of("message",
+                            removed ? "Đã xóa thành viên khỏi tất cả dự án bạn quản lý!"
+                                    : "Không có dự án nào chứa thành viên này!",
+                            "status", removed));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "message", "Lỗi hệ thống khi xóa thành viên khỏi tất cả dự án!"));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Lỗi hệ thống khi xóa thành viên khỏi tất cả dự án!"));
         }
     }
 
-    // 🔄 Đổi role trong project (theo phân quyền Project)
     @PutMapping("/project/{projectId}/member/{userId}/role")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> updateMemberRole(
-            @PathVariable Long projectId,
-            @PathVariable Long userId,
-            @RequestParam String role,
-            Authentication auth) {
+    public ResponseEntity<?> updateMemberRole(@PathVariable Long projectId,
+            @PathVariable Long userId, @RequestParam String role, Authentication auth) {
         try {
             String pmEmail = extractEmail(auth);
             projectMemberService.updateMemberRole(projectId, userId, role, pmEmail);
 
             var updated = projectMemberRepo.findMembersByProject(projectId);
-            return ResponseEntity.ok(Map.of(
-                    "message", "✅ Cập nhật vai trò thành công!",
-                    "members", updated));
+            return ResponseEntity
+                    .ok(Map.of("message", "Cập nhật vai trò thành công!", "members", updated));
 
         } catch (NotFoundException e) {
             return ResponseEntity.status(404).body(Map.of("message", e.getMessage()));
@@ -130,43 +116,35 @@ public class ProjectMemberRestController {
             return ResponseEntity.status(403).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "message", "Lỗi hệ thống khi cập nhật vai trò!"));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Lỗi hệ thống khi cập nhật vai trò!"));
         }
     }
+
     @GetMapping("/project/{projectId}/mentions")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getMentionSuggestions(
-            @PathVariable Long projectId,
+    public ResponseEntity<?> getMentionSuggestions(@PathVariable Long projectId,
             @RequestParam(required = false, defaultValue = "") String keyword) {
 
         try {
             int limit = (keyword == null || keyword.isBlank()) ? 30 : 200;
 
             // ✅ ép sang ArrayList để có thể .add()
-            List<MemberDTO> suggestions = new ArrayList<>(projectMemberService.getMembersByProject(projectId, limit, keyword));
+            List<MemberDTO> suggestions = new ArrayList<>(
+                    projectMemberService.getMembersByProject(projectId, limit, keyword));
             // 🧩 Thêm 2 mention đặc biệt (hiển thị đẹp hơn)
-            suggestions.add(new MemberDTO(
-                    null,
-                    "Tất cả thành viên trên thẻ", // 👈 name hiển thị
+            suggestions.add(new MemberDTO(null, "Tất cả thành viên trên thẻ", // 👈 name hiển thị
                     "@card", // 👈 email / tag thực tế
-                    "https://cdn-icons-png.flaticon.com/512/4727/4727400.png",
-                    "SPECIAL"));
+                    "https://cdn-icons-png.flaticon.com/512/4727/4727400.png", "SPECIAL"));
 
-            suggestions.add(new MemberDTO(
-                    null,
-                    "Tất cả thành viên trong bảng",
-                    "@board",
-                    "https://cdn-icons-png.flaticon.com/512/1055/1055646.png",
-                    "SPECIAL"));
+            suggestions.add(new MemberDTO(null, "Tất cả thành viên trong bảng", "@board",
+                    "https://cdn-icons-png.flaticon.com/512/1055/1055646.png", "SPECIAL"));
 
-            return ResponseEntity.ok(Map.of(
-                    "count", suggestions.size(),
-                    "members", suggestions));
+            return ResponseEntity.ok(Map.of("count", suggestions.size(), "members", suggestions));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "message", "Lỗi khi lấy danh sách gợi ý mention!"));
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Lỗi khi lấy danh sách gợi ý mention!"));
         }
     }
 

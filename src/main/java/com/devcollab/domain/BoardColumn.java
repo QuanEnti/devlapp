@@ -17,7 +17,7 @@ public class BoardColumn {
     private Project project;
 
     @Column(nullable = false, length = 100)
-    private String name; 
+    private String name;
 
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex = 0;
@@ -28,8 +28,7 @@ public class BoardColumn {
     @OneToMany(mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Task> tasks = new ArrayList<>();
 
-    public BoardColumn() {
-    }
+    public BoardColumn() {}
 
     public Long getColumnId() {
         return columnId;

@@ -265,58 +265,60 @@
           </div>
 
           <!-- 🏷️ LABELS POPUP -->
-          <div
-            id="labels-popup"
-            class="hidden fixed z-[70] bg-white border border-gray-300 rounded-lg shadow-lg w-80 p-3"
-          >
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="font-semibold text-gray-800 text-sm">Labels</h3>
+          <div id="labels-popup" class="hidden fixed z-[70] labels-popup">
+            <div class="labels-popup__header">
+              <h3 class="labels-popup__title">Labels</h3>
               <button
                 id="close-labels-btn"
-                class="text-gray-500 hover:text-gray-700 text-lg"
+                class="labels-popup__close"
+                aria-label="Close labels popup"
               >
                 ×
               </button>
             </div>
 
-            <input
-              id="search-label-input"
-              type="text"
-              placeholder="Search labels..."
-              class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400"
-            />
+            <div class="labels-popup__search-wrapper">
+              <input
+                id="search-label-input"
+                type="text"
+                placeholder="Search labels..."
+                class="labels-popup__search"
+                autocomplete="off"
+              />
+            </div>
 
-            <div
-              id="labels-list"
-              class="space-y-2 max-h-[300px] overflow-y-auto"
-            ></div>
+            <div id="labels-list" class="labels-popup__list"></div>
 
             <button
               id="create-label-btn"
-              class="mt-3 w-full text-center border border-gray-300 hover:bg-gray-50 text-sm rounded-md py-2"
+              class="labels-popup__create"
+              type="button"
             >
               + Create a new label
             </button>
           </div>
 
           <!-- 🆕 CREATE LABEL POPUP -->
-          <div
-            id="create-label-popup"
-            class="hidden fixed z-[80] bg-white border border-gray-300 rounded-lg shadow-xl w-96 p-4"
-          >
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold text-gray-800 text-sm">Create label</h3>
+          <div id="create-label-popup" class="hidden fixed z-[80] label-editor">
+            <div class="label-editor__header">
+              <button
+                id="create-label-back"
+                type="button"
+                class="label-editor__back"
+                aria-label="Back to labels"
+              >
+                ←
+              </button>
+              <h3>Create label</h3>
               <button
                 id="close-create-label-btn"
-                class="text-gray-500 hover:text-gray-700 text-lg"
+                class="label-editor__close"
+                aria-label="Close create label popup"
               >
                 ×
               </button>
             </div>
-            <div
-              id="label-preview"
-              class="w-full h-8 rounded-md mb-3 border border-gray-300 flex items-center justify-center text-sm font-semibold text-white"
-            >
+            <div id="label-preview" class="label-editor__preview">
               New Label
             </div>
 
@@ -324,24 +326,25 @@
               id="new-label-name"
               type="text"
               placeholder="Title"
-              class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400"
+              class="label-editor__input"
+              autocomplete="off"
             />
 
-            <label class="text-sm text-gray-700 mb-1 block"
-              >Select a color</label
-            >
-            <div id="color-grid" class="grid grid-cols-8 gap-2 mb-3"></div>
+            <label class="label-editor__label">Select a color</label>
+            <div id="color-grid" class="label-editor__grid"></div>
 
-            <div class="flex items-center justify-between">
+            <div class="label-editor__actions">
               <button
                 id="remove-color-btn"
-                class="text-gray-600 hover:text-red-600 text-sm"
+                class="label-editor__link"
+                type="button"
               >
                 Remove color
               </button>
               <button
                 id="create-label-confirm"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium"
+                class="label-editor__primary"
+                type="button"
               >
                 Create
               </button>
@@ -350,26 +353,32 @@
           <!-- ✏️ EDIT LABEL POPUP -->
           <div
             id="edit-label-popup-wrapper"
-            class="hidden fixed inset-0 z-[90] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            class="hidden fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
           >
             <div
               id="edit-label-popup"
-              class="bg-white border border-gray-300 rounded-lg shadow-xl w-96 p-4 animate-[fadeIn_0.15s_ease-out]"
+              class="label-editor animate-[fadeIn_0.15s_ease-out]"
             >
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="font-semibold text-gray-800 text-sm">Edit label</h3>
+              <div class="label-editor__header">
                 <button
-                  onclick="closeEditLabelPopup()"
-                  class="text-gray-500 hover:text-gray-700 text-lg"
+                  id="edit-label-back"
+                  type="button"
+                  class="label-editor__back"
+                  aria-label="Back to labels"
+                >
+                  ←
+                </button>
+                <h3>Edit label</h3>
+                <button
+                  onclick="closeEditLabelPopup(event)"
+                  class="label-editor__close"
+                  aria-label="Close edit label popup"
                 >
                   ×
                 </button>
               </div>
 
-              <div
-                id="edit-label-preview"
-                class="w-full h-8 rounded-md mb-3 flex items-center justify-center text-sm font-semibold text-white"
-              >
+              <div id="edit-label-preview" class="label-editor__preview">
                 New
               </div>
 
@@ -377,39 +386,36 @@
                 id="edit-label-name"
                 type="text"
                 placeholder="Title"
-                class="w-full border border-gray-300 rounded-md p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-400"
+                class="label-editor__input"
               />
 
-              <label class="text-sm text-gray-700 mb-1 block"
-                >Select a color</label
-              >
-              <div
-                id="edit-color-grid"
-                class="grid grid-cols-8 gap-2 mb-3"
-              ></div>
+              <label class="label-editor__label">Select a color</label>
+              <div id="edit-color-grid" class="label-editor__grid"></div>
 
-              <div class="flex items-center justify-between mb-3">
+              <div class="label-editor__actions">
                 <button
                   onclick="removeEditColor()"
-                  class="text-gray-600 hover:text-red-600 text-sm"
+                  class="label-editor__link"
+                  type="button"
                 >
-                  ✕ Remove color
+                  Remove color
                 </button>
-              </div>
-
-              <div class="flex justify-between">
-                <button
-                  onclick="saveEditedLabel()"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium"
-                >
-                  Save
-                </button>
-                <button
-                  onclick="deleteEditedLabel()"
-                  class="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-medium"
-                >
-                  Delete
-                </button>
+                <div class="label-editor__action-group">
+                  <button
+                    onclick="saveEditedLabel()"
+                    class="label-editor__primary"
+                    type="button"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onclick="deleteEditedLabel()"
+                    class="label-editor__danger"
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           </div>

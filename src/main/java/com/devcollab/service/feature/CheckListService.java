@@ -2,16 +2,15 @@ package com.devcollab.service.feature;
 
 import com.devcollab.domain.CheckList;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 public interface CheckListService {
 
-    List<CheckList> getChecklistByTask(Long taskId);
+    List<CheckList> getByTask(Long taskId);
 
-    CheckList createChecklistItem(Long taskId, String itemText);
+    CheckList addItem(Long taskId, String item);
 
-    CheckList toggleChecklistItem(Long checklistId, boolean isDone);
+    CheckList toggleItem(Long id, boolean done);
 
-    CheckList updateChecklistItem(Long checklistId, String newText);
-
-    void deleteChecklistItem(Long checklistId);
+    void deleteItem(Long id);
 }

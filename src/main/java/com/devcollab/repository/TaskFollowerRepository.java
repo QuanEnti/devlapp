@@ -15,7 +15,8 @@ public interface TaskFollowerRepository extends JpaRepository<TaskFollower, Task
 
     boolean existsByTask_TaskIdAndUser_UserId(Long taskId, Long userId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM TaskFollower f WHERE f.task.taskId = :taskId AND f.user.userId = :userId")
     void deleteByTaskAndUser(@Param("taskId") Long taskId, @Param("userId") Long userId);
+
 }

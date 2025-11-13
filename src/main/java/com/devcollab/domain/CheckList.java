@@ -1,5 +1,6 @@
 package com.devcollab.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,9 +12,11 @@ public class CheckList {
     @Column(name = "checklist_id")
     private Long checklistId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
+    @JsonIgnore
     private Task task;
+
 
     @Column(nullable = false, length = 500)
     private String item;
@@ -24,8 +27,7 @@ public class CheckList {
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex = 0;
 
-    public CheckList() {
-    }
+    public CheckList() {}
 
     public Long getChecklistId() {
         return checklistId;

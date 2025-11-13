@@ -15,6 +15,7 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -38,111 +40,118 @@ public class AttachmentRestController {
     private final AttachmentService attachmentService;
     private final AuthService authService;
 
-    // 🧾 1️⃣ Lấy danh sách attachment (file + link)
+    // 🧾 1️⃣ Lấy danh sách attachment
     @GetMapping
     public ResponseEntity<List<AttachmentDTO>> getAttachments(@PathVariable Long taskId) {
         return ResponseEntity.ok(attachmentService.getAttachmentDTOsByTask(taskId));
     }
 
-    // 📤 2️⃣ Upload file thực
+
+    // 📤 2️⃣ Upload file vào task
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<AttachmentDTO> uploadAttachment(
-            @PathVariable Long taskId,
-            @RequestParam("file") MultipartFile file,
-            Authentication auth) throws IOException {
+    public ResponseEntity<AttachmentDTO> uploadAttachment(@PathVariable Long taskId,
+            @RequestParam("file") MultipartFile file, Authentication auth) throws IOException {
 
         User uploader = authService.getCurrentUserEntity(auth);
+
         Attachment saved = attachmentService.uploadAttachment(taskId, file, uploader);
 
-        AttachmentDTO dto = new AttachmentDTO(
-                saved.getAttachmentId(),
-                saved.getFileName(),
-                saved.getFileUrl(),
-                saved.getMimeType(),
-                saved.getFileSize(),
-                saved.getUploadedAt(),
-                new AttachmentMemberInfo(
-                        uploader.getUserId(),
-                        uploader.getName(),
+        AttachmentDTO dto = new AttachmentDTO(saved.getAttachmentId(), saved.getFileName(),
+                saved.getFileUrl(), saved.getMimeType(), saved.getFileSize(), saved.getUploadedAt(),
+                new AttachmentMemberInfo(uploader.getUserId(), uploader.getName(),
                         uploader.getAvatarUrl()));
 
-        log.info("📎 Uploaded attachment '{}' for task {} by {}", saved.getFileName(), taskId, uploader.getEmail());
+        log.info("📎 Uploaded attachment '{}' for task {} by {}", saved.getFileName(), taskId,
+                uploader.getEmail());
+
         return ResponseEntity.ok(dto);
     }
 
-    // 🔗 3️⃣ Gắn link ngoài (Figma, Drive, Docs,...)
+
+    // 🔗 3️⃣ Gắn link
     @PostMapping(value = "/link", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AttachmentDTO> attachLink(
-            @PathVariable Long taskId,
-            @RequestBody AttachmentDTO dto,
-            Authentication auth) {
+    public ResponseEntity<AttachmentDTO> attachLink(@PathVariable Long taskId,
+            @RequestBody AttachmentDTO dto, Authentication auth) {
 
         User uploader = authService.getCurrentUserEntity(auth);
-        Attachment saved = attachmentService.attachLink(taskId, dto.getFileName(), dto.getFileUrl(), uploader);
 
-        AttachmentDTO result = new AttachmentDTO(
-                saved.getAttachmentId(),
-                saved.getFileName(),
-                saved.getFileUrl(),
-                saved.getMimeType(),
-                saved.getFileSize(),
-                saved.getUploadedAt(),
-                new AttachmentMemberInfo(
-                        uploader.getUserId(),
-                        uploader.getName(),
+        Attachment saved =
+                attachmentService.attachLink(taskId, dto.getFileName(), dto.getFileUrl(), uploader);
+
+        AttachmentDTO result = new AttachmentDTO(saved.getAttachmentId(), saved.getFileName(),
+                saved.getFileUrl(), saved.getMimeType(), saved.getFileSize(), saved.getUploadedAt(),
+                new AttachmentMemberInfo(uploader.getUserId(), uploader.getName(),
                         uploader.getAvatarUrl()));
 
-        log.info("🔗 Attached external link '{}' to task {} by {}", saved.getFileUrl(), taskId, uploader.getEmail());
+        log.info("🔗 Attached link '{}' for task {} by {}", saved.getFileUrl(), taskId,
+                uploader.getEmail());
+
         return ResponseEntity.ok(result);
     }
 
-    // 🗑️ 4️⃣ Xóa attachment
     @DeleteMapping("/{attachmentId}")
-    public ResponseEntity<Void> deleteAttachment(@PathVariable Long attachmentId) {
-        attachmentService.deleteAttachment(attachmentId);
-        log.info("🗑️ Deleted attachment id={}", attachmentId);
-        return ResponseEntity.noContent().build();
-    }
+    public ResponseEntity<?> deleteAttachment(@PathVariable Long taskId,
+            @PathVariable Long attachmentId, Authentication auth) {
 
-   @GetMapping("/download/**")
-public ResponseEntity<Resource> downloadFile(HttpServletRequest request) {
-    try {
-        // ✅ Lấy phần path thực sự (sau /download/)
-        String fullPath = (String) request.getAttribute(
-                HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-        String bestMatchPattern = (String) request.getAttribute(
-                HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        User actor = authService.getCurrentUserEntity(auth);
 
-        // Ví dụ: /api/tasks/5/attachments/download/1730182838291_Token_ngắn_hạn_(ví_dụ_15_phút)_+_re.txt
-        String filename = new AntPathMatcher().extractPathWithinPattern(bestMatchPattern, fullPath);
+        try {
+            attachmentService.deleteAttachment(attachmentId, actor.getEmail());
+            log.info("🗑️ Attachment {} deleted by {}", attachmentId, actor.getEmail());
+            return ResponseEntity.noContent().build();
 
-        // ✅ Decode UTF-8 để tránh lỗi Unicode
-        String decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8);
+        } catch (AccessDeniedException ex) {
 
-        Path filePath = Paths.get(System.getProperty("user.dir"), "uploads", "attachments")
-                .resolve(decodedFilename)
-                .normalize();
+            return ResponseEntity.status(403)
+                    .body(Map.of("message", "Bạn không có quyền xóa file/link này"));
 
-        if (!Files.exists(filePath)) {
-            log.warn("⚠️ File not found: {}", filePath);
-            return ResponseEntity.notFound().build();
+        } catch (Exception ex) {
+
+            log.error("❌ Error deleting attachment: {}", ex.getMessage(), ex);
+
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Lỗi server khi xóa file/link"));
         }
-
-        Resource resource = new UrlResource(filePath.toUri());
-        String contentType = Files.probeContentType(filePath);
-        if (contentType == null) contentType = "application/octet-stream";
-
-        log.info("📥 Serving file: {}", decodedFilename);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
-
-    } catch (Exception e) {
-        log.error("❌ Error serving file: {}", e.getMessage(), e);
-        return ResponseEntity.internalServerError().build();
     }
-}
 
+
+
+    // 📥 5️⃣ Download file vật lý
+    @GetMapping("/download/**")
+    public ResponseEntity<Resource> downloadFile(HttpServletRequest request) {
+
+        try {
+            String fullPath = (String) request
+                    .getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+            String bestPattern =
+                    (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+
+            String filename = new AntPathMatcher().extractPathWithinPattern(bestPattern, fullPath);
+
+            String decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8);
+
+            Path filePath = Paths.get(System.getProperty("user.dir"), "uploads", "attachments")
+                    .resolve(decodedFilename).normalize();
+
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Resource resource = new UrlResource(filePath.toUri());
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null)
+                contentType = "application/octet-stream";
+
+            log.info("📥 Serving file: {}", decodedFilename);
+
+            return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("❌ Error serving file: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

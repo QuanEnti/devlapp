@@ -64,16 +64,18 @@ export function safeStop(id) {
 
 // Sinh màu ngẫu nhiên ổn định theo ID (dùng cho labels, avatars)
 export function getColorForId(id) {
-  if (!id) return "#9CA3AF"; // gray fallback
+  if (!id) return "#10b981"; // emerald-500 fallback
   const colors = [
-    "#ef4444",
-    "#f97316",
-    "#eab308",
-    "#22c55e",
-    "#3b82f6",
-    "#a855f7",
-    "#ec4899",
-    "#14b8a6",
+    "#ef4444", // red-500
+    "#f97316", // orange-500
+    "#eab308", // yellow-500
+    "#22c55e", // green-500
+    "#10b981", // emerald-500 (thêm màu xanh lá đậm)
+    "#3b82f6", // blue-500
+    "#a855f7", // purple-500
+    "#ec4899", // pink-500
+    "#14b8a6", // teal-500
+    "#06b6d4", // cyan-500
   ];
   let hash = 0;
   for (let i = 0; i < id.length; i++)

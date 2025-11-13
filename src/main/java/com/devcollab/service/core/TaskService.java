@@ -32,7 +32,7 @@ public interface TaskService {
     List<Task> getTasksByProjectAndMember(Long projectId, String email);
 
     Task quickCreate(String title, Long columnId, Long projectId, Long creatorId);
-    
+
     Task getById(Long id);
 
     TaskDTO updateTaskDescription(Long id, String description);
@@ -40,13 +40,15 @@ public interface TaskService {
     TaskDTO updateDates(Long taskId, TaskDTO dto);
 
     TaskDTO moveTask(Long taskId, MoveTaskRequest req);
-    
+
     TaskDTO getByIdAsDTO(Long id);
 
     boolean archiveTask(Long taskId);
-    
+
     boolean restoreTask(Long taskId);
-    
+
     TaskDTO markComplete(Long taskId, Long userId);
+
+    void removeDeadline(Long taskId);
 
 }

@@ -15,13 +15,13 @@ public interface NotificationService {
      * Gửi thông báo đơn giản (giống Trello).
      * 
      * @param receiver Người nhận thông báo
-     * @param type     Loại thông báo (ví dụ: TASK_MEMBER_ADDED, PROJECT_CREATED,
-     *                 ...)
-     * @param message  Nội dung thông báo chính
-     * @param link     Liên kết đến trang chi tiết
+     * @param type Loại thông báo (ví dụ: TASK_MEMBER_ADDED, PROJECT_CREATED, ...)
+     * @param message Nội dung thông báo chính
+     * @param link Liên kết đến trang chi tiết
      */
-void createNotification(User receiver, String type, Long refId,
-            String title, String message, String link, User sender) ;
+    void createNotification(User receiver, String type, Long refId, String title, String message,
+            String link, User sender);
+
     // ======================================================
     // 🗂️ Project-level notifications
     // ======================================================
@@ -35,21 +35,21 @@ void createNotification(User receiver, String type, Long refId,
     // 🧩 Task-level notifications
     // ======================================================
     /**
-     * Gửi thông báo cho các sự kiện trong Task (assign, comment, due soon...).
-     * Nếu có actor (người thực hiện), hệ thống sẽ tự sinh message:
-     * "{actor.getName()} đã thêm bạn vào công việc..."
+     * Gửi thông báo cho các sự kiện trong Task (assign, comment, due soon...). Nếu có actor (người
+     * thực hiện), hệ thống sẽ tự sinh message: "{actor.getName()} đã thêm bạn vào công việc..."
      *
-     * @param task      Task liên quan
-     * @param actor     Người thực hiện hành động (có thể null → hệ thống)
+     * @param task Task liên quan
+     * @param actor Người thực hiện hành động (có thể null → hệ thống)
      * @param eventType Loại sự kiện (TASK_MEMBER_ADDED, TASK_COMMENTED, ...)
-     * @param message   Nội dung mô tả (tùy chọn)
+     * @param message Nội dung mô tả (tùy chọn)
      */
     void notifyTaskEvent(Task task, User actor, String eventType, String message);
 
     /**
      * Gửi thông báo Task cho 1 người cụ thể (ví dụ người được thêm/gỡ).
      */
-    void notifyTaskEvent(Task task, User actor, String eventType, String message, User specificReceiver);
+    void notifyTaskEvent(Task task, User actor, String eventType, String message,
+            User specificReceiver);
 
     // ======================================================
     // 👤 User-level notifications
@@ -74,7 +74,15 @@ void createNotification(User receiver, String type, Long refId,
     void notifyMemberRoleUpdated(Project project, User target, User actor, String newRole);
 
     void notifyPaymentSuccess(User user, PaymentOrder order);
+
     void notifyMentions(Task task, User actor, List<CommentDTO> mentions);
+
     void notifyProjectLinkRegenerated(Project project);
+
+    void notifyJoinRequestToPM(Project project, User requester);
+
+    void notifyJoinRequestApproved(Project project, User requester, String reviewerEmail);
+
+    void notifyJoinRequestRejected(Project project, User requester, String reviewerEmail);
 
 }

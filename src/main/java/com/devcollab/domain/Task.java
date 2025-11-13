@@ -20,7 +20,9 @@ public class Task {
 
     @ManyToOne
     @JoinColumn(name = "project_id", nullable = false)
+    @JsonIgnoreProperties({"members", "tasks", "sprints"})
     private Project project;
+
 
     @ManyToOne
     @JoinColumn(name = "sprint_id")
@@ -45,10 +47,10 @@ public class Task {
     private User createdBy;
 
     @Column(length = 16, nullable = false)
-    private String priority = "MEDIUM"; 
+    private String priority = "MEDIUM";
 
     @Column(length = 16, nullable = false)
-    private String status = "OPEN"; 
+    private String status = "OPEN";
 
     @Column
     private LocalDateTime deadline;
@@ -69,13 +71,13 @@ public class Task {
     private LocalDateTime startDate;
 
     @Column(length = 20)
-    private String recurring = "Never"; 
+    private String recurring = "Never";
 
     @Column(length = 50)
-    private String reminder = "Never"; 
+    private String reminder = "Never";
 
     @Column(nullable = false)
-    private boolean archived = false; 
+    private boolean archived = false;
     @Column(name = "last_remind_at")
     private LocalDateTime lastRemindAt;
 
@@ -83,20 +85,22 @@ public class Task {
     private String lastReminderStage;
 
     @ManyToMany
-    @JoinTable(
-        name = "[TaskLabel]", 
-        joinColumns = @JoinColumn(name = "task_id", nullable = false),
-        inverseJoinColumns = @JoinColumn(name = "label_id", nullable = false)
-    )
-    @JsonIgnoreProperties("tasks") 
+    @JoinTable(name = "[TaskLabel]", joinColumns = @JoinColumn(name = "task_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "label_id", nullable = false))
+    @JsonIgnoreProperties("tasks")
     private Set<Label> labels = new HashSet<>();
 
-    
-     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
     private List<TaskFollower> followers = new ArrayList<>();
 
-    public Task() {
-    }
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"task"})
+    private List<CheckList> checklists = new ArrayList<>();
+
+    public Task() {}
 
     public Long getTaskId() {
         return taskId;
@@ -225,25 +229,31 @@ public class Task {
     public void setLabels(Set<Label> labels) {
         this.labels = labels;
     }
+
     public LocalDateTime getStartDate() {
         return startDate;
     }
+
     public void setStartDate(LocalDateTime startDate) {
         this.startDate = startDate;
     }
+
     public String getRecurring() {
         return recurring;
     }
+
     public void setRecurring(String recurring) {
         this.recurring = recurring;
     }
+
     public String getReminder() {
         return reminder;
     }
+
     public void setReminder(String reminder) {
         this.reminder = reminder;
     }
-    
+
     public boolean isArchived() {
         return archived;
     }
@@ -275,6 +285,6 @@ public class Task {
     public void setLastReminderStage(String lastReminderStage) {
         this.lastReminderStage = lastReminderStage;
     }
-    
-    
+
+
 }

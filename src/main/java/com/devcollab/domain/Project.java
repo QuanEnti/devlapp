@@ -73,9 +73,11 @@ public class Project {
 
     @Column(name = "invite_max_uses")
     private Integer inviteMaxUses = 10; // giới hạn số lần sử dụng link
+    // ai là người bật / tạo link mời gần nhất
+    @Column(name = "invite_created_by", length = 150)
+    private String inviteCreatedBy; // lưu email hoặc userId người tạo link
 
-    public Project() {
-    }
+    public Project() {}
 
     public Long getProjectId() {
         return projectId;
@@ -244,4 +246,13 @@ public class Project {
     public void setInviteMaxUses(Integer inviteMaxUses) {
         this.inviteMaxUses = inviteMaxUses;
     }
+
+    public String getInviteCreatedBy() {
+        return inviteCreatedBy;
+    }
+
+    public void setInviteCreatedBy(String inviteCreatedBy) {
+        this.inviteCreatedBy = inviteCreatedBy;
+    }
+
 }

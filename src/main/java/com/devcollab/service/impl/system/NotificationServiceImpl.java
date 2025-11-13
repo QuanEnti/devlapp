@@ -37,8 +37,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Transactional
     @Override
-    public void createNotification(User receiver, String type, Long refId,
-            String title, String message, String link, User sender) {
+    public void createNotification(User receiver, String type, Long refId, String title,
+            String message, String link, User sender) {
         if (receiver == null) {
             log.warn("⚠️ [Notification] Receiver is null for type: {}", type);
             return;
@@ -98,8 +98,7 @@ public class NotificationServiceImpl implements NotificationService {
                 log.info("💬 LOW (Realtime only) for {}", receiver.getEmail());
             }
 
-            log.info("✅ [Notification] Created '{}' for {} from {}",
-                    type, receiver.getEmail(),
+            log.info("✅ [Notification] Created '{}' for {} from {}", type, receiver.getEmail(),
                     sender != null ? sender.getName() : "System");
 
         } catch (Exception e) {
@@ -107,18 +106,14 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    private void sendEmail(Notification notif, User receiver,
-            String title, String message, String link, User sender) {
+    private void sendEmail(Notification notif, User receiver, String title, String message,
+            String link, User sender) {
         if (receiver.getEmail() == null || receiver.getEmail().isBlank()) {
             log.warn("⚠️ [Notification] No email address found for {}", receiver.getUserId());
             return;
         }
 
-        mailService.sendNotificationMail(
-                receiver.getEmail(),
-                title,
-                message,
-                link,
+        mailService.sendNotificationMail(receiver.getEmail(), title, message, link,
                 sender != null ? sender.getName() : "DevCollab System");
     }
 
@@ -137,10 +132,7 @@ public class NotificationServiceImpl implements NotificationService {
         if (project == null || project.getCreatedBy() == null)
             return;
 
-        createNotification(
-                project.getCreatedBy(),
-                "PROJECT_CREATED",
-                project.getProjectId(),
+        createNotification(project.getCreatedBy(), "PROJECT_CREATED", project.getProjectId(),
                 "Dự án mới: " + project.getName(),
                 "Bạn đã tạo dự án \"" + project.getName() + "\" thành công.",
                 "/view/pm/project/board?projectId=" + project.getProjectId(),
@@ -153,10 +145,7 @@ public class NotificationServiceImpl implements NotificationService {
         if (project == null || user == null)
             return;
 
-        createNotification(
-                user,
-                "MEMBER_ADDED",
-                project.getProjectId(),
+        createNotification(user, "MEMBER_ADDED", project.getProjectId(),
                 "Tham gia dự án: " + project.getName(),
                 "đã thêm bạn vào dự án \"" + project.getName() + "\".",
                 "/view/pm/project/board?projectId=" + project.getProjectId(),
@@ -180,21 +169,17 @@ public class NotificationServiceImpl implements NotificationService {
 
             User receiver = userRepository.findById(target.getUserId())
                     .orElseThrow(() -> new IllegalArgumentException("Receiver not found"));
-            User sender = (actor != null)
-                    ? userRepository.findById(actor.getUserId()).orElse(null)
+            User sender = (actor != null) ? userRepository.findById(actor.getUserId()).orElse(null)
                     : null;
 
-            createNotification(
-                    receiver,
-                    "PROJECT_MEMBER_ROLE_UPDATED",
-                    project.getProjectId(),
+            createNotification(receiver, "PROJECT_MEMBER_ROLE_UPDATED", project.getProjectId(),
                     "Cập nhật vai trò thành viên",
-                    "đã chỉ định bạn là " + formattedRole +
-                            " của dự án \"" + project.getName() + "\".",
-                    "/view/pm/project/board?projectId=" + project.getProjectId(),
-                    sender);
+                    "đã chỉ định bạn là " + formattedRole + " của dự án \"" + project.getName()
+                            + "\".",
+                    "/view/pm/project/board?projectId=" + project.getProjectId(), sender);
 
-            log.info("📨 [Notification] Sent PROJECT_MEMBER_ROLE_UPDATED to {}", receiver.getEmail());
+            log.info("📨 [Notification] Sent PROJECT_MEMBER_ROLE_UPDATED to {}",
+                    receiver.getEmail());
         } catch (Exception e) {
             log.error("❌ notifyMemberRoleUpdated(): {}", e.getMessage(), e);
         }
@@ -206,36 +191,80 @@ public class NotificationServiceImpl implements NotificationService {
         if (project == null || project.getCreatedBy() == null)
             return;
 
-        createNotification(
-                project.getCreatedBy(),
-                "PROJECT_ARCHIVED",
-                project.getProjectId(),
+        createNotification(project.getCreatedBy(), "PROJECT_ARCHIVED", project.getProjectId(),
                 "Dự án đã được lưu trữ",
                 "Dự án \"" + project.getName() + "\" hiện đã được chuyển vào lưu trữ.",
                 "/view/pm/project/board?projectId=" + project.getProjectId(),
                 project.getCreatedBy());
     }
-    
+
     @Override
     @Transactional
     public void notifyProjectLinkRegenerated(Project project) {
         if (project == null || project.getCreatedBy() == null)
             return;
 
-        String message = "Hệ thống đã tự tạo một liên kết mời mới cho dự án \""
-                + project.getName()
+        String message = "Hệ thống đã tự tạo một liên kết mời mới cho dự án \"" + project.getName()
                 + "\" do liên kết cũ đã hết hạn hoặc đạt giới hạn.";
 
-        createNotification(
-                project.getCreatedBy(),
-                "PROJECT_LINK_REGENERATED",
-                project.getProjectId(),
-                "Liên kết mời dự án được làm mới",
-                message,
+        createNotification(project.getCreatedBy(), "PROJECT_LINK_REGENERATED",
+                project.getProjectId(), "Liên kết mời dự án được làm mới", message,
                 "/view/pm/project/board?projectId=" + project.getProjectId(),
                 project.getCreatedBy());
 
-        log.info("📨 [Notification] Sent PROJECT_LINK_REGENERATED to {}", project.getCreatedBy().getEmail());
+        log.info("📨 [Notification] Sent PROJECT_LINK_REGENERATED to {}",
+                project.getCreatedBy().getEmail());
+    }
+    // ============================================================================
+    // 📨 JOIN REQUEST NOTIFICATIONS
+    // ============================================================================
+
+    @Override
+    @Transactional
+    public void notifyJoinRequestToPM(Project project, User requester) {
+        if (project == null || requester == null)
+            return;
+
+        // Gửi cho tất cả PM/OWNER/ADMIN của project
+        project.getMembers().stream()
+                .filter(m -> List.of("PM", "OWNER", "ADMIN").contains(m.getRoleInProject()))
+                .forEach(pm -> createNotification(pm.getUser(), "JOIN_REQUEST_RECEIVED",
+                        project.getProjectId(), "Yêu cầu tham gia dự án",
+                        requester.getName() + " (" + requester.getEmail()
+                                + ") muốn tham gia dự án \"" + project.getName() + "\".",
+                        "/view/pm/project/members?projectId=" + project.getProjectId(), requester));
+
+        log.info("📨 [Notification] Sent JOIN_REQUEST_RECEIVED for project {}", project.getName());
+    }
+
+    @Override
+    @Transactional
+    public void notifyJoinRequestApproved(Project project, User requester, String reviewerEmail) {
+        if (project == null || requester == null)
+            return;
+
+        createNotification(requester, "JOIN_REQUEST_APPROVED", project.getProjectId(),
+                "Yêu cầu tham gia được chấp thuận",
+                "PM (" + reviewerEmail + ") đã chấp thuận cho bạn tham gia dự án \""
+                        + project.getName() + "\".",
+                "/view/pm/project/board?projectId=" + project.getProjectId(),
+                project.getCreatedBy());
+
+        log.info("✅ [Notification] JOIN_REQUEST_APPROVED for {}", requester.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public void notifyJoinRequestRejected(Project project, User requester, String reviewerEmail) {
+        if (project == null || requester == null)
+            return;
+
+        createNotification(requester, "JOIN_REQUEST_REJECTED", project.getProjectId(),
+                "Yêu cầu tham gia bị từ chối", "PM (" + reviewerEmail
+                        + ") đã từ chối yêu cầu tham gia dự án \"" + project.getName() + "\".",
+                null, project.getCreatedBy());
+
+        log.info("❌ [Notification] JOIN_REQUEST_REJECTED for {}", requester.getEmail());
     }
 
     @Override
@@ -246,14 +275,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void notifyTaskEvent(Task task, User actor, String eventType, String message, User specificReceiver) {
+    public void notifyTaskEvent(Task task, User actor, String eventType, String message,
+            User specificReceiver) {
         if (task == null) {
             log.warn("⚠️ notifyTaskEvent(): Task is null");
             return;
         }
 
-        List<String> allowedEvents = List.of(
-                "TASK_MEMBER_ADDED", "TASK_MEMBER_REMOVED",
+        List<String> allowedEvents = List.of("TASK_MEMBER_ADDED", "TASK_MEMBER_REMOVED",
                 "TASK_COMMENTED", "TASK_DUE_SOON", "TASK_FOLLOWED");
 
         if (!allowedEvents.contains(eventType))
@@ -262,26 +291,29 @@ public class NotificationServiceImpl implements NotificationService {
         try {
             Task managed = taskRepository.findById(task.getTaskId())
                     .orElseThrow(() -> new IllegalArgumentException("Task not found"));
-            String link = "/projects/" + managed.getProject().getProjectId()
-                    + "/tasks/" + managed.getTaskId();
-            String actorName = (actor != null && actor.getName() != null) ? actor.getName() : "Hệ thống";
+            String link = "/projects/" + managed.getProject().getProjectId() + "/tasks/"
+                    + managed.getTaskId();
+            String actorName =
+                    (actor != null && actor.getName() != null) ? actor.getName() : "Hệ thống";
 
             if (specificReceiver != null) {
-                String msg = buildTaskMessage(eventType, actorName, managed.getTitle(), message, true);
+                String msg =
+                        buildTaskMessage(eventType, actorName, managed.getTitle(), message, true);
                 createNotification(specificReceiver, eventType, managed.getTaskId(),
                         mapTitle(eventType), msg, link, actor);
                 return;
             }
 
-            List<User> receivers = managed.getFollowers().stream()
-                    .map(TaskFollower::getUser)
-                    .filter(u -> u != null && (actor == null || !u.getUserId().equals(actor.getUserId())))
+            List<User> receivers = managed.getFollowers().stream().map(TaskFollower::getUser)
+                    .filter(u -> u != null
+                            && (actor == null || !u.getUserId().equals(actor.getUserId())))
                     .distinct().toList();
 
             for (User receiver : receivers) {
-                String msg = buildTaskMessage(eventType, actorName, managed.getTitle(), message, false);
-                createNotification(receiver, eventType, managed.getTaskId(),
-                        mapTitle(eventType), msg, link, actor);
+                String msg =
+                        buildTaskMessage(eventType, actorName, managed.getTitle(), message, false);
+                createNotification(receiver, eventType, managed.getTaskId(), mapTitle(eventType),
+                        msg, link, actor);
             }
 
             log.info("✅ [Notification] Sent '{}' to {} follower(s)", eventType, receivers.size());
@@ -290,8 +322,8 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    private String buildTaskMessage(String eventType, String actorName, String taskTitle, String custom,
-            boolean direct) {
+    private String buildTaskMessage(String eventType, String actorName, String taskTitle,
+            String custom, boolean direct) {
         return switch (eventType) {
             case "TASK_MEMBER_ADDED" -> direct
                     ? actorName + " đã thêm bạn vào công việc \"" + taskTitle + "\""
@@ -299,7 +331,8 @@ public class NotificationServiceImpl implements NotificationService {
             case "TASK_MEMBER_REMOVED" -> direct
                     ? actorName + " đã xóa bạn khỏi công việc \"" + taskTitle + "\""
                     : actorName + " đã xóa một thành viên khỏi \"" + taskTitle + "\"";
-            case "TASK_COMMENTED" -> actorName + " đã bình luận: \"" + custom + "\" trong \"" + taskTitle + "\"";
+            case "TASK_COMMENTED" -> actorName + " đã bình luận: \"" + custom + "\" trong \""
+                    + taskTitle + "\"";
             case "TASK_DUE_SOON" -> "⏰ Công việc \"" + taskTitle + "\" sắp đến hạn!";
             case "TASK_FOLLOWED" -> actorName + " đang theo dõi công việc \"" + taskTitle + "\"";
             default -> "Công việc \"" + taskTitle + "\" có cập nhật mới.";
@@ -316,17 +349,14 @@ public class NotificationServiceImpl implements NotificationService {
 
         try {
             Project project = task.getProject();
-            String actorName = (actor != null && actor.getName() != null) ? actor.getName() : "Hệ thống";
+            String actorName =
+                    (actor != null && actor.getName() != null) ? actor.getName() : "Hệ thống";
             String taskLink = "/view/pm/task/detail?taskId=" + task.getTaskId();
             String projectLink = "/view/pm/project/board?projectId=" + project.getProjectId();
 
-            List<String> emails = mentions.stream()
-                    .map(CommentDTO::getUserEmail)
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(s -> !s.isBlank())
-                    .distinct()
-                    .toList();
+            List<String> emails =
+                    mentions.stream().map(CommentDTO::getUserEmail).filter(Objects::nonNull)
+                            .map(String::trim).filter(s -> !s.isBlank()).distinct().toList();
 
             log.info("💬 [Mention] Processing mentions for task {}: {}", task.getTaskId(), emails);
 
@@ -345,13 +375,14 @@ public class NotificationServiceImpl implements NotificationService {
                         });
                     }
 
-                    cardMembers.removeIf(u -> actor != null && u.getUserId().equals(actor.getUserId()));
+                    cardMembers.removeIf(
+                            u -> actor != null && u.getUserId().equals(actor.getUserId()));
 
                     for (User receiver : cardMembers) {
                         createNotification(receiver, "TASK_COMMENT_MENTION", task.getTaskId(),
                                 "Nhắc đến trong thẻ",
-                                " đã nhắc đến bạn trong thẻ \"" + task.getTitle() + "\".",
-                                taskLink, actor);
+                                " đã nhắc đến bạn trong thẻ \"" + task.getTitle() + "\".", taskLink,
+                                actor);
                     }
 
                     log.info("📨 [Mention] Sent @card to {} member(s)", cardMembers.size());
@@ -360,14 +391,13 @@ public class NotificationServiceImpl implements NotificationService {
 
                 if ("@board".equalsIgnoreCase(email)) {
                     Set<User> boardMembers = project.getMembers().stream()
-                            .map(ProjectMember::getUser)
-                            .filter(Objects::nonNull)
+                            .map(ProjectMember::getUser).filter(Objects::nonNull)
                             .filter(u -> actor == null || !u.getUserId().equals(actor.getUserId()))
                             .collect(Collectors.toSet());
 
                     for (User receiver : boardMembers) {
-                        createNotification(receiver, "PROJECT_COMMENT_MENTION", project.getProjectId(),
-                                "Nhắc đến trong bảng dự án",
+                        createNotification(receiver, "PROJECT_COMMENT_MENTION",
+                                project.getProjectId(), "Nhắc đến trong bảng dự án",
                                 " đã nhắc đến bạn trong dự án \"" + project.getName() + "\".",
                                 projectLink, actor);
                     }
@@ -382,17 +412,14 @@ public class NotificationServiceImpl implements NotificationService {
 
                     createNotification(receiver, "TASK_COMMENT_MENTION", task.getTaskId(),
                             "Bạn được nhắc đến",
-                            " đã nhắc đến bạn trong thẻ \"" + task.getTitle() + "\".",
-                            taskLink, actor);
+                            " đã nhắc đến bạn trong thẻ \"" + task.getTitle() + "\".", taskLink,
+                            actor);
                     log.info("📨 [Mention] Sent direct mention to {}", email);
 
                 }, () -> log.debug("⚠️ [Mention] Skipped unknown email: {}", email));
             }
 
-            activityService.log(
-                    "MENTION",
-                    task.getTaskId(),
-                    "NOTIFY_MENTIONS",
+            activityService.log("MENTION", task.getTaskId(), "NOTIFY_MENTIONS",
                     "Đã gửi thông báo mention cho " + emails.size() + " mục.");
 
         } catch (Exception e) {
@@ -405,9 +432,8 @@ public class NotificationServiceImpl implements NotificationService {
     public void notifyChangeProfile(User user) {
         if (user == null)
             return;
-        createNotification(user, "PROFILE_UPDATED", user.getUserId(),
-                "Cập nhật hồ sơ", "Thông tin tài khoản của bạn đã được thay đổi.",
-                "/profile", user);
+        createNotification(user, "PROFILE_UPDATED", user.getUserId(), "Cập nhật hồ sơ",
+                "Thông tin tài khoản của bạn đã được thay đổi.", "/profile", user);
     }
 
     @Override
@@ -415,11 +441,10 @@ public class NotificationServiceImpl implements NotificationService {
     public void notifyChangePassword(User user) {
         if (user == null)
             return;
-        createNotification(user, "PASSWORD_CHANGED", user.getUserId(),
-                "Đổi mật khẩu", "Mật khẩu tài khoản của bạn đã được cập nhật thành công.",
-                "/security", user);
+        createNotification(user, "PASSWORD_CHANGED", user.getUserId(), "Đổi mật khẩu",
+                "Mật khẩu tài khoản của bạn đã được cập nhật thành công.", "/security", user);
     }
-    
+
     @Override
     public void notifyPaymentSuccess(User user, PaymentOrder order) {
         if (user == null || order == null)
@@ -443,8 +468,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional(readOnly = true)
     public int countUnread(String email) {
         return userRepository.findByEmail(email)
-                .map(u -> notificationRepository.countUnreadByUserId(u.getUserId()))
-                .orElse(0);
+                .map(u -> notificationRepository.countUnreadByUserId(u.getUserId())).orElse(0);
     }
 
     @Override
@@ -458,29 +482,26 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public boolean markAsRead(Long id, String email) {
-        return notificationRepository.findById(id)
-                .map(n -> {
-                    if (n.getUser() == null || n.getUser().getEmail() == null)
-                        return false;
-                    if (!n.getUser().getEmail().equalsIgnoreCase(email))
-                        return false;
+        return notificationRepository.findById(id).map(n -> {
+            if (n.getUser() == null || n.getUser().getEmail() == null)
+                return false;
+            if (!n.getUser().getEmail().equalsIgnoreCase(email))
+                return false;
 
-                    if (!"read".equalsIgnoreCase(n.getStatus())) {
-                        n.setStatus("read");
-                        n.setReadAt(LocalDateTime.now());
-                        notificationRepository.save(n);
-                    }
-                    return true;
-                })
-                .orElse(false);
+            if (!"read".equalsIgnoreCase(n.getStatus())) {
+                n.setStatus("read");
+                n.setReadAt(LocalDateTime.now());
+                notificationRepository.save(n);
+            }
+            return true;
+        }).orElse(false);
     }
 
     @Override
     @Transactional
     public int markAllAsRead(String email) {
         return userRepository.findByEmail(email)
-                .map(u -> notificationRepository.markAllAsReadByUserId(u.getUserId()))
-                .orElse(0);
+                .map(u -> notificationRepository.markAllAsReadByUserId(u.getUserId())).orElse(0);
     }
 
     @Override
@@ -488,55 +509,49 @@ public class NotificationServiceImpl implements NotificationService {
     public void deleteNotification(Long id) {
         notificationRepository.deleteById(id);
     }
-    
+
     private String determinePriority(String type) {
         if (type == null)
             return "LOW";
 
         return switch (type.toUpperCase()) {
-            case "TASK_COMMENT_MENTION", "PROJECT_COMMENT_MENTION",
-                    "MEMBER_ADDED", "TASK_MEMBER_ADDED",
-                    "PROJECT_MEMBER_ROLE_UPDATED",
-                    "PASSWORD_CHANGED", "PAYMENT_SUCCESS",
-                    "PROJECT_LINK_REGENERATED",
-                    "TASK_DUE_SOON" -> 
-                "HIGH";
-            case "TASK_COMMENTED", "TASK_MEMBER_REMOVED",
-                    "PROJECT_CREATED", "PROJECT_ARCHIVED",
-                    "TASK_FOLLOWED" ->
-                "MEDIUM";
+            case "TASK_COMMENT_MENTION", "PROJECT_COMMENT_MENTION", "MEMBER_ADDED", "TASK_MEMBER_ADDED", "PROJECT_MEMBER_ROLE_UPDATED", "PASSWORD_CHANGED", "PAYMENT_SUCCESS", "PROJECT_LINK_REGENERATED", "TASK_DUE_SOON", "JOIN_REQUEST_RECEIVED" -> "HIGH";
+
+            case "TASK_COMMENTED", "TASK_MEMBER_REMOVED", "PROJECT_CREATED", "PROJECT_ARCHIVED", "TASK_FOLLOWED", "JOIN_REQUEST_APPROVED", "JOIN_REQUEST_REJECTED" -> "MEDIUM";
+
             default -> "LOW";
         };
     }
 
-    private static final Map<String, String> TITLE_MAP = Map.ofEntries(
-            Map.entry("PROJECT_CREATED", "Dự án mới"),
-            Map.entry("PROJECT_ARCHIVED", "Dự án đã được lưu trữ"),
-            Map.entry("MEMBER_ADDED", "Được thêm vào dự án"),
-            Map.entry("PROJECT_MEMBER_ROLE_UPDATED", "Cập nhật vai trò thành viên"),
-            Map.entry("TASK_MEMBER_ADDED", "Được thêm vào công việc"),
-            Map.entry("TASK_MEMBER_REMOVED", "Bị xóa khỏi công việc"),
-            Map.entry("TASK_COMMENTED", "Bình luận mới"),
-            Map.entry("TASK_COMMENT_MENTION", "Bạn được nhắc đến"),
-            Map.entry("PROJECT_COMMENT_MENTION", "Bạn được nhắc đến trong dự án"),
-            Map.entry("TASK_DUE_SOON", "Công việc sắp đến hạn"),
-            Map.entry("TASK_FOLLOWED", "Công việc được theo dõi"),
-            Map.entry("PROJECT_LINK_REGENERATED", "Liên kết mời được làm mới"),
-            Map.entry("PROFILE_UPDATED", "Cập nhật hồ sơ"),
-            Map.entry("PASSWORD_CHANGED", "Đổi mật khẩu"));
+
+    private static final Map<String, String> TITLE_MAP =
+            Map.ofEntries(Map.entry("PROJECT_CREATED", "Dự án mới"),
+                    Map.entry("PROJECT_ARCHIVED", "Dự án đã được lưu trữ"),
+                    Map.entry("MEMBER_ADDED", "Được thêm vào dự án"),
+                    Map.entry("PROJECT_MEMBER_ROLE_UPDATED", "Cập nhật vai trò thành viên"),
+                    Map.entry("TASK_MEMBER_ADDED", "Được thêm vào công việc"),
+                    Map.entry("TASK_MEMBER_REMOVED", "Bị xóa khỏi công việc"),
+                    Map.entry("TASK_COMMENTED", "Bình luận mới"),
+                    Map.entry("TASK_COMMENT_MENTION", "Bạn được nhắc đến"),
+                    Map.entry("PROJECT_COMMENT_MENTION", "Bạn được nhắc đến trong dự án"),
+                    Map.entry("TASK_DUE_SOON", "Công việc sắp đến hạn"),
+                    Map.entry("TASK_FOLLOWED", "Công việc được theo dõi"),
+                    Map.entry("PROJECT_LINK_REGENERATED", "Liên kết mời được làm mới"),
+                    Map.entry("PROFILE_UPDATED", "Cập nhật hồ sơ"),
+                    Map.entry("JOIN_REQUEST_RECEIVED", "Yêu cầu tham gia dự án"),
+                    Map.entry("JOIN_REQUEST_APPROVED", "Yêu cầu tham gia được duyệt"),
+                    Map.entry("JOIN_REQUEST_REJECTED", "Yêu cầu tham gia bị từ chối"),
+
+                    Map.entry("PASSWORD_CHANGED", "Đổi mật khẩu"));
 
     private static final Map<String, String> ICON_MAP = Map.ofEntries(
-            Map.entry("PROJECT_CREATED", "🗂️"),
-            Map.entry("PROJECT_MEMBER_ROLE_UPDATED", "👤"),
-            Map.entry("MEMBER_ADDED", "👥"),
-            Map.entry("TASK_MEMBER_ADDED", "👤"),
-            Map.entry("TASK_COMMENTED", "💬"),
-            Map.entry("TASK_COMMENT_MENTION", "📣"),
-            Map.entry("PROJECT_COMMENT_MENTION", "📢"),
-            Map.entry("TASK_DUE_SOON", "⏰"),
-            Map.entry("TASK_FOLLOWED", "⭐"),
-            Map.entry("PROJECT_LINK_REGENERATED", "🔗"),
-            Map.entry("PASSWORD_CHANGED", "🔑"),
+            Map.entry("PROJECT_CREATED", "🗂️"), Map.entry("PROJECT_MEMBER_ROLE_UPDATED", "👤"),
+            Map.entry("MEMBER_ADDED", "👥"), Map.entry("TASK_MEMBER_ADDED", "👤"),
+            Map.entry("TASK_COMMENTED", "💬"), Map.entry("TASK_COMMENT_MENTION", "📣"),
+            Map.entry("PROJECT_COMMENT_MENTION", "📢"), Map.entry("TASK_DUE_SOON", "⏰"),
+            Map.entry("TASK_FOLLOWED", "⭐"), Map.entry("PROJECT_LINK_REGENERATED", "🔗"),
+            Map.entry("JOIN_REQUEST_RECEIVED", "📩"), Map.entry("JOIN_REQUEST_APPROVED", "✅"),
+            Map.entry("JOIN_REQUEST_REJECTED", "❌"), Map.entry("PASSWORD_CHANGED", "🔑"),
             Map.entry("PROFILE_UPDATED", "⚙️"));
 
     private String mapTitle(String type) {

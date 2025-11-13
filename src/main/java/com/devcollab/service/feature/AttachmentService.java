@@ -13,10 +13,11 @@ public interface AttachmentService {
 
     Attachment uploadAttachment(Long taskId, MultipartFile file, User uploader) throws IOException;
 
-    void deleteAttachment(Long attachmentId);
-    
+    void deleteAttachment(Long attachmentId, String email);
+
     Attachment attachLink(Long taskId, String name, String url, User uploader);
+
     List<AttachmentDTO> getAttachmentDTOsByTask(Long taskId);
 
     List<AttachmentDTO> getRecentLinksByUser(Long userId);
-}   
+}
