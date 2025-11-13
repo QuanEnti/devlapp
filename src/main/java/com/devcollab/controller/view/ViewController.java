@@ -1,24 +1,17 @@
 package com.devcollab.controller.view;
 
-import java.security.Principal;
-
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-
-import com.devcollab.service.core.ProjectService;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 
 @Controller
 @RequestMapping("/view")
 public class ViewController {
+
     @GetMapping({"/", "/home"})
     public String homePage(Authentication authentication, Model model) {
         if (authentication != null && authentication.isAuthenticated()) {
@@ -30,6 +23,10 @@ public class ViewController {
         return "home";
     }
 
+    @GetMapping("/ban")
+    public String bannedPage() {
+        return "view/ban";
+    }
 
     @GetMapping("/signin")
     public String signinPage(@RequestParam(value = "redirect", required = false) String redirect,

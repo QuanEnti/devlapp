@@ -12,7 +12,7 @@ let debounceTimer;
 export function openMembersPopup(e) {
   const popup = document.getElementById("members-popup");
   if (!popup) {
-    console.error("❌ #members-popup not found");
+    console.error(" #members-popup not found");
     return;
   } // Ngăn chặn việc đóng popup ngay lập tức nếu click vào nút mở
 
@@ -114,6 +114,15 @@ export async function loadMembers(keyword = "") {
     const taskMembers = await resTask.json();
     const assignedIds = new Set((taskMembers || []).map((m) => m.userId)); // 3. Phân loại thành 2 nhóm
 
+    window.CURRENT_TASK_FOLLOWER_IDS = Array.from(assignedIds).reduce(
+      (acc, id) => {
+        const parsed = Number(id);
+        if (!Number.isNaN(parsed)) acc.push(parsed);
+        return acc;
+      },
+      []
+    );
+
     const assigned = [];
     const notAssigned = [];
 
@@ -151,7 +160,7 @@ export async function loadMembers(keyword = "") {
     // 5. Gắn sự kiện click sau khi render
     addMemberClickListeners(listContainer);
   } catch (err) {
-    console.error("❌ Error loading members:", err);
+    console.error(" Error loading members:", err);
     listContainer.innerHTML = `<p class="members-error">Error loading members</p>`;
   }
 }
@@ -349,6 +358,7 @@ export async function assignMember(userId, rowElement) {
       method: "PUT",
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
+<<<<<<< HEAD
 
     if (res.status === 403) {
       const message = await res.text();
@@ -357,6 +367,18 @@ export async function assignMember(userId, rowElement) {
         "You do not have permission to assign members.";
       showToast(text, "error");
       return;
+=======
+    if (!res.ok) throw new Error("Assign failed");
+    await loadMembers(document.getElementById("search-member-input").value); // Tải lại danh sách
+  } catch (err) {
+    console.error(" assignMember error:", err);
+    showToast(" Failed to assign member", "error");
+  } finally {
+    if (isButton) {
+      button.disabled = false;
+    } else {
+      button?.classList.remove("is-loading");
+>>>>>>> origin/main
     }
 
     if (!res.ok) {
@@ -396,6 +418,7 @@ export async function unassignMember(userId, button) {
       method: "PUT",
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
+<<<<<<< HEAD
 
     if (res.status === 403) {
       const message = await res.text();
@@ -424,6 +447,13 @@ export async function unassignMember(userId, button) {
   } catch (err) {
     console.error("unassignMember error:", err);
     showToast("Failed to unassign member", "error");
+=======
+    if (!res.ok) throw new Error("Unassign failed");
+    await loadMembers(document.getElementById("search-member-input").value); // Tải lại danh sách
+  } catch (err) {
+    console.error(" unassignMember error:", err);
+    showToast(" Failed to unassign member", "error");
+>>>>>>> origin/main
   } finally {
     button.disabled = false;
   }

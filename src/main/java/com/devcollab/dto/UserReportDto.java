@@ -14,6 +14,7 @@ public class UserReportDto {
     private Instant createdAt;
     private Instant reviewedAt;
     private String pathUrl;
+    private String proofUrl;
 
     public UserReportDto(UserReport r) {
         this.id = r.getId();
@@ -26,6 +27,7 @@ public class UserReportDto {
         this.createdAt = r.getCreatedAt();
         this.reviewedAt = r.getReviewedAt();
         this.pathUrl = r.getProofUrl();
+        this.proofUrl = r.getProofUrl();
     }
 
     // getters
@@ -40,4 +42,8 @@ public class UserReportDto {
     public String getActionTaken() { return actionTaken; }
     public Instant getCreatedAt() { return createdAt; }
     public String getPathUrl() { return pathUrl; }
+
+    public String getProofUrl() {
+        return proofUrl;
+    }
 }

@@ -5,6 +5,7 @@ import com.devcollab.domain.*;
 import com.devcollab.dto.CommentDTO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface NotificationService {
 
@@ -84,5 +85,7 @@ public interface NotificationService {
     void notifyJoinRequestApproved(Project project, User requester, String reviewerEmail);
 
     void notifyJoinRequestRejected(Project project, User requester, String reviewerEmail);
+
+    List<Map<String, Object>> findRecentByProject(Long projectId);
 
 }

@@ -37,4 +37,7 @@
 
 
         UserDetails loadUserByUsername(String username);
+
+        long countByStatus(String status);
+
     }

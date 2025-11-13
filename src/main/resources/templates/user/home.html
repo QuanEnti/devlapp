@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>User Home – DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-slate-50">
+    <!-- 🔹 Header -->
+    <div th:replace="fragments/header :: header"></div>
+
+    <!-- 🔹 Sidebar + Main -->
+    <div class="flex min-h-[calc(100vh-4rem)]">
+      <!-- Sidebar -->
+      <div th:replace="fragments/sidebar :: sidebar"></div>
+
+      <!-- Main Content -->
+      <main class="flex-1 p-10 bg-slate-50 space-y-10">
+        <!-- 👋 Welcome -->
+        <section
+          class="bg-white shadow-sm rounded-2xl p-6 border border-slate-200"
+        >
+          <h1 class="text-2xl font-semibold text-gray-800">
+            Welcome back, <span th:text="${user.name}">User</span> 👋
+          </h1>
+          <p class="text-gray-500 mt-2">
+            You currently have
+            <b th:text="${#lists.size(myTasks)}">0</b> assigned tasks.
+          </p>
+        </section>
+
+        <!-- 🧠 My Tasks -->
+        <section>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">My Tasks</h2>
+            <a
+              href="/user/view/tasks"
+              class="text-sm text-blue-600 hover:underline"
+              >View all →</a
+            >
+          </div>
+
+          <div
+            class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
+          >
+            <table class="w-full text-sm text-left">
+              <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                <tr>
+                  <th class="px-6 py-3">Title</th>
+                  <th class="px-6 py-3">Status</th>
+                  <th class="px-6 py-3">Deadline</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  th:each="t : ${myTasks}"
+                  class="border-t hover:bg-gray-50 transition"
+                >
+                  <td class="px-6 py-3 font-medium text-gray-800">
+                    <a
+                      th:href="@{'/view/pm/project/board?projectId=' + ${t.project.projectId}}"
+                      class="hover:text-blue-600 transition"
+                      th:text="${t.title}"
+                      >Task title</a
+                    >
+                  </td>
+                  <td class="px-6 py-3">
+                    <span th:switch="${t.status}">
+                      <span
+                        th:case="'DONE'"
+                        class="text-green-600 font-medium"
+                        th:text="${t.status}"
+                        >DONE</span
+                      >
+                      <span
+                        th:case="'IN_PROGRESS'"
+                        class="text-blue-600 font-medium"
+                        th:text="${t.status}"
+                        >IN_PROGRESS</span
+                      >
+                      <span
+                        th:case="'REVIEW'"
+                        class="text-amber-600 font-medium"
+                        th:text="${t.status}"
+                        >REVIEW</span
+                      >
+                      <span
+                        th:case="*"
+                        class="text-gray-600 font-medium"
+                        th:text="${t.status}"
+                        >OPEN</span
+                      > </span
+                    >x
+                  </td>
+                  <td class="px-6 py-3 text-gray-700">
+                    <span
+                      th:if="${t.deadline != null}"
+                      th:text="${#temporals.format(t.deadline, 'dd MMM yyyy')}"
+                    >
+                    </span>
+                    <span
+                      th:if="${t.deadline == null}"
+                      class="text-gray-400 italic"
+                      >No deadline</span
+                    >
+                  </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(myTasks)}">
+                  <td colspan="3" class="text-center text-gray-500 py-6">
+                    No assigned tasks yet 🎉
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ⏰ Upcoming Deadlines -->
+        <section>
+          <h2 class="text-xl font-semibold mb-4 text-gray-800">
+            Upcoming Deadlines
+          </h2>
+          <div
+            class="bg-white border border-gray-200 rounded-2xl shadow-sm p-5"
+          >
+            <ul class="divide-y">
+              <li
+                th:each="t : ${upcoming}"
+                class="py-3 flex justify-between items-center"
+              >
+                <div>
+                  <span class="font-medium text-gray-800" th:text="${t.title}"
+                    >Task Title</span
+                  >
+                  <p class="text-xs text-gray-500" th:text="${t.project.name}">
+                    Project Name
+                  </p>
+                </div>
+                <span
+                  class="text-sm font-medium text-rose-600"
+                  <span
+                  th:if="${t.deadline != null}"
+                  th:text="${#temporals.format(t.deadline, 'dd MMM yyyy')}"
+                >
+                </span>
+              </li>
+              <li
+                th:if="${#lists.isEmpty(upcoming)}"
+                class="text-gray-500 text-center py-4"
+              >
+                No upcoming deadlines 🎉
+              </li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

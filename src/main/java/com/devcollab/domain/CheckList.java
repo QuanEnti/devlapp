@@ -1,6 +1,7 @@
 package com.devcollab.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
@@ -26,6 +27,12 @@ public class CheckList {
 
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex = 0;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = false)
+    @JsonIgnoreProperties({"tasks", "projects", "followers"})
+    private User createdBy;
+
 
     public CheckList() {}
 
@@ -67,5 +74,13 @@ public class CheckList {
 
     public void setOrderIndex(Integer orderIndex) {
         this.orderIndex = orderIndex;
+    }
+
+    public User getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
     }
 }

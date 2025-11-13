@@ -551,6 +551,10 @@ function renderMembersInModal(task) {
         if (!Number.isNaN(parsed)) followerIds.push(parsed);
       }
       membersContainer.appendChild(memberEl);
+      if (assignee.userId !== undefined && assignee.userId !== null) {
+        const parsed = Number(assignee.userId);
+        if (!Number.isNaN(parsed)) followerIds.push(parsed);
+      }
     });
   } else if (task.assigneeName && task.assigneeName !== "Unassigned") {
     const name = task.assigneeName;
@@ -591,6 +595,9 @@ function renderLabelsInModal(task) {
         "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold text-white";
       labelEl.style.backgroundColor = label.color || "#94a3b8";
       labelEl.textContent = label.name || "";
+      if (label.labelId != null) {
+        labelEl.dataset.labelId = String(label.labelId);
+      }
       labelsContainer.appendChild(labelEl);
     });
   }

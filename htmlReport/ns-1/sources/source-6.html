@@ -1,0 +1,770 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TaskServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.devcollab.service.impl.core</a>
+</div>
+
+<h1>Coverage Summary for Class: TaskServiceImpl (com.devcollab.service.impl.core)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TaskServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/32)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/133)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/310)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.devcollab.service.impl.core;
+&nbsp;
+&nbsp;import com.devcollab.domain.*;
+&nbsp;import com.devcollab.dto.MemberPerformanceDTO;
+&nbsp;import com.devcollab.dto.TaskDTO;
+&nbsp;import com.devcollab.dto.request.MoveTaskRequest;
+&nbsp;import com.devcollab.dto.userTaskDto.TaskCardDTO;
+&nbsp;import com.devcollab.exception.BadRequestException;
+&nbsp;import com.devcollab.exception.NotFoundException;
+&nbsp;import com.devcollab.repository.*;
+&nbsp;import com.devcollab.service.core.TaskService;
+&nbsp;import com.devcollab.service.system.ActivityService;
+&nbsp;import com.devcollab.service.system.NotificationService;
+&nbsp;
+&nbsp;import jakarta.transaction.Transactional;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;
+&nbsp;import org.hibernate.Hibernate;
+&nbsp;import org.springframework.data.domain.*;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.time.format.DateTimeFormatter;
+&nbsp;import java.util.*;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;import com.devcollab.dto.TaskFollowerDTO;
+&nbsp;import com.devcollab.exception.NotFoundException;
+&nbsp;import com.devcollab.service.core.TaskFollowerService;
+&nbsp;import com.devcollab.service.system.ActivityService;
+&nbsp;import com.devcollab.service.system.NotificationService;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import lombok.extern.slf4j.Slf4j;
+&nbsp;
+&nbsp;import org.springframework.security.core.Authentication;
+&nbsp;import org.springframework.security.core.context.SecurityContextHolder;
+&nbsp;
+<b class="nc">&nbsp;@Slf4j</b>
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;@Transactional
+&nbsp;public class TaskServiceImpl implements TaskService {
+&nbsp;
+&nbsp;    private final ProjectRepository projectRepository;
+&nbsp;    private final BoardColumnRepository boardColumnRepository;
+&nbsp;    private final TaskRepository taskRepository;
+&nbsp;    private final ActivityService activityService;
+&nbsp;    private final TaskFollowerRepository taskFollowerRepository;
+&nbsp;    private final UserRepository userRepository;
+&nbsp;    private final NotificationService notificationService;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 1. Tạo Task từ DTO
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    public Task createTaskFromDTO(TaskDTO dto, Long creatorId) {
+<b class="nc">&nbsp;        if (dto == null)</b>
+<b class="nc">&nbsp;            throw new BadRequestException(&quot;Dữ liệu task rỗng&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        Task task = new Task();</b>
+<b class="nc">&nbsp;        task.setTitle(dto.getTitle());</b>
+<b class="nc">&nbsp;        task.setPriority(dto.getPriority() != null ? dto.getPriority() : &quot;MEDIUM&quot;);</b>
+<b class="nc">&nbsp;        task.setDescriptionMd(dto.getDescriptionMd());</b>
+<b class="nc">&nbsp;        task.setOrderIndex(0);</b>
+<b class="nc">&nbsp;        task.setStatus(&quot;OPEN&quot;);</b>
+<b class="nc">&nbsp;        task.setCreatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+&nbsp;
+<b class="nc">&nbsp;        if (dto.getDeadline() != null &amp;&amp; !dto.getDeadline().isBlank()) {</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                task.setDeadline(LocalDateTime.parse(dto.getDeadline()));</b>
+&nbsp;            } catch (Exception e) {
+&nbsp;                try {
+<b class="nc">&nbsp;                    task.setDeadline(LocalDateTime.parse(dto.getDeadline() + &quot;T00:00:00&quot;));</b>
+&nbsp;                } catch (Exception ignored) {
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        BoardColumn column = boardColumnRepository.findById(dto.getColumnId())</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy cột&quot;));</b>
+<b class="nc">&nbsp;        Project project = column.getProject();</b>
+&nbsp;
+<b class="nc">&nbsp;        task.setColumn(column);</b>
+<b class="nc">&nbsp;        task.setProject(project);</b>
+&nbsp;
+<b class="nc">&nbsp;        if (creatorId != null) {</b>
+<b class="nc">&nbsp;            User creator = new User();</b>
+<b class="nc">&nbsp;            creator.setUserId(creatorId);</b>
+<b class="nc">&nbsp;            task.setCreatedBy(creator);</b>
+&nbsp;        } else {
+<b class="nc">&nbsp;            throw new BadRequestException(&quot;Không có thông tin người tạo task&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        Task saved = taskRepository.save(task);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, saved.getTaskId(), &quot;CREATE_TASK&quot;,</b>
+<b class="nc">&nbsp;                &quot;{\&quot;title\&quot;:\&quot;&quot; + escapeJson(saved.getTitle()) + &quot;\&quot;,\&quot;column\&quot;:\&quot;&quot; + escapeJson(column.getName())</b>
+&nbsp;                        + &quot;\&quot;}&quot;,
+<b class="nc">&nbsp;                saved.getCreatedBy());</b>
+&nbsp;
+<b class="nc">&nbsp;        return saved;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 2. Tạo nhanh Task
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    public Task quickCreate(String title, Long columnId, Long projectId, Long creatorId) {
+<b class="nc">&nbsp;        if (title == null || title.isBlank())</b>
+<b class="nc">&nbsp;            throw new BadRequestException(&quot;Tiêu đề task không được để trống&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        BoardColumn column = boardColumnRepository.findById(columnId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy cột&quot;));</b>
+<b class="nc">&nbsp;        Project project = projectRepository.findById(projectId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        Task task = new Task();</b>
+<b class="nc">&nbsp;        task.setTitle(title.trim());</b>
+<b class="nc">&nbsp;        task.setColumn(column);</b>
+<b class="nc">&nbsp;        task.setProject(project);</b>
+<b class="nc">&nbsp;        task.setCreatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+&nbsp;
+<b class="nc">&nbsp;        if (creatorId != null) {</b>
+<b class="nc">&nbsp;            User creator = new User();</b>
+<b class="nc">&nbsp;            creator.setUserId(creatorId);</b>
+<b class="nc">&nbsp;            task.setCreatedBy(creator);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        Task saved = taskRepository.save(task);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, saved.getTaskId(), &quot;CREATE_TASK&quot;,</b>
+<b class="nc">&nbsp;                &quot;{\&quot;title\&quot;:\&quot;&quot; + escapeJson(saved.getTitle()) + &quot;\&quot;,\&quot;column\&quot;:\&quot;&quot; + escapeJson(column.getName())</b>
+&nbsp;                        + &quot;\&quot;}&quot;,
+<b class="nc">&nbsp;                saved.getCreatedBy());</b>
+&nbsp;
+<b class="nc">&nbsp;        return saved;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 3. Tạo Task thủ công
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    public Task createTask(Task task, Long creatorId) {
+<b class="nc">&nbsp;        if (task == null)</b>
+<b class="nc">&nbsp;            throw new BadRequestException(&quot;Task rỗng&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        if (task.getCreatedAt() == null)</b>
+<b class="nc">&nbsp;            task.setCreatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        if (task.getUpdatedAt() == null)</b>
+<b class="nc">&nbsp;            task.setUpdatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        if (task.getStatus() == null)</b>
+<b class="nc">&nbsp;            task.setStatus(&quot;OPEN&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        if (creatorId != null) {</b>
+<b class="nc">&nbsp;            User creator = new User();</b>
+<b class="nc">&nbsp;            creator.setUserId(creatorId);</b>
+<b class="nc">&nbsp;            task.setCreatedBy(creator);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return taskRepository.save(task);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 4. Cập nhật Task
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    public Task updateTask(Long id, Task patch) {
+<b class="nc">&nbsp;        Task existing = taskRepository.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</b>
+<b class="nc">&nbsp;        if (patch.getTitle() != null)</b>
+<b class="nc">&nbsp;            existing.setTitle(patch.getTitle());</b>
+<b class="nc">&nbsp;        if (patch.getDescriptionMd() != null)</b>
+<b class="nc">&nbsp;            existing.setDescriptionMd(patch.getDescriptionMd());</b>
+<b class="nc">&nbsp;        if (patch.getPriority() != null)</b>
+<b class="nc">&nbsp;            existing.setPriority(patch.getPriority());</b>
+<b class="nc">&nbsp;        if (patch.getStatus() != null)</b>
+<b class="nc">&nbsp;            existing.setStatus(patch.getStatus());</b>
+<b class="nc">&nbsp;        existing.setUpdatedAt(LocalDateTime.now());</b>
+&nbsp;
+<b class="nc">&nbsp;        Task saved = taskRepository.save(existing);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, saved.getTaskId(), &quot;EDIT_TASK&quot;,</b>
+<b class="nc">&nbsp;                &quot;{\&quot;title\&quot;:\&quot;&quot; + escapeJson(saved.getTitle()) + &quot;\&quot;}&quot;,</b>
+<b class="nc">&nbsp;                saved.getCreatedBy());</b>
+&nbsp;
+<b class="nc">&nbsp;        return saved;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 5. Xóa Task
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    public void deleteTask(Long id) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Task không tồn tại&quot;));</b>
+<b class="nc">&nbsp;        taskRepository.deleteById(id);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, id, &quot;DELETE_TASK&quot;,</b>
+<b class="nc">&nbsp;                &quot;{\&quot;title\&quot;:\&quot;&quot; + escapeJson(task.getTitle()) + &quot;\&quot;}&quot;,</b>
+<b class="nc">&nbsp;                task.getCreatedBy());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 6. Gán người phụ trách
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    public Task assignTask(Long taskId, Long assigneeId) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(taskId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        User assignee = new User();</b>
+<b class="nc">&nbsp;        assignee.setUserId(assigneeId);</b>
+<b class="nc">&nbsp;        task.setAssignee(assignee);</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+&nbsp;
+<b class="nc">&nbsp;        Task saved = taskRepository.save(task);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, taskId, &quot;ASSIGN_TASK&quot;,</b>
+<b class="nc">&nbsp;                &quot;{\&quot;assigneeId\&quot;:&quot; + assigneeId + &quot;}&quot;, task.getCreatedBy());</b>
+&nbsp;
+<b class="nc">&nbsp;        return saved;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 8. Di chuyển Task (with order)
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public TaskDTO moveTask(Long taskId, MoveTaskRequest req) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(taskId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Task not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        BoardColumn oldCol = task.getColumn();</b>
+<b class="nc">&nbsp;        BoardColumn newCol = boardColumnRepository.findById(req.getTargetColumnId())</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;Target column not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        task.setColumn(newCol);</b>
+<b class="nc">&nbsp;        task.setOrderIndex(req.getNewOrderIndex());</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        taskRepository.save(task);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, taskId, &quot;MOVE_COLUMN&quot;,</b>
+<b class="nc">&nbsp;                String.format(&quot;{\&quot;from\&quot;:\&quot;%s\&quot;,\&quot;to\&quot;:\&quot;%s\&quot;}&quot;,</b>
+<b class="nc">&nbsp;                        escapeJson(oldCol != null ? oldCol.getName() : &quot;Unknown&quot;),</b>
+<b class="nc">&nbsp;                        escapeJson(newCol.getName())),</b>
+<b class="nc">&nbsp;                task.getCreatedBy());</b>
+&nbsp;
+<b class="nc">&nbsp;        return TaskDTO.fromEntity(task);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 9. Đóng / mở lại Task
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    public Task closeTask(Long taskId) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(taskId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</b>
+<b class="nc">&nbsp;        task.setStatus(&quot;CLOSED&quot;);</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        Task saved = taskRepository.save(task);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, taskId, &quot;CLOSE_TASK&quot;,</b>
+<b class="nc">&nbsp;                &quot;{\&quot;title\&quot;:\&quot;&quot; + escapeJson(saved.getTitle()) + &quot;\&quot;}&quot;,</b>
+<b class="nc">&nbsp;                saved.getCreatedBy());</b>
+<b class="nc">&nbsp;        return saved;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Task reopenTask(Long taskId) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(taskId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</b>
+<b class="nc">&nbsp;        task.setStatus(&quot;OPEN&quot;);</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        Task saved = taskRepository.save(task);</b>
+&nbsp;
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, taskId, &quot;REOPEN_TASK&quot;,</b>
+<b class="nc">&nbsp;                &quot;{\&quot;title\&quot;:\&quot;&quot; + escapeJson(saved.getTitle()) + &quot;\&quot;}&quot;,</b>
+<b class="nc">&nbsp;                saved.getCreatedBy());</b>
+<b class="nc">&nbsp;        return saved;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 10. Cập nhật mô tả Task
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public TaskDTO updateTaskDescription(Long id, String description) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</b>
+<b class="nc">&nbsp;        task.setDescriptionMd(description);</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+&nbsp;
+<b class="nc">&nbsp;        Task saved = taskRepository.save(task);</b>
+&nbsp;
+&nbsp;        // ✅ Chuyển sang DTO ngay trong Transaction (Session vẫn còn mở)
+<b class="nc">&nbsp;        return TaskDTO.fromEntity(saved);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public TaskDTO updateDates(Long taskId, TaskDTO dto) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(taskId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;❌ Task not found with ID: &quot; + taskId));</b>
+&nbsp;
+&nbsp;        // 👤 Lấy actor hiện tại (user đang thao tác)
+<b class="nc">&nbsp;        User actor = getCurrentUserOrNull();</b>
+&nbsp;
+<b class="nc">&nbsp;        DateTimeFormatter iso = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd&#39;T&#39;HH:mm&quot;);</b>
+<b class="nc">&nbsp;        LocalDateTime oldDeadline = task.getDeadline();</b>
+<b class="nc">&nbsp;        LocalDateTime newDeadline = null;</b>
+&nbsp;
+&nbsp;        // 🕒 Cập nhật Start Date
+<b class="nc">&nbsp;        if (dto.getStartDate() != null &amp;&amp; !dto.getStartDate().isBlank()) {</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                LocalDateTime start = LocalDateTime.parse(dto.getStartDate(), iso);</b>
+<b class="nc">&nbsp;                task.setStartDate(start);</b>
+&nbsp;            } catch (Exception e) {
+<b class="nc">&nbsp;                log.warn(&quot;⚠️ Invalid startDate format: {}&quot;, dto.getStartDate());</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+&nbsp;        // ⏰ Cập nhật Deadline (và chặn quá khứ)
+<b class="nc">&nbsp;        if (dto.getDeadline() != null &amp;&amp; !dto.getDeadline().isBlank()) {</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                newDeadline = LocalDateTime.parse(dto.getDeadline(), iso);</b>
+<b class="nc">&nbsp;                if (newDeadline.isBefore(LocalDateTime.now())) {</b>
+<b class="nc">&nbsp;                    throw new IllegalArgumentException(&quot;🚫 Deadline không được nhỏ hơn thời gian hiện tại!&quot;);</b>
+&nbsp;                }
+<b class="nc">&nbsp;                task.setDeadline(newDeadline);</b>
+&nbsp;            } catch (IllegalArgumentException e) {
+<b class="nc">&nbsp;                log.warn(&quot;⚠️ {}&quot;, e.getMessage());</b>
+&nbsp;                throw e;
+&nbsp;            } catch (Exception e) {
+<b class="nc">&nbsp;                log.warn(&quot;⚠️ Invalid deadline format: {}&quot;, dto.getDeadline());</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(&quot;⚠️ Định dạng deadline không hợp lệ!&quot;);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        Task saved = taskRepository.save(task);</b>
+&nbsp;
+&nbsp;        // 📝 Ghi activity: actor phải là người đang thao tác
+<b class="nc">&nbsp;        activityService.log(</b>
+&nbsp;                &quot;TASK&quot;,
+&nbsp;                taskId,
+&nbsp;                &quot;UPDATE_DATES&quot;,
+<b class="nc">&nbsp;                &quot;{\&quot;start\&quot;:\&quot;&quot; + dto.getStartDate() + &quot;\&quot;,\&quot;deadline\&quot;:\&quot;&quot; + dto.getDeadline() + &quot;\&quot;}&quot;,</b>
+&nbsp;                actor /* ✅ đúng người thao tác */
+&nbsp;        );
+&nbsp;
+&nbsp;        // 🔔 Nếu deadline thay đổi → gửi noti, sender = actor
+<b class="nc">&nbsp;        if (newDeadline != null &amp;&amp; (oldDeadline == null || !newDeadline.equals(oldDeadline))) {</b>
+<b class="nc">&nbsp;            sendDeadlineNotification(saved, actor /* ✅ đúng người thao tác */);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;🕓 [Deadline Updated] {} chỉnh deadline của task &#39;{}&#39;&quot;,</b>
+<b class="nc">&nbsp;                actor != null ? actor.getName() : &quot;System&quot;, task.getTitle());</b>
+&nbsp;
+<b class="nc">&nbsp;        return TaskDTO.fromEntity(saved);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Hỗ trợ cả UsernamePassword &amp; OAuth2/OIDC */
+&nbsp;    private User getCurrentUserOrNull() {
+<b class="nc">&nbsp;        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</b>
+<b class="nc">&nbsp;        if (auth == null || !auth.isAuthenticated())</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;
+<b class="nc">&nbsp;        String email = null;</b>
+&nbsp;
+&nbsp;        // OIDC / OAuth2
+<b class="nc">&nbsp;        if (auth.getPrincipal() instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidc) {</b>
+<b class="nc">&nbsp;            email = oidc.getEmail();</b>
+<b class="nc">&nbsp;        } else if (auth.getPrincipal() instanceof org.springframework.security.oauth2.core.user.OAuth2User ou) {</b>
+<b class="nc">&nbsp;            Object em = ou.getAttributes().get(&quot;email&quot;);</b>
+<b class="nc">&nbsp;            if (em != null)</b>
+<b class="nc">&nbsp;                email = String.valueOf(em);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // Form login / UserDetails
+<b class="nc">&nbsp;        if (email == null) {</b>
+<b class="nc">&nbsp;            Object principal = auth.getPrincipal();</b>
+<b class="nc">&nbsp;            if (principal instanceof org.springframework.security.core.userdetails.UserDetails ud) {</b>
+<b class="nc">&nbsp;                email = ud.getUsername();</b>
+<b class="nc">&nbsp;            } else if (principal instanceof String s) { // đôi khi là email/username</b>
+<b class="nc">&nbsp;                email = s;</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (email == null || email.isBlank())</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;
+<b class="nc">&nbsp;        return userRepository.findByEmail(email).orElse(null);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // ✅ 12. Các truy vấn cơ bản
+&nbsp;    // ----------------------------------------------------
+&nbsp;    @Override
+&nbsp;    public List&lt;TaskDTO&gt; getTasksByProject(Long projectId) {
+<b class="nc">&nbsp;        projectRepository.findById(projectId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy dự án&quot;));</b>
+&nbsp;
+&nbsp;        // ⚡️ Chỉ lấy task chưa archived
+<b class="nc">&nbsp;        return taskRepository.findByProject_ProjectIdAndArchivedFalse(projectId)</b>
+<b class="nc">&nbsp;                .stream()</b>
+<b class="nc">&nbsp;                .map(TaskDTO::fromEntity)</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Task&gt; getTasksByAssignee(Long userId) {
+<b class="nc">&nbsp;        return taskRepository.findByAssignee_UserId(userId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Task&gt; getTasksByProjectAndMember(Long projectId, String email) {
+<b class="nc">&nbsp;        throw new UnsupportedOperationException(&quot;Chưa triển khai: getTasksByProjectAndMember&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Task getById(Long id) {
+<b class="nc">&nbsp;        return taskRepository.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public TaskDTO getByIdAsDTO(Long id) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(id)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</b>
+<b class="nc">&nbsp;        return TaskDTO.fromEntity(task);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ----------------------------------------------------
+&nbsp;    // 🧩 Helper
+&nbsp;    // ----------------------------------------------------
+&nbsp;    private String escapeJson(String text) {
+<b class="nc">&nbsp;        return text == null ? &quot;&quot; : text.replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;).replace(&quot;\n&quot;, &quot;\\n&quot;).replace(&quot;\r&quot;, &quot;&quot;);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public boolean archiveTask(Long taskId) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(taskId).orElse(null);</b>
+<b class="nc">&nbsp;        if (task == null)</b>
+<b class="nc">&nbsp;            return false;</b>
+&nbsp;
+<b class="nc">&nbsp;        task.setArchived(true);</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        taskRepository.save(task);</b>
+<b class="nc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public boolean restoreTask(Long taskId) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(taskId).orElse(null);</b>
+<b class="nc">&nbsp;        if (task == null)</b>
+<b class="nc">&nbsp;            return false;</b>
+<b class="nc">&nbsp;        task.setArchived(false);</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        taskRepository.save(task);</b>
+<b class="nc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public TaskDTO markComplete(Long taskId, Long userId) {
+<b class="nc">&nbsp;        Task task = taskRepository.findById(taskId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; new NotFoundException(&quot;Không tìm thấy task&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        boolean allowed = taskFollowerRepository.existsByTask_TaskIdAndUser_UserId(taskId, userId)</b>
+<b class="nc">&nbsp;                || (task.getCreatedBy() != null &amp;&amp; task.getCreatedBy().getUserId().equals(userId));</b>
+&nbsp;
+<b class="nc">&nbsp;        if (!allowed)</b>
+<b class="nc">&nbsp;            throw new SecurityException(&quot;⚠️ Chỉ thành viên của task mới có thể đánh dấu hoàn thành&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        if (&quot;DONE&quot;.equalsIgnoreCase(task.getStatus()))</b>
+<b class="nc">&nbsp;            return TaskDTO.fromEntity(task); // đã DONE rồi thì trả về luôn DTO</b>
+&nbsp;
+<b class="nc">&nbsp;        task.setStatus(&quot;DONE&quot;);</b>
+<b class="nc">&nbsp;        task.setClosedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        task.setUpdatedAt(LocalDateTime.now());</b>
+<b class="nc">&nbsp;        Task saved = taskRepository.save(task);</b>
+&nbsp;
+&nbsp;        // ✅ Khởi tạo các quan hệ cần thiết cho DTO
+<b class="nc">&nbsp;        Hibernate.initialize(saved.getAssignee());</b>
+<b class="nc">&nbsp;        Hibernate.initialize(saved.getCreatedBy());</b>
+<b class="nc">&nbsp;        Hibernate.initialize(saved.getProject());</b>
+<b class="nc">&nbsp;        Hibernate.initialize(saved.getColumn());</b>
+<b class="nc">&nbsp;        Hibernate.initialize(saved.getLabels());</b>
+&nbsp;
+&nbsp;        // 🪶 Ghi log hoạt động
+<b class="nc">&nbsp;        activityService.log(&quot;TASK&quot;, taskId, &quot;MARK_COMPLETE&quot;,</b>
+<b class="nc">&nbsp;                &quot;{\&quot;title\&quot;:\&quot;&quot; + escapeJson(saved.getTitle()) + &quot;\&quot;}&quot;,</b>
+<b class="nc">&nbsp;                saved.getCreatedBy());</b>
+&nbsp;
+&nbsp;        // ✅ Trả về DTO
+<b class="nc">&nbsp;        return TaskDTO.fromEntity(saved);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;  
+&nbsp;  private void sendDeadlineNotification(Task task, User actor) {
+&nbsp;    try {
+<b class="nc">&nbsp;        if (task == null || task.getDeadline() == null) return;</b>
+&nbsp;
+<b class="nc">&nbsp;        String link = &quot;/projects/&quot; + task.getProject().getProjectId()</b>
+<b class="nc">&nbsp;                + &quot;/tasks/&quot; + task.getTaskId();</b>
+&nbsp;
+<b class="nc">&nbsp;        DateTimeFormatter fmt = DateTimeFormatter.ofPattern(&quot;HH:mm dd/MM/yyyy&quot;);</b>
+<b class="nc">&nbsp;        String deadlineStr = task.getDeadline().format(fmt);</b>
+&nbsp;
+<b class="nc">&nbsp;        String title = &quot;Công việc sắp đến hạn&quot;;</b>
+<b class="nc">&nbsp;        String message = &quot;Công việc \&quot;&quot; + task.getTitle() + &quot;\&quot; sắp đến hạn vào: &quot; + deadlineStr;</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;User&gt; receivers = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        if (task.getAssignee() != null) receivers.add(task.getAssignee());</b>
+<b class="nc">&nbsp;        if (task.getCreatedBy() != null) receivers.add(task.getCreatedBy());</b>
+<b class="nc">&nbsp;        if (task.getFollowers() != null &amp;&amp; !task.getFollowers().isEmpty()) {</b>
+<b class="nc">&nbsp;            task.getFollowers().forEach(f -&gt; { if (f.getUser() != null) receivers.add(f.getUser()); });</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // ✅ Lọc trùng + loại actor
+<b class="nc">&nbsp;        List&lt;User&gt; filtered = receivers.stream()</b>
+<b class="nc">&nbsp;                .filter(Objects::nonNull)</b>
+<b class="nc">&nbsp;                .filter(u -&gt; u.getUserId() != null)</b>
+<b class="nc">&nbsp;                .filter(u -&gt; actor == null || !u.getUserId().equals(actor.getUserId()))</b>
+<b class="nc">&nbsp;                .collect(Collectors.collectingAndThen(</b>
+<b class="nc">&nbsp;                        Collectors.toMap(User::getUserId, u -&gt; u, (a,b)-&gt;a),</b>
+<b class="nc">&nbsp;                        m -&gt; new ArrayList&lt;&gt;(m.values())</b>
+&nbsp;                ));
+&nbsp;
+<b class="nc">&nbsp;        if (filtered.isEmpty()) {</b>
+<b class="nc">&nbsp;            log.debug(&quot;ℹ️ Không có người nhận thông báo deadline cho task &#39;{}&#39;&quot;, task.getTitle());</b>
+&nbsp;            return;
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        for (User receiver : filtered) {</b>
+<b class="nc">&nbsp;            notificationService.createNotification(</b>
+&nbsp;                    receiver,
+&nbsp;                    &quot;TASK_DUE_SOON&quot;,
+<b class="nc">&nbsp;                    task.getTaskId(),</b>
+&nbsp;                    title,
+&nbsp;                    message,
+&nbsp;                    link,
+&nbsp;                    actor // ✅ sender chính là actor
+&nbsp;            );
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;🔔 [Deadline] Đã gửi &#39;TASK_DUE_SOON&#39; cho {} người trong task &#39;{}&#39;&quot;,</b>
+<b class="nc">&nbsp;                filtered.size(), task.getTitle());</b>
+&nbsp;
+&nbsp;    } catch (Exception e) {
+<b class="nc">&nbsp;        log.error(&quot;❌ sendDeadlineNotification() failed: {}&quot;, e.getMessage(), e);</b>
+&nbsp;    }
+&nbsp;}
+&nbsp;
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Task&gt; getTasksByAssignee(User user) {
+<b class="nc">&nbsp;        return taskRepository.findTasksByAssignee(user);</b>
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public List&lt;Task&gt; getTasksCreatedBy(User user) {
+<b class="nc">&nbsp;        return taskRepository.findTasksCreatedBy(user);</b>
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public Map&lt;String, Object&gt; getPercentDoneByStatus(Long projectId) {
+<b class="nc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; raw = taskRepository.countTasksByStatus(projectId);</b>
+&nbsp;
+<b class="nc">&nbsp;        long total = raw.stream()</b>
+<b class="nc">&nbsp;                .mapToLong(m -&gt; ((Number) m.get(&quot;count&quot;)).longValue())</b>
+<b class="nc">&nbsp;                .sum();</b>
+&nbsp;
+<b class="nc">&nbsp;        Map&lt;String, Double&gt; temp = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        raw.forEach(m -&gt; {</b>
+<b class="nc">&nbsp;            String status = (String) m.get(&quot;status&quot;);</b>
+<b class="nc">&nbsp;            long count = ((Number) m.get(&quot;count&quot;)).longValue();</b>
+<b class="nc">&nbsp;            double percent = total == 0 ? 0 : ((double) count / total) * 100;</b>
+<b class="nc">&nbsp;            temp.put(status, percent);</b>
+&nbsp;        });
+&nbsp;
+&nbsp;        // ✅ Ensure all keys exist
+<b class="nc">&nbsp;        Map&lt;String, Object&gt; result = new LinkedHashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        result.put(&quot;DONE&quot;, String.format(&quot;%.1f&quot;, temp.getOrDefault(&quot;DONE&quot;, 0.0)));</b>
+<b class="nc">&nbsp;        result.put(&quot;IN_PROGRESS&quot;, String.format(&quot;%.1f&quot;, temp.getOrDefault(&quot;IN_PROGRESS&quot;, 0.0)));</b>
+<b class="nc">&nbsp;        result.put(&quot;OPEN&quot;, String.format(&quot;%.1f&quot;, temp.getOrDefault(&quot;OPEN&quot;, 0.0)));</b>
+<b class="nc">&nbsp;        result.put(&quot;total&quot;, total);</b>
+&nbsp;
+<b class="nc">&nbsp;        return result;</b>
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public List&lt;MemberPerformanceDTO&gt; getMemberPerformance(Long projectId) {
+<b class="nc">&nbsp;        List&lt;Object[]&gt; rows = taskRepository.findMemberPerformanceByProject(projectId);</b>
+<b class="nc">&nbsp;        List&lt;MemberPerformanceDTO&gt; list = new ArrayList&lt;&gt;();</b>
+&nbsp;
+<b class="nc">&nbsp;        for (Object[] r : rows) {</b>
+<b class="nc">&nbsp;            MemberPerformanceDTO dto = new MemberPerformanceDTO();</b>
+<b class="nc">&nbsp;            dto.setUserId(((Number) r[0]).longValue());</b>
+<b class="nc">&nbsp;            dto.setName((String) r[1]);</b>
+<b class="nc">&nbsp;            dto.setEmail((String) r[2]);</b>
+<b class="nc">&nbsp;            dto.setTotalTasks(((Number) r[3]).longValue());</b>
+<b class="nc">&nbsp;            dto.setCompletedTasks(((Number) r[4]).longValue());</b>
+<b class="nc">&nbsp;            dto.setOnTimeTasks(((Number) r[5]).longValue());</b>
+<b class="nc">&nbsp;            dto.setLateTasks(((Number) r[6]).longValue());</b>
+<b class="nc">&nbsp;            dto.setAvgDelayHours(((Number) r[7]).doubleValue());</b>
+<b class="nc">&nbsp;            dto.setPriorityPoints(((Number) r[8]).intValue());</b>
+&nbsp;
+&nbsp;            // 🧮 Calculate weighted performance score
+<b class="nc">&nbsp;            double score = 0;</b>
+<b class="nc">&nbsp;            if (dto.getTotalTasks() &gt; 0) {</b>
+<b class="nc">&nbsp;                double completion = ((double) dto.getCompletedTasks() / dto.getTotalTasks()) * 50;</b>
+<b class="nc">&nbsp;                double punctuality = dto.getCompletedTasks() &gt; 0</b>
+<b class="nc">&nbsp;                        ? ((double) dto.getOnTimeTasks() / dto.getCompletedTasks()) * 30</b>
+<b class="nc">&nbsp;                        : 0;</b>
+<b class="nc">&nbsp;                double effort = ((double) dto.getPriorityPoints() / dto.getTotalTasks()) * 20;</b>
+<b class="nc">&nbsp;                score = completion + punctuality + effort;</b>
+<b class="nc">&nbsp;                if (score &gt; 100) score = 100;</b>
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;            dto.setPerformanceScore(Math.round(score * 100.0) / 100.0);</b>
+<b class="nc">&nbsp;            list.add(dto);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return list;</b>
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public List&lt;Task&gt; getTasksByUser(User user) {
+<b class="nc">&nbsp;        return taskRepository.findAllUserTasks(user);</b>
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public Page&lt;Task&gt; getUserTasksPaged(User user, String sortBy, int page, int size, String status) {
+<b class="nc">&nbsp;        Pageable pageable = PageRequest.of(page, size);</b>
+&nbsp;
+&nbsp;        // If status is provided -&gt; FILTER, not sort
+<b class="nc">&nbsp;        if (status != null &amp;&amp; !status.isBlank() &amp;&amp; !&quot;ALL&quot;.equalsIgnoreCase(status)) {</b>
+<b class="nc">&nbsp;            return taskRepository.findUserTasksByStatus(user, status.toUpperCase(), pageable);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // Sorting path (no status filter)
+<b class="nc">&nbsp;        String key = (sortBy == null || sortBy.isBlank()) ? &quot;deadline&quot; : sortBy.toLowerCase();</b>
+<b class="nc">&nbsp;        return switch (key) {</b>
+<b class="nc">&nbsp;            case &quot;priority&quot; -&gt; taskRepository.findUserTasksOrderByPriority(user, pageable);</b>
+<b class="nc">&nbsp;            case &quot;project&quot;  -&gt; taskRepository.findUserTasksOrderByProject(user, pageable);</b>
+<b class="nc">&nbsp;            case &quot;deadline&quot; -&gt; taskRepository.findUserTasksOrderByDeadline(user, pageable);</b>
+<b class="nc">&nbsp;            default         -&gt; taskRepository.findUserTasksOrderByDeadline(user, pageable);</b>
+&nbsp;        };
+&nbsp;    }
+&nbsp;    @Override
+&nbsp;    public List&lt;Task&gt; findUpcomingDeadlines(Long userId) {
+<b class="nc">&nbsp;        return taskRepository.findTopUpcoming(userId, PageRequest.of(0, 5));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-11-12 20:35</div>
+</div>
+</body>
+</html>

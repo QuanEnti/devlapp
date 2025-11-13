@@ -2,8 +2,10 @@ package com.devcollab.service.impl.core;
 
 import com.devcollab.config.SpringContext;
 import com.devcollab.domain.*;
+import com.devcollab.dto.MemberPerformanceDTO;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
+import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
@@ -15,13 +17,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.hibernate.Hibernate;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -44,9 +45,7 @@ public class TaskServiceImpl implements TaskService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
-    // ----------------------------------------------------
-    // ✅ 1. Tạo Task từ DTO
-    // ----------------------------------------------------
+
     @Override
     public Task createTaskFromDTO(TaskDTO dto, Long creatorId) {
         if (dto == null)
@@ -97,45 +96,65 @@ public class TaskServiceImpl implements TaskService {
         return saved;
     }
 
-    // ----------------------------------------------------
-    // ✅ 2. Tạo nhanh Task
-    // ----------------------------------------------------
     @Override
+    @Transactional
     public Task quickCreate(String title, Long columnId, Long projectId, Long creatorId) {
+
         if (title == null || title.isBlank())
             throw new BadRequestException("Tiêu đề task không được để trống");
 
         BoardColumn column = boardColumnRepository.findById(columnId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy cột"));
+
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
+
+        User actor = userRepository.findById(creatorId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người tạo task"));
+
+        String email = actor.getEmail();
+
+        ProjectAuthorizationService authz =
+                SpringContext.getBean(ProjectAuthorizationService.class);
+
+        boolean isPm = false;
+        try {
+            authz.ensurePmOfProject(email, projectId);
+            isPm = true;
+        } catch (Exception ignored) {
+        }
+
+        boolean isMember = authz.isMemberOfProject(email, projectId);
+
+        if (!isPm && !isMember) {
+            throw new AccessDeniedException(
+                    "Chỉ PM/ADMIN hoặc thành viên dự án mới được tạo task.");
+        }
 
         Task task = new Task();
         task.setTitle(title.trim());
         task.setColumn(column);
         task.setProject(project);
+        task.setStatus("OPEN");
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
 
-        if (creatorId != null) {
-            User creator = new User();
-            creator.setUserId(creatorId);
-            task.setCreatedBy(creator);
-        }
+        User creator = new User();
+        creator.setUserId(creatorId);
+        task.setCreatedBy(creator);
 
         Task saved = taskRepository.save(task);
 
         activityService.log("TASK", saved.getTaskId(), "CREATE_TASK",
                 "{\"title\":\"" + escapeJson(saved.getTitle()) + "\",\"column\":\""
                         + escapeJson(column.getName()) + "\"}",
-                saved.getCreatedBy());
+                actor);
 
         return saved;
     }
 
-    // ----------------------------------------------------
-    // ✅ 3. Tạo Task thủ công
-    // ----------------------------------------------------
+
+
     @Override
     public Task createTask(Task task, Long creatorId) {
         if (task == null)
@@ -157,9 +176,6 @@ public class TaskServiceImpl implements TaskService {
         return taskRepository.save(task);
     }
 
-    // ----------------------------------------------------
-    // ✅ 4. Cập nhật Task
-    // ----------------------------------------------------
     @Override
     public Task updateTask(Long id, Task patch) {
         Task existing = taskRepository.findById(id)
@@ -183,14 +199,43 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public void deleteTask(Long id) {
+    @Transactional
+    public void deleteTask(Long id, User actor) {
+
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Task không tồn tại"));
-        taskRepository.deleteById(id);
+
+        Long projectId = task.getProject().getProjectId();
+        Long actorId = actor.getUserId();
+
+        String email = actor.getEmail();
+
+        ProjectAuthorizationService authz =
+                SpringContext.getBean(ProjectAuthorizationService.class);
+
+        boolean isPm = false;
+        try {
+            authz.ensurePmOfProject(email, projectId);
+            isPm = true;
+        } catch (Exception ignored) {
+        }
+
+        boolean isCreator =
+                task.getCreatedBy() != null && task.getCreatedBy().getUserId().equals(actorId);
+
+        if (!isPm && !isCreator) {
+            throw new AccessDeniedException(
+                    " Chỉ PM/ADMIN hoặc người tạo task mới có quyền xóa task này.");
+        }
+
+        taskRepository.delete(task);
 
         activityService.log("TASK", id, "DELETE_TASK",
-                "{\"title\":\"" + escapeJson(task.getTitle()) + "\"}", task.getCreatedBy());
+                "{\"title\":\"" + escapeJson(task.getTitle()) + "\"}", actor);
+
+        log.info(" Task '{}' (ID={}) đã bị xóa bởi {}", task.getTitle(), id, actor.getName());
     }
+
 
     @Override
     public Task assignTask(Long taskId, Long assigneeId) {
@@ -218,7 +263,6 @@ public class TaskServiceImpl implements TaskService {
 
         Long projectId = task.getProject().getProjectId();
 
-        // 🧩 Lấy email user hiện tại từ SecurityContext
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new AccessDeniedException("Bạn chưa đăng nhập!");
@@ -238,13 +282,11 @@ public class TaskServiceImpl implements TaskService {
             throw new AccessDeniedException("Không thể xác định người dùng hiện tại!");
         }
 
-        // 🧠 Chỉ cho phép PM hoặc ADMIN được phép di chuyển task
         ProjectAuthorizationService authz =
                 SpringContext.getBean(ProjectAuthorizationService.class);
-        authz.ensurePmOfProject(email, projectId); // ❗ sẽ ném AccessDeniedException nếu không phải
-                                                   // PM/ADMIN
+        authz.ensurePmOfProject(email, projectId);
 
-        // 🔹 Cập nhật column và thứ tự hiển thị
+
         BoardColumn oldCol = task.getColumn();
         BoardColumn newCol = boardColumnRepository.findById(req.getTargetColumnId())
                 .orElseThrow(() -> new RuntimeException("Target column not found"));
@@ -253,7 +295,6 @@ public class TaskServiceImpl implements TaskService {
         task.setOrderIndex(req.getNewOrderIndex());
         task.setUpdatedAt(LocalDateTime.now());
 
-        // 🔹 Cập nhật trạng thái (status) tự động theo tên column
         String colName = newCol.getName().trim().toLowerCase();
 
         if (colName.contains("backlog")) {
@@ -276,13 +317,11 @@ public class TaskServiceImpl implements TaskService {
             task.setStatus("DONE");
             task.setClosedAt(LocalDateTime.now());
         } else {
-            // Nếu cột có tên khác — giữ nguyên status cũ
             task.setClosedAt(null);
         }
 
         taskRepository.save(task);
 
-        // 🔹 Ghi log hoạt động
         activityService.log("TASK", taskId, "MOVE_COLUMN",
                 String.format("{\"from\":\"%s\",\"to\":\"%s\"}",
                         escapeJson(oldCol != null ? oldCol.getName() : "Unknown"),
@@ -292,10 +331,6 @@ public class TaskServiceImpl implements TaskService {
         return TaskDTO.fromEntity(task);
     }
 
-
-    // ----------------------------------------------------
-    // ✅ 9. Đóng / mở lại Task
-    // ----------------------------------------------------
     @Override
     public Task closeTask(Long taskId) {
         Task task = taskRepository.findById(taskId)
@@ -364,13 +399,11 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public TaskDTO updateDates(Long taskId, TaskDTO dto) {
-        // 🔍 1️⃣ Tìm task theo ID
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("❌ Task not found with ID: " + taskId));
+                .orElseThrow(() -> new RuntimeException("Task not found with ID: " + taskId));
 
         Long projectId = task.getProject().getProjectId();
 
-        // 👤 2️⃣ Lấy email user hiện tại từ SecurityContext
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new AccessDeniedException("Bạn chưa đăng nhập!");
@@ -405,8 +438,8 @@ public class TaskServiceImpl implements TaskService {
                 LocalDateTime start = LocalDateTime.parse(dto.getStartDate(), iso);
                 task.setStartDate(start);
             } catch (Exception e) {
-                log.warn("⚠️ Invalid startDate format: {}", dto.getStartDate());
-                throw new IllegalArgumentException("⚠️ Định dạng startDate không hợp lệ!");
+                log.warn(" Invalid startDate format: {}", dto.getStartDate());
+                throw new IllegalArgumentException(" Định dạng startDate không hợp lệ!");
             }
         }
 
@@ -415,42 +448,36 @@ public class TaskServiceImpl implements TaskService {
                 newDeadline = LocalDateTime.parse(dto.getDeadline(), iso);
                 if (newDeadline.isBefore(LocalDateTime.now())) {
                     throw new IllegalArgumentException(
-                            "🚫 Deadline không được nhỏ hơn thời gian hiện tại!");
+                            " Deadline không được nhỏ hơn thời gian hiện tại!");
                 }
                 task.setDeadline(newDeadline);
             } catch (IllegalArgumentException e) {
-                log.warn("⚠️ {}", e.getMessage());
+                log.warn(" {}", e.getMessage());
                 throw e;
             } catch (Exception e) {
-                log.warn("⚠️ Invalid deadline format: {}", dto.getDeadline());
-                throw new IllegalArgumentException("⚠️ Định dạng deadline không hợp lệ!");
+                log.warn(" Invalid deadline format: {}", dto.getDeadline());
+                throw new IllegalArgumentException(" Định dạng deadline không hợp lệ!");
             }
         }
 
-        // 💾 6️⃣ Lưu thay đổi
         task.setUpdatedAt(LocalDateTime.now());
         Task saved = taskRepository.save(task);
 
-        // 🪶 7️⃣ Ghi log hoạt động
         activityService.log("TASK", taskId, "UPDATE_DATES",
                 String.format("{\"start\":\"%s\",\"deadline\":\"%s\"}", dto.getStartDate(),
                         dto.getDeadline()),
                 actor);
 
-        // 🔔 8️⃣ Nếu deadline thay đổi → gửi thông báo
         if (newDeadline != null && (oldDeadline == null || !newDeadline.equals(oldDeadline))) {
             sendDeadlineNotification(saved, actor);
         }
 
-        log.info("🕓 [Deadline Updated] {} chỉnh deadline của task '{}'",
+        log.info("[Deadline Updated] {} chỉnh deadline của task '{}'",
                 actor != null ? actor.getName() : "System", task.getTitle());
 
-        // ✅ 9️⃣ Trả về DTO
         return TaskDTO.fromEntity(saved);
     }
 
-
-    /** Hỗ trợ cả UsernamePassword & OAuth2/OIDC */
     private User getCurrentUserOrNull() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated())
@@ -458,7 +485,6 @@ public class TaskServiceImpl implements TaskService {
 
         String email = null;
 
-        // OIDC / OAuth2
         if (auth.getPrincipal() instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidc) {
             email = oidc.getEmail();
         } else if (auth
@@ -468,12 +494,11 @@ public class TaskServiceImpl implements TaskService {
                 email = String.valueOf(em);
         }
 
-        // Form login / UserDetails
         if (email == null) {
             Object principal = auth.getPrincipal();
             if (principal instanceof org.springframework.security.core.userdetails.UserDetails ud) {
                 email = ud.getUsername();
-            } else if (principal instanceof String s) { // đôi khi là email/username
+            } else if (principal instanceof String s) {
                 email = s;
             }
         }
@@ -484,15 +509,11 @@ public class TaskServiceImpl implements TaskService {
         return userRepository.findByEmail(email).orElse(null);
     }
 
-    // ----------------------------------------------------
-    // ✅ 12. Các truy vấn cơ bản
-    // ----------------------------------------------------
     @Override
     public List<TaskDTO> getTasksByProject(Long projectId) {
         projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
 
-        // ⚡️ Chỉ lấy task chưa archived
         return taskRepository.findByProject_ProjectIdAndArchivedFalse(projectId).stream()
                 .map(TaskDTO::fromEntity).collect(Collectors.toList());
     }
@@ -520,9 +541,7 @@ public class TaskServiceImpl implements TaskService {
         return TaskDTO.fromEntity(task);
     }
 
-    // ----------------------------------------------------
-    // 🧩 Helper
-    // ----------------------------------------------------
+
     private String escapeJson(String text) {
         return text == null ? ""
                 : text.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
@@ -530,71 +549,108 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public boolean archiveTask(Long taskId) {
-        Task task = taskRepository.findById(taskId).orElse(null);
-        if (task == null)
-            return false;
+    public boolean archiveTask(Long taskId, User actor) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
 
+        Long projectId = task.getProject().getProjectId();
+        Long actorId = actor.getUserId();
+        String email = actor.getEmail();
+
+        ProjectAuthorizationService authz =
+                SpringContext.getBean(ProjectAuthorizationService.class);
+
+        boolean isPm = false;
+        try {
+            authz.ensurePmOfProject(email, projectId);
+            isPm = true;
+        } catch (Exception ignored) {
+        }
+
+        boolean isCreator =
+                task.getCreatedBy() != null && task.getCreatedBy().getUserId().equals(actorId);
+
+        if (!isPm && !isCreator) {
+            throw new AccessDeniedException(
+                    " Chỉ PM/ADMIN hoặc người tạo task mới được archive task này.");
+        }
         task.setArchived(true);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
+
         return true;
     }
 
     @Override
     @Transactional
-    public boolean restoreTask(Long taskId) {
-        Task task = taskRepository.findById(taskId).orElse(null);
-        if (task == null)
-            return false;
+    public boolean restoreTask(Long taskId, User actor) {
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+
+        Long projectId = task.getProject().getProjectId();
+        Long actorId = actor.getUserId();
+        String email = actor.getEmail();
+
+        ProjectAuthorizationService authz =
+                SpringContext.getBean(ProjectAuthorizationService.class);
+
+        boolean allowedAsPm = false;
+        try {
+            authz.ensurePmOfProject(email, projectId);
+            allowedAsPm = true;
+        } catch (Exception ignored) {
+        }
+
+        boolean allowedAsCreator =
+                task.getCreatedBy() != null && task.getCreatedBy().getUserId().equals(actorId);
+
+        if (!allowedAsPm && !allowedAsCreator) {
+            throw new AccessDeniedException("Bạn không có quyền restore task này.");
+        }
+
         task.setArchived(false);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
+
         return true;
     }
+
 
     @Override
     @Transactional
     public TaskDTO markComplete(Long taskId, Long userId) {
-        // 🔍 1️⃣ Lấy task
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
 
-        // 🔐 2️⃣ Chỉ cho phép người tạo hoặc follower của task đánh dấu hoàn thành
         boolean allowed = taskFollowerRepository.existsByTask_TaskIdAndUser_UserId(taskId, userId)
                 || (task.getCreatedBy() != null && task.getCreatedBy().getUserId().equals(userId));
 
         if (!allowed) {
-            throw new SecurityException(
-                    "⚠️ Chỉ thành viên của task mới có thể đánh dấu hoàn thành");
+            throw new SecurityException(" Chỉ thành viên của task mới có thể đánh dấu hoàn thành");
         }
 
-        // ⏳ 3️⃣ Nếu đã hoàn thành rồi thì bỏ qua
         if ("DONE".equalsIgnoreCase(task.getStatus())) {
             return TaskDTO.fromEntity(task);
         }
 
-        // ✅ 4️⃣ Cập nhật trạng thái task
         task.setStatus("DONE");
         task.setClosedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
         Task saved = taskRepository.save(task);
 
-        // 🧩 5️⃣ Khởi tạo các quan hệ để DTO không lỗi lazy
         Hibernate.initialize(saved.getAssignee());
         Hibernate.initialize(saved.getCreatedBy());
         Hibernate.initialize(saved.getProject());
         Hibernate.initialize(saved.getColumn());
         Hibernate.initialize(saved.getLabels());
 
-        // 🪶 6️⃣ Ghi activity log
         activityService.log("TASK", taskId, "MARK_COMPLETE",
                 "{\"title\":\"" + escapeJson(saved.getTitle()) + "\"}", saved.getCreatedBy());
 
-        log.info("✅ [TASK DONE] Task '{}' (ID={}) đã được đánh dấu hoàn thành bởi user {}",
+        log.info("[TASK DONE] Task '{}' (ID={}) đã được đánh dấu hoàn thành bởi user {}",
                 saved.getTitle(), taskId, userId);
 
-        // ✅ 7️⃣ Trả về DTO
         return TaskDTO.fromEntity(saved);
     }
 
@@ -626,8 +682,6 @@ public class TaskServiceImpl implements TaskService {
                         receivers.add(f.getUser());
                 });
             }
-
-            // ✅ Lọc trùng + loại actor
             List<User> filtered =
                     receivers.stream().filter(Objects::nonNull).filter(u -> u.getUserId() != null)
                             .filter(u -> actor == null || !u.getUserId().equals(actor.getUserId()))
@@ -636,37 +690,145 @@ public class TaskServiceImpl implements TaskService {
                                     m -> new ArrayList<>(m.values())));
 
             if (filtered.isEmpty()) {
-                log.debug("ℹ️ Không có người nhận thông báo deadline cho task '{}'",
+                log.debug("ℹ Không có người nhận thông báo deadline cho task '{}'",
                         task.getTitle());
                 return;
             }
 
             for (User receiver : filtered) {
                 notificationService.createNotification(receiver, "TASK_DUE_SOON", task.getTaskId(),
-                        title, message, link, actor // ✅ sender chính là actor
-                );
+                        title, message, link, actor);
             }
 
-            log.info("🔔 [Deadline] Đã gửi 'TASK_DUE_SOON' cho {} người trong task '{}'",
+            log.info("[Deadline] Đã gửi 'TASK_DUE_SOON' cho {} người trong task '{}'",
                     filtered.size(), task.getTitle());
 
         } catch (Exception e) {
-            log.error("❌ sendDeadlineNotification() failed: {}", e.getMessage(), e);
+            log.error(" sendDeadlineNotification() failed: {}", e.getMessage(), e);
         }
     }
 
     @Override
     @Transactional
-    public void removeDeadline(Long taskId) {
+    public void removeDeadline(Long taskId, User actor) {
+
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
+
+        Long projectId = task.getProject().getProjectId();
+
+        ProjectAuthorizationService authz =
+                SpringContext.getBean(ProjectAuthorizationService.class);
+
+        try {
+            authz.ensurePmOfProject(actor.getEmail(), projectId);
+        } catch (Exception e) {
+            throw new AccessDeniedException("Chỉ PM/ADMIN mới được xóa deadline của task.");
+        }
 
         task.setDeadline(null);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
         activityService.log("TASK", taskId, "REMOVE_DEADLINE", "{\"message\":\"Deadline removed\"}",
-                task.getCreatedBy());
+                actor);
+    }
+
+    @Override
+    public List<Task> getTasksByAssignee(User user) {
+        return taskRepository.findTasksByAssignee(user);
+    }
+
+    @Override
+    public List<Task> getTasksCreatedBy(User user) {
+        return taskRepository.findTasksCreatedBy(user);
+    }
+
+    @Override
+    public Map<String, Object> getPercentDoneByStatus(Long projectId) {
+        List<Map<String, Object>> raw = taskRepository.countTasksByStatus(projectId);
+
+        long total = raw.stream().mapToLong(m -> ((Number) m.get("count")).longValue()).sum();
+
+        Map<String, Double> temp = new HashMap<>();
+        raw.forEach(m -> {
+            String status = (String) m.get("status");
+            long count = ((Number) m.get("count")).longValue();
+            double percent = total == 0 ? 0 : ((double) count / total) * 100;
+            temp.put(status, percent);
+        });
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("DONE", String.format("%.1f", temp.getOrDefault("DONE", 0.0)));
+        result.put("IN_PROGRESS", String.format("%.1f", temp.getOrDefault("IN_PROGRESS", 0.0)));
+        result.put("OPEN", String.format("%.1f", temp.getOrDefault("OPEN", 0.0)));
+        result.put("total", total);
+
+        return result;
+    }
+
+    @Override
+    public List<MemberPerformanceDTO> getMemberPerformance(Long projectId) {
+        List<Object[]> rows = taskRepository.findMemberPerformanceByProject(projectId);
+        List<MemberPerformanceDTO> list = new ArrayList<>();
+
+        for (Object[] r : rows) {
+            MemberPerformanceDTO dto = new MemberPerformanceDTO();
+            dto.setUserId(((Number) r[0]).longValue());
+            dto.setName((String) r[1]);
+            dto.setEmail((String) r[2]);
+            dto.setTotalTasks(((Number) r[3]).longValue());
+            dto.setCompletedTasks(((Number) r[4]).longValue());
+            dto.setOnTimeTasks(((Number) r[5]).longValue());
+            dto.setLateTasks(((Number) r[6]).longValue());
+            dto.setAvgDelayHours(((Number) r[7]).doubleValue());
+            dto.setPriorityPoints(((Number) r[8]).intValue());
+
+            double score = 0;
+            if (dto.getTotalTasks() > 0) {
+                double completion = ((double) dto.getCompletedTasks() / dto.getTotalTasks()) * 50;
+                double punctuality = dto.getCompletedTasks() > 0
+                        ? ((double) dto.getOnTimeTasks() / dto.getCompletedTasks()) * 30
+                        : 0;
+                double effort = ((double) dto.getPriorityPoints() / dto.getTotalTasks()) * 20;
+                score = completion + punctuality + effort;
+                if (score > 100)
+                    score = 100;
+            }
+
+            dto.setPerformanceScore(Math.round(score * 100.0) / 100.0);
+            list.add(dto);
+        }
+
+        return list;
+    }
+
+    @Override
+    public List<Task> getTasksByUser(User user) {
+        return taskRepository.findAllUserTasks(user);
+    }
+
+    @Override
+    public Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size,
+            String status) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
+            return taskRepository.findUserTasksByStatus(user, status.toUpperCase(), pageable);
+        }
+
+        String key = (sortBy == null || sortBy.isBlank()) ? "deadline" : sortBy.toLowerCase();
+        return switch (key) {
+            case "priority" -> taskRepository.findUserTasksOrderByPriority(user, pageable);
+            case "project" -> taskRepository.findUserTasksOrderByProject(user, pageable);
+            case "deadline" -> taskRepository.findUserTasksOrderByDeadline(user, pageable);
+            default -> taskRepository.findUserTasksOrderByDeadline(user, pageable);
+        };
+    }
+
+    @Override
+    public List<Task> findUpcomingDeadlines(Long userId) {
+        return taskRepository.findTopUpcoming(userId, PageRequest.of(0, 5));
     }
 
 }

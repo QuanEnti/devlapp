@@ -27,9 +27,6 @@ public class NotificationRestController {
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
 
-    // ======================================================
-    // 🔔 Lấy danh sách thông báo của user hiện tại
-    // ======================================================
     @GetMapping
     public ResponseEntity<?> getNotifications(Authentication auth) {
         if (auth == null)
@@ -43,10 +40,9 @@ public class NotificationRestController {
             if (notifications == null || notifications.isEmpty())
                 return ResponseEntity.ok(List.of());
 
-            List<NotificationResponseDTO> responseList = notifications.stream()
-                    .map(this::mapToResponseDTO)
-                    .filter(dto -> dto != null)
-                    .collect(Collectors.toList());
+            List<NotificationResponseDTO> responseList =
+                    notifications.stream().map(this::mapToResponseDTO).filter(dto -> dto != null)
+                            .collect(Collectors.toList());
 
             return ResponseEntity.ok(responseList);
         } catch (Exception e) {
@@ -55,9 +51,6 @@ public class NotificationRestController {
         }
     }
 
-    // ======================================================
-    // 📖 Đánh dấu 1 thông báo là đã đọc
-    // ======================================================
     @PutMapping("/{id}/read")
     public ResponseEntity<?> markAsRead(@PathVariable("id") Long id, Authentication auth) {
         if (auth == null)
@@ -78,9 +71,7 @@ public class NotificationRestController {
         }
     }
 
-    // ======================================================
-    // 📬 Đánh dấu tất cả thông báo là đã đọc
-    // ======================================================
+
     @PutMapping("/read-all")
     public ResponseEntity<?> markAllAsRead(Authentication auth) {
         if (auth == null)
@@ -96,18 +87,12 @@ public class NotificationRestController {
         }
     }
 
-    // ======================================================
-    // 🗑️ Xóa thông báo
-    // ======================================================
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNotification(@PathVariable("id") Long id) {
         notificationService.deleteNotification(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ======================================================
-    // 🔹 Đếm số thông báo chưa đọc
-    // ======================================================
     @GetMapping("/unread-count")
     public ResponseEntity<?> countUnread(Authentication auth) {
         if (auth == null)
@@ -118,9 +103,6 @@ public class NotificationRestController {
         return ResponseEntity.ok(count);
     }
 
-    // ======================================================
-    // 🧠 Helper: lấy email từ Auth (Local / Google)
-    // ======================================================
     private String extractEmail(Authentication auth) {
         if (auth == null)
             return null;
@@ -136,34 +118,30 @@ public class NotificationRestController {
 
             String type = n.getType() != null ? n.getType().trim().toUpperCase() : "GENERAL";
             String title = n.getTitle() != null ? n.getTitle() : "Thông báo mới";
+
             String message = n.getMessage() != null ? n.getMessage() : "Bạn có thông báo mới.";
             String link = n.getLink() != null ? n.getLink() : "#";
             String projectName = "Không xác định";
 
-            // 🔹 Mapping project/task link an toàn
             if (n.getReferenceId() != null && type.startsWith("PROJECT_")) {
-                projectName = projectRepository.findById(n.getReferenceId())
-                        .map(Project::getName)
+                projectName = projectRepository.findById(n.getReferenceId()).map(Project::getName)
                         .orElse("Không xác định");
 
-                // 🧩 Nếu DB đã có link hợp lệ thì giữ nguyên, chỉ fallback nếu null
                 if (link == null || link.equals("#") || link.isBlank()) {
                     link = "/view/pm/project/board?projectId=" + n.getReferenceId();
                 }
-                    }
-                    else if (n.getReferenceId() != null && type.startsWith("TASK_")) {
-                                    Task task = taskRepository.findById(n.getReferenceId()).orElse(null);
+            } else if (n.getReferenceId() != null && type.startsWith("TASK_")) {
+                Task task = taskRepository.findById(n.getReferenceId()).orElse(null);
                 if (task != null && task.getProject() != null) {
                     projectName = task.getProject().getName();
-                    link = "/projects/" + task.getProject().getProjectId()
-                            + "/tasks/" + task.getTaskId();
+                    link = "/projects/" + task.getProject().getProjectId() + "/tasks/"
+                            + task.getTaskId();
                 }
             }
 
             if (message.contains("{project}"))
                 message = message.replace("{project}", projectName);
 
-            // ✅ Lấy thông tin người gửi (sender) thay vì hardcode “Hệ thống”
             String senderName = "Hệ thống";
             String senderAvatar = null;
             if (n.getSender() != null) {
@@ -171,29 +149,18 @@ public class NotificationRestController {
                 senderAvatar = n.getSender().getAvatarUrl();
             }
 
-            return NotificationResponseDTO.builder()
-                    .id(n.getNotificationId())
-                    .type(type)
-                    .title(title)
-                    .message(message)
-                    .status(n.getStatus())
-                    .createdAt(n.getCreatedAt())
-                    .referenceId(n.getReferenceId())
-                    .link(link)
-                    .icon(mapIcon(type))
-                    .senderName(senderName)
-                    .senderAvatar(senderAvatar)
-                    .build();
+            return NotificationResponseDTO.builder().id(n.getNotificationId()).type(type)
+                    .title(title).message(message).status(n.getStatus()).createdAt(n.getCreatedAt())
+                    .referenceId(n.getReferenceId()).link(link).icon(mapIcon(type))
+                    .senderName(senderName).senderAvatar(senderAvatar).build();
 
         } catch (Exception e) {
-            log.warn("⚠️ mapToResponseDTO() error for {}: {}", n.getNotificationId(), e.getMessage());
+            log.warn("⚠️ mapToResponseDTO() error for {}: {}", n.getNotificationId(),
+                    e.getMessage());
             return null;
         }
     }
 
-    // ======================================================
-    // 🧭 Helper: type → icon
-    // ======================================================
     private String mapIcon(String type) {
         return switch (type) {
             case "TASK_MEMBER_ADDED" -> "👥";

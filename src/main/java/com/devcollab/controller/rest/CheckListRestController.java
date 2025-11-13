@@ -3,8 +3,11 @@ package com.devcollab.controller.rest;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.devcollab.domain.User;
 import com.devcollab.service.feature.CheckListService;
+import com.devcollab.service.system.AuthService;
 import java.util.Map;
 
 @RestController
@@ -13,33 +16,40 @@ import java.util.Map;
 public class CheckListRestController {
 
     private final CheckListService checkListService;
+    private final AuthService authService;
 
-    /** 🧾 Lấy danh sách checklist của task */
     @GetMapping("/task/{taskId}")
     public ResponseEntity<?> getChecklist(@PathVariable Long taskId) {
         return ResponseEntity.ok(checkListService.getByTask(taskId));
     }
 
-    /** ➕ Thêm item mới vào checklist */
     @PostMapping("/task/{taskId}")
     public ResponseEntity<?> addItem(@PathVariable Long taskId,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body, Authentication auth) {
+
+        User actor = authService.getCurrentUserEntity(auth);
+
         String content = body.get("item");
-        return ResponseEntity.ok(checkListService.addItem(taskId, content));
+        return ResponseEntity.ok(checkListService.addItem(taskId, content, actor));
     }
 
-    /** ✅ Toggle hoàn thành / chưa hoàn thành */
     @PutMapping("/{id}/toggle")
     public ResponseEntity<?> toggleItem(@PathVariable Long id,
-            @RequestBody Map<String, Boolean> body) {
+            @RequestBody Map<String, Boolean> body, Authentication auth) {
+
+        User actor = authService.getCurrentUserEntity(auth);
+
         boolean done = body.getOrDefault("isDone", false);
-        return ResponseEntity.ok(checkListService.toggleItem(id, done));
+        return ResponseEntity.ok(checkListService.toggleItem(id, done, actor));
     }
 
-    /** ❌ Xóa một item trong checklist */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteItem(@PathVariable Long id) {
-        checkListService.deleteItem(id);
+    public ResponseEntity<?> deleteItem(@PathVariable Long id, Authentication auth) {
+
+        User actor = authService.getCurrentUserEntity(auth);
+
+        checkListService.deleteItem(id, actor);
         return ResponseEntity.ok(Map.of("message", "Đã xóa checklist item"));
     }
 }
+

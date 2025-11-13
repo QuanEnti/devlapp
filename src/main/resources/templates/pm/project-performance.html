@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Performance – DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+<!-- ✅ Header & Sidebar -->
+<div th:replace="fragments/header :: header"></div>
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+
+    <!-- ✅ Main content -->
+    <main class="flex-1 p-8 overflow-y-auto space-y-8">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-blue-600"></i> Member Performance
+            </h1>
+            <div class="flex items-center gap-3">
+                <button id="calcBtn"
+                        class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-money-bill-wave"></i> Calculate Salary
+                </button>
+
+                <button id="backBtn"
+                        class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Project
+                </button>
+            </div>
+        </div>
+
+
+        <!-- ✅ Table -->
+        <div class="bg-white p-6 rounded-2xl shadow border border-slate-200">
+            <table class="w-full text-sm border-separate border-spacing-y-1">
+                <thead>
+                <tr class="text-slate-600 bg-slate-50 border-b border-slate-200">
+                    <th class="py-2 px-4 text-left">Member</th>
+                    <th class="py-2 px-4 text-center">Total</th>
+                    <th class="py-2 px-4 text-center">Completed</th>
+                    <th class="py-2 px-4 text-center">On Time</th>
+                    <th class="py-2 px-4 text-center">Late</th>
+                    <th class="py-2 px-4 text-center">Avg Delay (hrs)</th>
+                    <th class="py-2 px-4 text-center">Priority Points</th>
+                    <th class="py-2 px-4 text-center">Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="m : ${performance}" class="bg-white hover:bg-blue-50 border border-slate-100 transition">
+                    <td class="py-2 px-4 font-medium text-slate-800" th:text="${m.name}">John Doe</td>
+                    <td class="py-2 px-4 text-center" th:text="${m.totalTasks}">0</td>
+                    <td class="py-2 px-4 text-center" th:text="${m.completedTasks}">0</td>
+                    <td class="py-2 px-4 text-center text-green-600" th:text="${m.onTimeTasks}">0</td>
+                    <td class="py-2 px-4 text-center text-red-500" th:text="${m.lateTasks}">0</td>
+                    <td class="py-2 px-4 text-center" th:text="${m.avgDelayHours}">0.0</td>
+                    <td class="py-2 px-4 text-center text-yellow-600" th:text="${m.priorityPoints}">0</td>
+                    <td class="py-2 px-4 text-center font-bold text-blue-700"
+                        th:text="${#numbers.formatDecimal(m.performanceScore, 0, 1) + '%'}">0%</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ✅ Chart Card -->
+        <div class="bg-white p-6 rounded-2xl shadow border border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-indigo-500"></i> Performance Overview
+            </h2>
+            <div class="w-full h-[380px]">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+        <!-- 💵 Salary Modal -->
+        <div id="salaryModal"
+             class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div class="bg-white w-[480px] p-6 rounded-2xl shadow-xl border border-slate-200 animate-fadeIn">
+                <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-coins text-yellow-500"></i> Salary Calculation
+                </h2>
+
+                <div class="mb-4">
+                    <label class="block text-slate-700 text-sm font-medium mb-1">💵 Enter Base Amount (VND):</label>
+                    <input id="baseRateInput" type="number" min="0" value="5000000"
+                           class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                           placeholder="e.g. 5000000" />
+                </div>
+
+                <table class="w-full text-sm border-separate border-spacing-y-1 mb-4">
+                    <thead>
+                    <tr class="text-slate-500 bg-slate-50 border-b border-slate-200">
+                        <th class="text-left py-2 px-3">Member</th>
+                        <th class="text-center py-2 px-3">Score</th>
+                        <th class="text-right py-2 px-3">Salary (VND)</th>
+                    </tr>
+                    </thead>
+                    <tbody id="salaryTable"></tbody>
+                </table>
+
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="recalcBtn"
+                            class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition">
+                        Recalculate
+                    </button>
+                    <button id="closeModal"
+                            class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium transition">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
+        </style>
+
+    </main>
+</div>
+
+<!-- ✅ ChartJS Script -->
+<script th:inline="javascript">
+    const projectId = new URLSearchParams(window.location.search).get("projectId");
+    const labels = /*[[${labels}]]*/ [];
+    const scores = /*[[${scores}]]*/ [];
+
+    const ctx = document.getElementById('scoreChart');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Performance Score (%)',
+                data: scores,
+                backgroundColor: [
+                    '#2563eb', '#059669', '#f59e0b', '#dc2626', '#9333ea'
+                ],
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: { color: '#e2e8f0' },
+                    ticks: {
+                        stepSize: 20,
+                        callback: val => val + '%'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Performance (%)',
+                        color: '#475569',
+                        font: { weight: 'bold' }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    title: {
+                        display: true,
+                        text: 'Team Members',
+                        color: '#475569',
+                        font: { weight: 'bold' }
+                    },
+                    ticks: { color: '#334155' }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    callbacks: {
+                        label: ctx => `${ctx.parsed.y.toFixed(1)}%`
+                    }
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+    document.getElementById("backBtn").addEventListener("click", () => {
+        window.location.href = `/view/pm/project/detail?projectId=${projectId}`;
+    });
+    // 💰 Open salary modal
+    document.getElementById("calcBtn").addEventListener("click", () => {
+        updateSalaryTable();
+        document.getElementById("salaryModal").classList.remove("hidden");
+    });
+
+    // 🔁 Recalculate when user clicks "Recalculate"
+    document.getElementById("recalcBtn").addEventListener("click", () => updateSalaryTable());
+
+    // ❌ Close modal
+    document.getElementById("closeModal").addEventListener("click", () => {
+        document.getElementById("salaryModal").classList.add("hidden");
+    });
+
+    // 📊 Function: update salary table based on input
+    function updateSalaryTable() {
+        const baseRate = parseFloat(document.getElementById("baseRateInput").value) || 0;
+        const tbody = document.getElementById("salaryTable");
+        tbody.innerHTML = "";
+
+        if (!labels.length || !scores.length) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-slate-500 py-3">No performance data</td></tr>`;
+            return;
+        }
+
+        labels.forEach((name, i) => {
+            const score = scores[i] ?? 0;
+            const salary = Math.round(baseRate * (score / 100));
+            const color =
+                score >= 80 ? "text-green-600"
+                    : score >= 60 ? "text-yellow-600"
+                        : "text-red-500";
+
+            tbody.innerHTML += `
+      <tr class="bg-white hover:bg-blue-50 border border-slate-100">
+        <td class="py-2 px-3 font-medium text-slate-800">${name}</td>
+        <td class="py-2 px-3 text-center ${color}">${score.toFixed(1)}%</td>
+        <td class="py-2 px-3 text-right font-semibold text-slate-700">${salary.toLocaleString()} ₫</td>
+      </tr>`;
+        });
+    }
+
+</script>
+</body>
+
+<div th:replace="fragments/chatbox :: chatbox"></div>
+<script th:src="@{/js/chatbox.js}"></script>
+</html>

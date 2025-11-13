@@ -398,6 +398,23 @@ body {
   margin-bottom: 14px;
 }
 
+.label-option--readonly .label-option__content {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.label-option--readonly input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.label-option--active .label-option__content {
+  border-color: rgba(59, 130, 246, 0.6);
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+/* ==========================
+   📎 Attachment Thumbnails
+   ========================== */
 .label-editor__header h3 {
   font-size: 14px;
   font-weight: 600;

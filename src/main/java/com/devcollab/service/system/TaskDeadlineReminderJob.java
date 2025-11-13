@@ -26,16 +26,14 @@ public class TaskDeadlineReminderJob {
     private final NotificationService notificationService;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    // Các mốc nhắc trước deadline
-    private static final Map<String, Duration> REMINDER_STAGES = Map.of(
-            "24h", Duration.ofHours(24),
-            "1h", Duration.ofHours(1),
-            "5m", Duration.ofMinutes(5));
+    private static final Map<String, Duration> REMINDER_STAGES = Map.of("24h", Duration.ofHours(24),
+            "1h", Duration.ofHours(1), "5m", Duration.ofMinutes(5));
 
     @Scheduled(fixedRate = 30 * 1000)
 
     public void checkUpcomingDeadlines() {
-        List<Task> tasks = taskRepository.findTasksDueBetween(LocalDateTime.now(), LocalDateTime.now().plusHours(24));
+        List<Task> tasks = taskRepository.findTasksDueBetween(LocalDateTime.now(),
+                LocalDateTime.now().plusHours(24));
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -59,24 +57,25 @@ public class TaskDeadlineReminderJob {
                 String redisKey = "task:reminder:" + task.getTaskId() + ":" + stage;
 
                 boolean redisSent = Boolean.TRUE.equals(redisTemplate.hasKey(redisKey));
-                boolean dbSentRecently = task.getLastRemindAt() != null
-                        && task.getLastReminderStage() != null
-                        && task.getLastReminderStage().equals(stage)
-                        && Duration.between(task.getLastRemindAt(), now).toHours() < 24;
+                boolean dbSentRecently =
+                        task.getLastRemindAt() != null && task.getLastReminderStage() != null
+                                && task.getLastReminderStage().equals(stage)
+                                && Duration.between(task.getLastRemindAt(), now).toHours() < 24;
 
                 if (redisSent || dbSentRecently)
                     continue;
 
                 sendReminderToAll(task, stage);
 
-                redisTemplate.opsForValue().set(redisKey, "sent", getTTLMinutes(stage), TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(redisKey, "sent", getTTLMinutes(stage),
+                        TimeUnit.MINUTES);
 
                 task.setLastRemindAt(LocalDateTime.now());
                 task.setLastReminderStage(stage);
                 taskRepository.save(task);
 
-                log.info("🔔 [HybridReminder] Gửi nhắc '{}' cho task '{}' (ID={})", stage, task.getTitle(),
-                        task.getTaskId());
+                log.info("🔔 [HybridReminder] Gửi nhắc '{}' cho task '{}' (ID={})", stage,
+                        task.getTitle(), task.getTaskId());
             }
         }
     }
@@ -91,8 +90,8 @@ public class TaskDeadlineReminderJob {
             default -> "Công việc \"" + task.getTitle() + "\" sắp đến hạn!";
         };
 
-        String link = "/projects/" + task.getProject().getProjectId()
-                + "/tasks/" + task.getTaskId();
+        String link =
+                "/projects/" + task.getProject().getProjectId() + "/tasks/" + task.getTaskId();
 
         List<User> receivers = new ArrayList<>();
 
@@ -108,12 +107,11 @@ public class TaskDeadlineReminderJob {
         }
 
         // Lọc trùng userId
-        List<User> uniqueReceivers = receivers.stream()
-                .filter(Objects::nonNull)
-                .filter(u -> u.getUserId() != null)
-                .collect(Collectors.collectingAndThen(
-                        Collectors.toMap(User::getUserId, u -> u, (a, b) -> a),
-                        m -> new ArrayList<>(m.values())));
+        List<User> uniqueReceivers =
+                receivers.stream().filter(Objects::nonNull).filter(u -> u.getUserId() != null)
+                        .collect(Collectors.collectingAndThen(
+                                Collectors.toMap(User::getUserId, u -> u, (a, b) -> a),
+                                m -> new ArrayList<>(m.values())));
 
         if (uniqueReceivers.isEmpty()) {
             log.debug("ℹ️ Không có người nhận nhắc hạn cho task '{}'", task.getTitle());
@@ -121,17 +119,12 @@ public class TaskDeadlineReminderJob {
         }
 
         for (User receiver : uniqueReceivers) {
-            notificationService.createNotification(
-                    receiver,
-                    "TASK_DUE_SOON",
-                    task.getTaskId(),
-                    title,
-                    message,
-                    link,
-                    null);
+            notificationService.createNotification(receiver, "TASK_DUE_SOON", task.getTaskId(),
+                    title, message, link, null);
         }
 
-        log.info("📨 Đã gửi nhắc hạn '{}' tới {} người cho task '{}'", stage, uniqueReceivers.size(), task.getTitle());
+        log.info("📨 Đã gửi nhắc hạn '{}' tới {} người cho task '{}'", stage,
+                uniqueReceivers.size(), task.getTitle());
     }
 
     private long getTTLMinutes(String stage) {

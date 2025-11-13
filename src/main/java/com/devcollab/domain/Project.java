@@ -59,6 +59,17 @@ public class Project {
     @Column(name = "allow_link_join", nullable = false)
     private boolean allowLinkJoin = false;
 
+    @Column(columnDefinition = "NVARCHAR(MAX)")
+    private String businessRule;
+
+    public String getBusinessRule() {
+        return businessRule;
+    }
+
+    public void setBusinessRule(String businessRule) {
+        this.businessRule = businessRule;
+    }
+
     @Column(name = "invite_auto_regen", nullable = false)
     private boolean inviteAutoRegen = true;
 
@@ -69,13 +80,13 @@ public class Project {
     private LocalDateTime inviteExpiredAt;
 
     @Column(name = "invite_usage_count")
-    private Integer inviteUsageCount = 0; // số lượng người đã dùng link
+    private Integer inviteUsageCount = 0;
 
     @Column(name = "invite_max_uses")
-    private Integer inviteMaxUses = 10; // giới hạn số lần sử dụng link
-    // ai là người bật / tạo link mời gần nhất
+    private Integer inviteMaxUses = 10;
+
     @Column(name = "invite_created_by", length = 150)
-    private String inviteCreatedBy; // lưu email hoặc userId người tạo link
+    private String inviteCreatedBy;
 
     public Project() {}
 

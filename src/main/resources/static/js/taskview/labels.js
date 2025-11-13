@@ -40,14 +40,192 @@ const COLOR_PALETTE = [
 let selectedColor = null;
 let selectedEditColor = null; // ✅ thêm biến cho edit preview
 let currentEditingLabelId = null;
+let currentEditingLabelMeta = null;
 let debounceLabelTimer;
 let lastLabelKeyword = "";
 let savedLabelsPopupPosition = null; // Lưu vị trí labels popup
+
+function parseNumericId(value) {
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function getCurrentUserId() {
+  const stored = localStorage.getItem("currentUserId");
+  if (!stored) return null;
+  const parsed = Number(stored);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function normalizeRole(role) {
+  return (role || window.CURRENT_ROLE || "ROLE_MEMBER")
+    .toString()
+    .toUpperCase();
+}
+
+function hasManagerLabelPrivileges(role) {
+  const normalized = normalizeRole(role);
+  return normalized === "ROLE_PM" || normalized === "ROLE_ADMIN";
+}
+
+function isProjectMember(role) {
+  const normalized = normalizeRole(role);
+  return (
+    normalized === "ROLE_PM" ||
+    normalized === "ROLE_ADMIN" ||
+    normalized === "ROLE_MEMBER"
+  );
+}
+
+function isCurrentUserFollower() {
+  const currentId = getCurrentUserId();
+  if (currentId == null) return false;
+  const followers = Array.isArray(window.CURRENT_TASK_FOLLOWER_IDS)
+    ? window.CURRENT_TASK_FOLLOWER_IDS
+    : [];
+  return followers.some((id) => Number(id) === Number(currentId));
+}
+
+function getLabelCreatorId(label = {}) {
+  const candidates = [
+    label.createdById,
+    label.createdBy?.userId,
+    label.createdBy,
+    label.ownerId,
+    label.owner?.userId,
+  ];
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null || candidate === "")
+      continue;
+    const parsed = parseNumericId(candidate);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+function canCreateLabels() {
+  return isProjectMember();
+}
+
+function canAssignLabels() {
+  if (hasManagerLabelPrivileges()) return true;
+  return isCurrentUserFollower();
+}
+
+function canEditLabel(label = {}) {
+  if (hasManagerLabelPrivileges()) return true;
+  if (typeof label.isCreator === "boolean") return label.isCreator;
+  const currentId = getCurrentUserId();
+  if (currentId == null) return false;
+  const creatorId = getLabelCreatorId(label);
+  if (creatorId == null) return false;
+  return Number(currentId) === Number(creatorId);
+}
+
+async function extractErrorMessage(res) {
+  try {
+    const data = await res.clone().json();
+    if (typeof data === "string") return data;
+    return data?.message || data?.error || "";
+  } catch (err) {
+    try {
+      return await res.text();
+    } catch (textErr) {
+      return "";
+    }
+  }
+}
 
 function stopEvent(e) {
   if (!e) return;
   if (typeof e.preventDefault === "function") e.preventDefault();
   if (typeof e.stopPropagation === "function") e.stopPropagation();
+}
+
+function decodeLabelName(value) {
+  if (!value) return "";
+  try {
+    return decodeURIComponent(value);
+  } catch (err) {
+    return value;
+  }
+}
+
+function getLabelMetadata(labelId) {
+  const row = document.querySelector(
+    `.label-option[data-label-id="${labelId}"]`
+  );
+  if (!row) return null;
+  const name = decodeLabelName(row.dataset.labelName || "");
+  const color = row.dataset.labelColor || "#94a3b8";
+  return {
+    labelId,
+    name,
+    color,
+    creatorId:
+      row.dataset.creatorId != null ? Number(row.dataset.creatorId) : null,
+  };
+}
+
+function addInlineLabelChip(meta) {
+  const container = document.getElementById("labels-display-inline");
+  if (!container || !meta) return;
+  const existing = container.querySelector(`[data-label-id="${meta.labelId}"]`);
+  if (existing) return;
+  const chip = document.createElement("span");
+  chip.dataset.labelId = String(meta.labelId);
+  chip.className =
+    "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold text-white";
+  chip.style.backgroundColor = meta.color || "#94a3b8";
+  chip.textContent = meta.name || "";
+  container.appendChild(chip);
+}
+
+function removeInlineLabelChip(labelId) {
+  const container = document.getElementById("labels-display-inline");
+  if (!container) return;
+  const chip = container.querySelector(`[data-label-id="${labelId}"]`);
+  if (chip) chip.remove();
+}
+
+function setLabelRowAssigned(labelId, assigned) {
+  const row = document.querySelector(
+    `.label-option[data-label-id="${labelId}"]`
+  );
+  if (!row) return;
+  row.classList.toggle("label-option--active", Boolean(assigned));
+  const checkbox = row.querySelector('input[type="checkbox"]');
+  if (checkbox) checkbox.checked = Boolean(assigned);
+}
+
+function updateLabelRowMetadata(label) {
+  if (!label || label.labelId == null) return;
+  const row = document.querySelector(
+    `.label-option[data-label-id="${label.labelId}"]`
+  );
+  if (!row) return;
+
+  const encodedName = encodeURIComponent(label.name || "Unnamed");
+  row.dataset.labelName = encodedName;
+  row.dataset.labelColor = label.color || "#94a3b8";
+  row.dataset.creatorId =
+    label.createdById != null ? String(label.createdById) : "";
+
+  const nameEl = row.querySelector(".label-option__name");
+  if (nameEl) nameEl.textContent = label.name || "";
+
+  const swatch = row.querySelector(".label-option__swatch");
+  if (swatch) swatch.style.background = label.color || DEFAULT_COLOR;
+}
+
+function updateInlineLabelChip(meta) {
+  if (!meta || meta.labelId == null) return;
+  const container = document.getElementById("labels-display-inline");
+  if (!container) return;
+  const chip = container.querySelector(`[data-label-id="${meta.labelId}"]`);
+  if (!chip) return;
+  chip.textContent = meta.name || "";
+  chip.style.backgroundColor = meta.color || "#94a3b8";
 }
 
 // ================= INIT EVENTS =================
@@ -68,6 +246,10 @@ export function initLabelEvents() {
 
   const editLabelBack = document.getElementById("edit-label-back");
   const editLabelName = document.getElementById("edit-label-name");
+
+  if (!canCreateLabels()) {
+    createLabelBtn?.classList.add("hidden");
+  }
 
   // 🟢 Mở popup labels
   openLabelsBtn?.addEventListener("click", openLabelsPopup);
@@ -92,6 +274,13 @@ export function initLabelEvents() {
   createLabelBtn?.addEventListener("click", (e) => {
     stopEvent(e);
     safeStop(e);
+    if (!canCreateLabels()) {
+      showToast(
+        " You do not have permission to create labels in this project.",
+        "error"
+      );
+      return;
+    }
     if (!createLabelPopup) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -154,6 +343,32 @@ export function initLabelEvents() {
 
   editLabelName?.addEventListener("input", updateEditLabelPreview);
   editLabelBack?.addEventListener("click", (e) => closeEditLabelPopup(e, true));
+
+  document.addEventListener("mousedown", (event) => {
+    const labelsPopupEl = document.getElementById("labels-popup");
+    const createPopupEl = document.getElementById("create-label-popup");
+    const editWrapperEl = document.getElementById("edit-label-popup-wrapper");
+
+    const clickedInsidePopup =
+      labelsPopupEl?.contains(event.target) ||
+      createPopupEl?.contains(event.target) ||
+      editWrapperEl?.contains(event.target);
+
+    const triggeredFromControls =
+      event.target.closest("#open-labels-btn") ||
+      event.target.closest("#open-labels-btn-inline") ||
+      event.target.closest("#card-context-menu") ||
+      event.target.closest(".label-option") ||
+      event.target.closest(".color-option") ||
+      event.target.closest("#create-label-btn") ||
+      event.target.closest("#labels-popup");
+
+    if (!clickedInsidePopup && !triggeredFromControls) {
+      labelsPopupEl?.classList.add("hidden");
+      createPopupEl?.classList.add("hidden");
+      editWrapperEl?.classList.add("hidden");
+    }
+  });
 }
 
 // ================= OPEN POPUP =================
@@ -162,11 +377,17 @@ export function openLabelsPopup(e) {
   safeStop(e);
 
   const labelsPopup = document.getElementById("labels-popup");
-  if (!labelsPopup) return console.error("❌ labelsPopup not found in DOM");
+  if (!labelsPopup) return console.error(" labelsPopup not found in DOM");
   const createLabelPopup = document.getElementById("create-label-popup");
   const editLabelPopupWrapper = document.getElementById(
     "edit-label-popup-wrapper"
   );
+  const createLabelBtn = document.getElementById("create-label-btn");
+  if (createLabelBtn) {
+    const canCreate = canCreateLabels();
+    createLabelBtn.classList.toggle("hidden", !canCreate);
+    createLabelBtn.disabled = !canCreate;
+  }
 
   let rect = e?.currentTarget?.getBoundingClientRect?.() ?? null;
   const isValidRect = rect && rect.width > 0 && rect.height > 0;
@@ -204,6 +425,24 @@ export async function loadLabels(keyword = lastLabelKeyword) {
   if (!taskId || !listEl) return;
 
   lastLabelKeyword = keyword ?? "";
+
+  const canAssign = canAssignLabels();
+  const permissionHint = document.getElementById("labels-permission-hint");
+  if (permissionHint) {
+    if (canAssign) {
+      permissionHint.textContent = "";
+      permissionHint.classList.add("hidden");
+    } else {
+      permissionHint.textContent =
+        "Only project managers or members assigned to this task can change labels.";
+      permissionHint.classList.remove("hidden");
+    }
+  }
+  try {
+    listEl.dataset.readonly = canAssign ? "false" : "true";
+  } catch (err) {
+    // ignore dataset errors on older browsers
+  }
 
   listEl.innerHTML = `<p class="text-gray-400 text-sm italic">Loading...</p>`;
 
@@ -245,16 +484,17 @@ function renderLabelRow(label, isAssigned) {
   const taskId = window.CURRENT_TASK_ID;
   const color = label.color || DEFAULT_COLOR;
   const displayName = escapeHtmlUtil(label.name || "Unnamed");
-  return `
-    <label class="label-option" style="--label-color:${color}">
-      <input type="checkbox" ${isAssigned ? "checked" : ""}
-        onchange="handleLabelChange(${taskId},${label.labelId},this.checked)">
-      <span class="label-option__content" role="presentation">
-        <span class="label-option__left">
-          <span class="label-option__swatch" style="background:${color};"></span>
-          <span class="label-option__name" title="${displayName}">${displayName}</span>
-        </span>
-        <span class="label-option__actions">
+  const assignable = canAssignLabels();
+  const canEditThisLabel = canEditLabel(label);
+  const labelClass = `label-option${
+    assignable ? "" : " label-option--readonly"
+  }`;
+  const contentClass = `label-option__content${
+    assignable ? "" : " label-option__content--readonly"
+  }`;
+  const checkboxAttrs = assignable ? "" : ' disabled aria-disabled="true"';
+  const actionsHtml = canEditThisLabel
+    ? `<span class="label-option__actions">
           <button
             type="button"
             class="label-option__edit"
@@ -263,49 +503,138 @@ function renderLabelRow(label, isAssigned) {
           >
             ✎
           </button>
+        </span>`
+    : "";
+  const rawName = label.name || "Unnamed";
+  const encodedName = encodeURIComponent(rawName);
+  return `
+    <label class="${labelClass}${
+    isAssigned ? " label-option--active" : ""
+  }" style="--label-color:${color}" data-label-id="${
+    label.labelId
+  }" data-label-name="${encodedName}" data-label-color="${color}" data-creator-id="${
+    label.createdById ?? ""
+  }">
+      <input type="checkbox" data-label-id="${label.labelId}" ${
+    isAssigned ? "checked" : ""
+  }${checkboxAttrs}
+        onchange="handleLabelChange(${taskId},${label.labelId},this.checked)">
+      <span class="${contentClass}" role="presentation">
+        <span class="label-option__left">
+          <span class="label-option__swatch" style="background:${color};"></span>
+          <span class="label-option__name" title="${displayName}">${displayName}</span>
         </span>
+        ${actionsHtml}
       </span>
     </label>`;
 }
 
-function handleLabelChange(taskId, labelId, isChecked) {
-  if (isChecked) assignLabel(taskId, labelId);
-  else unassignLabel(taskId, labelId);
+async function handleLabelChange(taskId, labelId, isChecked) {
+  if (!canAssignLabels()) {
+    showToast(
+      " You do not have permission to change labels on this task.",
+      "error"
+    );
+    const checkbox = document.querySelector(
+      `.label-option input[data-label-id="${labelId}"]`
+    );
+    if (checkbox) checkbox.checked = !isChecked;
+    return;
+  }
+
+  const success = isChecked
+    ? await assignLabel(taskId, labelId)
+    : await unassignLabel(taskId, labelId);
+
+  if (!success) {
+    const checkbox = document.querySelector(
+      `.label-option input[data-label-id="${labelId}"]`
+    );
+    if (checkbox) checkbox.checked = !isChecked;
+  }
+  if (success) {
+    setLabelRowAssigned(labelId, isChecked);
+  }
 }
 
 // ================= ASSIGN / UNASSIGN =================
 export async function assignLabel(taskId, labelId) {
+  if (!canAssignLabels()) {
+    showToast(
+      " You do not have permission to assign labels on this task.",
+      "error"
+    );
+    return false;
+  }
   try {
     const res = await fetch(`/api/tasks/${taskId}/labels/${labelId}`, {
       method: "POST",
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error(`Failed to assign label (${res.status})`);
-    await loadLabels();
+    if (!res.ok) {
+      if (res.status === 403) {
+        const message = await extractErrorMessage(res);
+        showToast(
+          message ||
+            " You do not have permission to assign labels on this task.",
+          "error"
+        );
+        return false;
+      }
+      throw new Error(`Failed to assign label (${res.status})`);
+    }
+    const meta = getLabelMetadata(labelId);
+    addInlineLabelChip(meta);
+    return true;
   } catch (err) {
     console.error(" assignLabel error:", err);
     showToast(" Failed to assign label", "error");
+    return false;
   }
 }
 
 export async function unassignLabel(taskId, labelId) {
+  if (!canAssignLabels()) {
+    showToast(
+      " You do not have permission to remove labels from this task.",
+      "error"
+    );
+    return false;
+  }
   try {
     const res = await fetch(`/api/tasks/${taskId}/labels/${labelId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
     if (res.ok || res.status === 204) {
-      await loadLabels();
-      return;
+      removeInlineLabelChip(labelId);
+      return true;
+    }
+    if (res.status === 403) {
+      const message = await extractErrorMessage(res);
+      showToast(
+        message ||
+          " You do not have permission to remove labels from this task.",
+        "error"
+      );
+      return false;
     }
     throw new Error(`Failed to unassign label: ${res.status}`);
   } catch (err) {
     console.error(" unassignLabel error:", err);
     showToast(" Failed to remove label", "error");
+    return false;
   }
 }
 
 async function handleCreateLabel() {
+  if (!canCreateLabels()) {
+    showToast(
+      " You do not have permission to create labels in this project.",
+      "error"
+    );
+    return;
+  }
   const name = document.getElementById("new-label-name").value.trim();
   if (!name) return showToast("⚠️ Please enter label name", "error");
 
@@ -432,7 +761,15 @@ async function openEditLabel(labelId, e) {
     if (!res.ok) throw new Error(`Failed to fetch label ${labelId}`);
 
     const label = await res.json();
+    if (!canEditLabel(label)) {
+      showToast(
+        " Only project managers or label creators can edit this label.",
+        "error"
+      );
+      return;
+    }
     currentEditingLabelId = labelId;
+    currentEditingLabelMeta = label;
     selectedEditColor = label.color || DEFAULT_COLOR;
     editNameInput.value = label.name || "";
 
@@ -486,6 +823,7 @@ function closeEditLabelPopup(e, reopenList = true) {
   if (reopenList) labelsPopup?.classList.remove("hidden");
 
   currentEditingLabelId = null;
+  currentEditingLabelMeta = null;
   selectedEditColor = DEFAULT_COLOR;
   renderColorGrid(editGrid, { selected: selectedEditColor, mode: "edit" });
   updateEditLabelPreview();
@@ -504,6 +842,13 @@ async function saveEditedLabel() {
 
   const name = document.getElementById("edit-label-name")?.value.trim();
   if (!name) return showToast(" Please enter label name", "error");
+  if (!canEditLabel(currentEditingLabelMeta || {})) {
+    showToast(
+      " Only project managers or label creators can edit this label.",
+      "error"
+    );
+    return;
+  }
 
   const payload = {
     name,
@@ -518,8 +863,15 @@ async function saveEditedLabel() {
     });
 
     if (!res.ok) throw new Error(`Update failed (${res.status})`);
+    const updated = await res.json();
+    currentEditingLabelMeta = updated;
+    updateLabelRowMetadata(updated);
+    updateInlineLabelChip({
+      labelId: updated.labelId,
+      name: updated.name,
+      color: updated.color,
+    });
     closeEditLabelPopup(null);
-    await loadLabels();
   } catch (err) {
     console.error(" saveEditedLabel error:", err);
     showToast(" Failed to update label", "error");
@@ -530,10 +882,13 @@ async function deleteEditedLabel() {
   if (!currentEditingLabelId)
     return showToast(" Please select a label to delete", "error");
 
-  const confirmed = window.confirm(
-    "Are you sure you want to delete this label?"
-  );
-  if (!confirmed) return;
+  if (!canEditLabel(currentEditingLabelMeta || {})) {
+    showToast(
+      " Only project managers or label creators can delete this label.",
+      "error"
+    );
+    return;
+  }
 
   try {
     const res = await fetch(`/api/labels/${currentEditingLabelId}`, {
@@ -542,8 +897,13 @@ async function deleteEditedLabel() {
     });
 
     if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+    removeInlineLabelChip(currentEditingLabelId);
+    const row = document.querySelector(
+      `.label-option[data-label-id="${currentEditingLabelId}"]`
+    );
+    row?.remove();
     closeEditLabelPopup(null);
-    await loadLabels();
+    showToast(" Label deleted", "success");
   } catch (err) {
     console.error(" deleteEditedLabel error:", err);
     showToast("Failed to delete label", "error");

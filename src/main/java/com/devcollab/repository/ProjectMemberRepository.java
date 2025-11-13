@@ -266,5 +266,31 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Pr
                     )
                 """)
         List<User> findUsersByProjectIds(@Param("projectIds") List<Long> projectIds, @Param("userId") Long userId);
+    @Query("""
+        SELECT pm FROM ProjectMember pm
+        WHERE pm.user = :user
+        ORDER BY
+            CASE
+                WHEN LOWER(pm.roleInProject) IN ('pm','project manager','manager','projectmanager') THEN 1
+                ELSE 2
+            END,
+            pm.joinedAt DESC
+    """)
+    Page<ProjectMember> findByUserSortedByManager(User user, Pageable pageable);
 
+    // ✅ Sort by Member roles first
+    @Query("""
+        SELECT pm FROM ProjectMember pm
+        WHERE pm.user = :user
+        ORDER BY
+            CASE
+                WHEN LOWER(pm.roleInProject) IN ('member','normal','user') THEN 1
+                ELSE 2
+            END,
+            pm.joinedAt DESC
+    """)
+    Page<ProjectMember> findByUserSortedByMember(User user, Pageable pageable);
+
+    // ✅ Default (no special sort)
+    Page<ProjectMember> findByUser(User user, Pageable pageable);
 }

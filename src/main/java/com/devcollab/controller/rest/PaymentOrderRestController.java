@@ -190,7 +190,18 @@ public class PaymentOrderRestController {
     /** ➕ Tạo đơn hàng */
     @PostMapping("/create")
     public Map<String, Object> createOrder(@RequestBody Map<String, Object> body, Authentication auth) {
-        String email = (auth != null && auth.isAuthenticated()) ? auth.getName() : null;
+        String email = null;
+
+        if (auth != null && auth.isAuthenticated()) {
+            Object principal = auth.getPrincipal();
+            if (principal instanceof org.springframework.security.core.userdetails.User userDetails) {
+                // ✅ Local login
+                email = userDetails.getUsername();
+            } else if (principal instanceof org.springframework.security.oauth2.core.user.DefaultOAuth2User oauth2User) {
+                // ✅ Google login
+                email = (String) oauth2User.getAttribute("email");
+            }
+        }
         return paymentOrderService.createOrder(body, email);
     }
 

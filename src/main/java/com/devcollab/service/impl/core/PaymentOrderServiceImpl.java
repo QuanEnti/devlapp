@@ -14,9 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -89,9 +87,18 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                 user = userRepo.findById(order.getUser().getUserId()).orElse(null);
             }
 
-            if (user != null && !user.isPremium()) {
+            if (user != null) {
                 user.setPremium(true);
-                user.setPremiumExpiry(Instant.now().plusSeconds(30L * 24 * 60 * 60)); // 30 ngày
+                Instant now = Instant.now();
+                Instant currentExpiry = user.getPremiumExpiry();
+
+                if (currentExpiry != null && currentExpiry.isAfter(now)) {
+                    // 🔹 Nếu user vẫn còn hạn, cộng thêm 30 ngày
+                    user.setPremiumExpiry(currentExpiry.plusSeconds(30L * 24 * 60 * 60));
+                } else {
+                    // 🔹 Nếu đã hết hạn hoặc chưa có, bắt đầu lại từ hôm nay
+                    user.setPremiumExpiry(now.plusSeconds(30L * 24 * 60 * 60));
+                }
                 userRepo.save(user);
             }
 
@@ -152,5 +159,18 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
         result.put("payment_status", order.getPaymentStatus());
         return result;
+    }
+    @Override
+    public List<Map<String, Object>> getRevenueByMonth() {
+        List<Map<String, Object>> revenue = new ArrayList<>();
+        List<Object[]> raw = orderRepo.sumRevenueByMonth();
+
+        for (Object[] row : raw) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("month", row[0]);  // e.g. "2025-11"
+            item.put("total", row[1]);
+            revenue.add(item);
+        }
+        return revenue;
     }
 }

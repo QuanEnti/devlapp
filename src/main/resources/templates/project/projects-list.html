@@ -111,49 +111,16 @@
       let totalPages = 1;
       let keyword = "";
 
-      // ✅ Kiểm tra quyền PM trước khi load
-      async function ensureCurrentUser() {
-        try {
-          const token = localStorage.getItem("token");
-          const res = await fetch("/api/auth/me", {
-            headers: { Authorization: "Bearer " + token },
-            credentials: "include",
-          });
-          if (!res.ok) throw new Error("Unauthorized");
-
-          const result = await res.json();
-          const user = result.user || result;
-          const roles = user.roles || [];
-
-          if (!roles.includes("ROLE_PM")) {
-            alert("⚠️ Bạn không có quyền truy cập trang này!");
-            window.location.href = "/view/member/overview";
-            return false;
-          }
-
-          console.log("✅ PM xác thực:", user.email);
-          return true;
-        } catch (err) {
-          console.error("❌ Lỗi xác thực:", err);
-          window.location.href = "/view/signin?redirect=/view/pm/projects";
-          return false;
-        }
-      }
-
-      // ✅ Load danh sách dự án
       async function loadProjects(page = 0) {
         try {
-          const token = localStorage.getItem("token");
           const res = await fetch(
             `/api/pm/project/all?page=${page}&size=6&keyword=${encodeURIComponent(
               keyword
             )}`,
             {
-              headers: { Authorization: "Bearer " + token },
               credentials: "include",
             }
           );
-
           const data = await res.json();
           const content = data.content || data.data?.content || [];
           totalPages = data.totalPages || data.data?.totalPages || 1;
@@ -172,44 +139,45 @@
               const visibleNames = (p.memberNames || []).slice(0, 4);
               const extraCount = Math.max(0, (p.memberCount || 0) - 4);
 
+              // 🔹 Avatars block
               const avatarsHTML = `
-            <div class="flex items-center mt-3">
-              <div class="flex -space-x-3 overflow-visible relative z-10">
-                ${visibleAvatars
-                  .map(
-                    (url, i) => `
-                  <div class="relative group">
-                    <img src="${url || "https://i.pravatar.cc/100?img=" + i}" 
-                        class="w-9 h-9 rounded-full border-2 border-white object-cover" 
-                        alt="Member avatar">
-                    <div class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 
-                                opacity-0 group-hover:opacity-100 transition-opacity duration-200 
-                                bg-slate-800 text-white text-xs font-medium py-1 px-2 rounded-lg 
-                                pointer-events-none whitespace-nowrap shadow-sm">
-                      ${visibleNames[i] || "Member"}
-                    </div>
-                  </div>
-                `
-                  )
-                  .join("")}
-                ${
-                  extraCount > 0
-                    ? `
-                  <div class="relative group">
-                    <div class="w-9 h-9 rounded-full bg-blue-50 border-2 border-white flex items-center justify-center 
-                                text-sm font-semibold text-blue-600 cursor-pointer">+${extraCount}</div>
-                    <div class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 
-                                opacity-0 group-hover:opacity-100 transition-opacity duration-200 
-                                bg-slate-800 text-white text-xs font-medium py-1 px-2 rounded-lg 
-                                pointer-events-none whitespace-nowrap shadow-sm">
-                      ${p.memberCount} members
-                    </div>
-                  </div>`
-                    : ""
-                }
+        <div class="flex items-center mt-3">
+          <div class="flex -space-x-3 overflow-visible relative z-10">
+            ${visibleAvatars
+              .map(
+                (url, i) => `
+              <div class="relative group">
+                <img src="${url || "https://i.pravatar.cc/100?img=" + i}" 
+                    class="w-9 h-9 rounded-full border-2 border-white object-cover" 
+                    alt="Member avatar">
+                <div class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 
+                            opacity-0 group-hover:opacity-100 transition-opacity duration-200 
+                            bg-slate-800 text-white text-xs font-medium py-1 px-2 rounded-lg 
+                            pointer-events-none whitespace-nowrap shadow-sm">
+                  ${visibleNames[i] || "Member"}
+                </div>
               </div>
-            </div>
-          `;
+            `
+              )
+              .join("")}
+            ${
+              extraCount > 0
+                ? `
+              <div class="relative group">
+                <div class="w-9 h-9 rounded-full bg-blue-50 border-2 border-white flex items-center justify-center 
+                            text-sm font-semibold text-blue-600 cursor-pointer">+${extraCount}</div>
+                <div class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 
+                            opacity-0 group-hover:opacity-100 transition-opacity duration-200 
+                            bg-slate-800 text-white text-xs font-medium py-1 px-2 rounded-lg 
+                            pointer-events-none whitespace-nowrap shadow-sm">
+                  ${p.memberCount} members
+                </div>
+              </div>`
+                : ""
+            }
+          </div>
+        </div>
+      `;
 
               return `
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-all">
@@ -263,7 +231,6 @@
           renderPagination();
         } catch (err) {
           console.error("⚠️ Error loading projects:", err);
-          alert("Không thể tải danh sách dự án. Vui lòng đăng nhập lại!");
         }
       }
 
@@ -302,11 +269,7 @@
         loadProjects(0);
       });
 
-      document.addEventListener("DOMContentLoaded", async () => {
-        const ok = await ensureCurrentUser();
-        if (!ok) return;
-        loadProjects();
-      });
+      document.addEventListener("DOMContentLoaded", () => loadProjects());
     </script>
 
     <script

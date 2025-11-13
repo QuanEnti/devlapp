@@ -6,7 +6,8 @@ import java.util.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
-@Table(name = "[Label]", uniqueConstraints = @UniqueConstraint(columnNames = { "project_id", "name" }))
+@Table(name = "[Label]",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"project_id", "name"}))
 public class Label {
 
     @Id
@@ -20,17 +21,21 @@ public class Label {
 
     @Column(nullable = false, length = 60)
     private String name;
-    
+
     @Column(length = 24)
     private String color;
 
-   @ManyToMany(mappedBy = "labels", fetch = FetchType.LAZY)
-@JsonIgnoreProperties("labels") // 💥 Cắt vòng lặp JSON
-private Set<Task> tasks = new HashSet<>();
+    @ManyToMany(mappedBy = "labels", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("labels")
+    private Set<Task> tasks = new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = true)
+    @JsonIgnoreProperties({"roles", "projects"})
 
-    public Label() {
-    }
+    private User createdBy;
+
+    public Label() {}
 
     public Long getLabelId() {
         return labelId;
@@ -70,5 +75,13 @@ private Set<Task> tasks = new HashSet<>();
 
     public void setTasks(Set<Task> tasks) {
         this.tasks = tasks;
+    }
+
+    public User getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
     }
 }

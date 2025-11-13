@@ -133,4 +133,12 @@ public class ActivityServiceImpl implements ActivityService {
             System.err.println("[ActivityService] Error logging with actor: " + e.getMessage());
         }
     }
+    @Override
+    public Page<Activity> searchActivities(String user, String action, String entityType, Pageable pageable) {
+        String userFilter = (user == null || user.isBlank()) ? null : user.trim().toLowerCase();
+        String actionFilter = (action == null || action.isBlank()) ? null : action.trim().toLowerCase();
+        String entityFilter = (entityType == null || entityType.isBlank()) ? null : entityType.trim().toLowerCase();
+
+        return activityRepo.searchActivities(userFilter, actionFilter, entityFilter, pageable);
+    }
 }

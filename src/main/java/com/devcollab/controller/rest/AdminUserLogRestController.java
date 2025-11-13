@@ -7,7 +7,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -25,12 +24,35 @@ public class AdminUserLogRestController {
     public Map<String, Object> getAllLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        var pageData = activityService.getPaginatedActivities(PageRequest.of(page, size));
+
+        Page<Activity> pageData = activityService.getPaginatedActivities(PageRequest.of(page, size));
+
         Map<String, Object> response = new HashMap<>();
         response.put("content", pageData.getContent());
         response.put("currentPage", pageData.getNumber());
         response.put("totalItems", pageData.getTotalElements());
         response.put("totalPages", pageData.getTotalPages());
+        response.put("pageSize", size);
+
         return response;
     }
+    @GetMapping("/search")
+    public Map<String, Object> searchLogs(
+            @RequestParam(required = false) String user,
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String entityType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<Activity> pageData = activityService.searchActivities(user, action, entityType, PageRequest.of(page, size));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", pageData.getContent());
+        response.put("currentPage", pageData.getNumber());
+        response.put("totalItems", pageData.getTotalElements());
+        response.put("totalPages", pageData.getTotalPages());
+        response.put("pageSize", size);
+        return response;
+    }
+
 }

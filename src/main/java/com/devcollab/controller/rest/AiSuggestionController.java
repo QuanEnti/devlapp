@@ -140,4 +140,71 @@ public class AiSuggestionController {
             return Map.of("intent", "error");
         }
     }
+    @PostMapping("/suggest-business-rule")
+    public Map<String, String> suggestBusinessRule(@RequestBody Map<String, String> payload) {
+        String input = payload.get("input");
+        String projectName = payload.getOrDefault("projectName", "Dự án");
+        String description = payload.getOrDefault("description", "");
+
+        if ((input == null || input.isBlank()) && description.isBlank()) {
+            return Map.of("suggestion", "Hãy nhập tên hoặc mô tả dự án để AI có thể gợi ý quy tắc nghiệp vụ.");
+        }
+
+        try {
+            String modelName = "gemini-2.0-flash";
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/"
+                    + modelName + ":generateContent?key=" + geminiApiKey;
+
+            RestTemplate restTemplate = new RestTemplate();
+
+            String prompt = """
+                Viết một đoạn **Business Rule (quy tắc nghiệp vụ)** rõ ràng, súc tích cho dự án:
+                - Tên dự án: %s
+                - Mô tả: %s
+                - Gợi ý thêm dựa vào: %s
+
+                Trả về bằng tiếng Việt, dễ hiểu, có thể liệt kê theo gạch đầu dòng.
+                Không dùng markdown hoặc ký tự **.
+                """.formatted(projectName, description, input);
+
+            Map<String, Object> textPart = Map.of("text", prompt);
+            Map<String, Object> content = Map.of("parts", List.of(textPart));
+            Map<String, Object> body = Map.of("contents", List.of(content));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+
+            Map<String, Object> result = response.getBody();
+            String suggestion = "Không thể sinh gợi ý.";
+
+            if (result != null && result.containsKey("candidates")) {
+                List candidates = (List) result.get("candidates");
+                if (!candidates.isEmpty()) {
+                    Map firstCandidate = (Map) candidates.get(0);
+                    Map contentMap = (Map) firstCandidate.get("content");
+                    List parts = (List) contentMap.get("parts");
+                    if (!parts.isEmpty()) {
+                        Map textPartMap = (Map) parts.get(0);
+                        suggestion = textPartMap.get("text").toString();
+                    }
+                }
+            }
+
+            suggestion = suggestion
+                    .replaceAll("\\*\\*", "")
+                    .replaceAll("\\*", "")
+                    .trim();
+
+            return Map.of("suggestion", suggestion);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Map.of("suggestion", "⚠️ Lỗi khi gọi AI: " + e.getMessage());
+        }
+    }
+
+
 }
