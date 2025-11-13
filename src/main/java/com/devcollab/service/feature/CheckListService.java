@@ -1,16 +1,16 @@
 package com.devcollab.service.feature;
 
-import com.devcollab.domain.CheckList;
+import com.devcollab.dto.CheckListDTO;
+import com.devcollab.domain.User;
 import java.util.List;
-import org.springframework.stereotype.Service;
 
 public interface CheckListService {
 
-    List<CheckList> getByTask(Long taskId);
+    List<CheckListDTO> getByTask(Long taskId);
 
-    CheckList addItem(Long taskId, String item);
+    CheckListDTO addItem(Long taskId, String item, User actor);
 
-    CheckList toggleItem(Long id, boolean done);
+    CheckListDTO toggleItem(Long id, boolean done, User actor);
 
-    void deleteItem(Long id);
+    void deleteItem(Long id, User actor);
 }

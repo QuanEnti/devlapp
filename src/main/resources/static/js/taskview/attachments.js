@@ -41,6 +41,30 @@ function canCurrentUserDelete(attachment = {}) {
   return Number(currentUserId) === Number(uploaderId);
 }
 
+async function downloadAttachmentFile(fileUrl, fileName) {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(fileUrl, {
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!res.ok) throw new Error("Download failed");
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    }, 500);
+  } catch (err) {
+    console.error(" downloadAttachmentFile error:", err);
+    showToast(" Failed to download file", "error");
+  }
+}
+
 // ================== INIT ==================
 export function initAttachmentEvents() {
   if (!uploadBtn || !fileInput) return;
@@ -324,6 +348,9 @@ function renderAttachments(items) {
 
   // Render Files section
   if (files.length > 0) {
+    html += `<div class="mt-5">
+      <h4 class="text-xs font-semibold text-gray-900 mb-2">Files</h4>
+      <div class="space-y-2">`;
     files.forEach((a) => {
       const canDelete = canCurrentUserDelete(a);
       const fileUrl =
@@ -340,10 +367,6 @@ function renderAttachments(items) {
         JSON.stringify({ ...a, fileUrl, isLink: false })
       );
 
-      const deleteButtonHtml = canDelete
-        ? `<button class="delete-attach text-red-500 hover:text-red-700 text-sm" data-id="${a.attachmentId}" data-can-delete="true">🗑️</button>`
-        : "";
-
       html += `
         <div class="attachment-row flex items-center gap-3 border border-gray-200 rounded-md p-2 hover:bg-gray-50 transition cursor-pointer"
              data-attachment='${dataAttr}'>
@@ -354,9 +377,30 @@ function renderAttachments(items) {
               a.uploadedBy?.name || "Unknown"
             } • ${new Date(a.uploadedAt).toLocaleString()}</p>
           </div>
-          ${deleteButtonHtml}
+          <div class="flex items-center gap-1 file-actions">
+            <button class="file-open-btn text-gray-500 hover:text-gray-700 text-sm px-2 py-1 rounded hover:bg-gray-100" title="Preview">
+              ↗️
+            </button>
+            <div class="relative">
+              <button class="file-options-btn text-gray-500 hover:text-gray-700 text-sm px-1 py-0.5 rounded hover:bg-gray-100" title="More actions">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
+              <div class="file-context-menu hidden absolute right-0 top-6 bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-[140px]">
+                <button class="file-preview-btn w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">Preview</button>
+                <button class="file-download-btn w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">Download</button>
+                ${
+                  canDelete
+                    ? `<button class="file-delete-btn w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-100" data-id="${a.attachmentId}" data-can-delete="true">Delete</button>`
+                    : ""
+                }
+              </div>
+            </div>
+          </div>
         </div>`;
     });
+    html += `</div></div>`;
   }
 
   attachmentsList.innerHTML = html;
@@ -367,7 +411,10 @@ function renderAttachments(items) {
     row.addEventListener("click", (e) => {
       if (
         e.target.closest(".link-options-btn") ||
-        e.target.closest(".link-context-menu")
+        e.target.closest(".link-context-menu") ||
+        e.target.closest(".file-options-btn") ||
+        e.target.closest(".file-context-menu") ||
+        e.target.closest(".file-open-btn")
       )
         return;
       if (e.target.tagName === "A") return; // Don't trigger if clicking the link itself
@@ -474,33 +521,89 @@ function renderAttachments(items) {
     });
   });
 
+  // File action buttons
+  document.querySelectorAll(".file-open-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const row = btn.closest(".attachment-row");
+      if (!row) return;
+      const data = JSON.parse(
+        decodeURIComponent(row.dataset.attachment || "{}")
+      );
+      openPreviewModal(data);
+    });
+  });
+
+  document.querySelectorAll(".file-options-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".file-context-menu").forEach((menu) => {
+        if (menu !== btn.nextElementSibling) menu.classList.add("hidden");
+      });
+      const menu = btn.nextElementSibling;
+      if (menu) menu.classList.toggle("hidden");
+    });
+  });
+
+  document.querySelectorAll(".file-preview-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const row = btn.closest(".attachment-row");
+      const menu = btn.closest(".file-context-menu");
+      if (menu) menu.classList.add("hidden");
+      if (!row) return;
+      const data = JSON.parse(
+        decodeURIComponent(row.dataset.attachment || "{}")
+      );
+      openPreviewModal(data);
+    });
+  });
+
+  document.querySelectorAll(".file-download-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const row = btn.closest(".attachment-row");
+      const menu = btn.closest(".file-context-menu");
+      if (menu) menu.classList.add("hidden");
+      if (!row) return;
+      const data = JSON.parse(
+        decodeURIComponent(row.dataset.attachment || "{}")
+      );
+      if (!data?.fileUrl) return;
+      await downloadAttachmentFile(data.fileUrl, data.fileName || "download");
+    });
+  });
+
+  document.querySelectorAll(".file-delete-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const menu = btn.closest(".file-context-menu");
+      if (menu) menu.classList.add("hidden");
+      const success = await deleteAttachment(btn.dataset.id);
+      if (success) previewModal.classList.add("hidden");
+    });
+  });
+
   // Close menu when clicking outside
   document.addEventListener("click", (e) => {
     if (
       !e.target.closest(".link-options-btn") &&
-      !e.target.closest(".link-context-menu")
+      !e.target.closest(".link-context-menu") &&
+      !e.target.closest(".file-options-btn") &&
+      !e.target.closest(".file-context-menu")
     ) {
       document.querySelectorAll(".link-context-menu").forEach((menu) => {
         menu.classList.add("hidden");
       });
+      document.querySelectorAll(".file-context-menu").forEach((menu) => {
+        menu.classList.add("hidden");
+      });
     }
-  });
-
-  // Keep old delete-attach for files
-  document.querySelectorAll(".delete-attach").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      deleteAttachment(e.target.dataset.id);
-    });
   });
 }
 
 // ================== DELETE ==================
-async function deleteAttachment(id, options = {}) {
-  const { skipConfirm = false } = options || {};
-  if (!skipConfirm) {
-    if (!confirm("🗑️ Delete this attachment?")) return false;
-  }
+async function deleteAttachment(id) {
   try {
     const res = await fetch(
       `/api/tasks/${window.CURRENT_TASK_ID}/attachments/${id}`,
@@ -511,10 +614,11 @@ async function deleteAttachment(id, options = {}) {
     );
     if (!res.ok) throw new Error("Delete failed");
     await loadAttachments(window.CURRENT_TASK_ID);
-    showToast(" Deleted attachment");
+    showToast("Attachment deleted", "success");
     return true;
   } catch (err) {
-    showToast(" Failed to delete attachment", "error");
+    console.error(" deleteAttachment error:", err);
+    showToast("Failed to delete attachment", "error");
     return false;
   }
 }
@@ -663,26 +767,7 @@ function attachFooterEvents(attachment = {}) {
   document
     .getElementById("download-btn")
     ?.addEventListener("click", async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(fileUrl, {
-          headers: { Authorization: "Bearer " + token },
-        });
-        if (!res.ok) throw new Error("Download failed");
-        const blob = await res.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(blobUrl);
-        }, 500);
-      } catch (err) {
-        alert("Không thể tải file này!");
-      }
+      await downloadAttachmentFile(fileUrl, fileName);
     });
 
   const deleteBtn = document.getElementById("delete-btn");
@@ -691,10 +776,7 @@ function attachFooterEvents(attachment = {}) {
       deleteBtn.classList.add("hidden");
     } else {
       deleteBtn.addEventListener("click", async () => {
-        if (!confirm(`Delete ${fileName}?`)) return;
-        const success = await deleteAttachment(attachment.attachmentId, {
-          skipConfirm: true,
-        });
+        const success = await deleteAttachment(attachment.attachmentId);
         if (!success) return;
         previewModal.classList.add("hidden");
       });
@@ -749,7 +831,7 @@ async function handlePopupInsert() {
   const displayText = displayTextInput.value.trim();
 
   if (!file && !link) {
-    alert("⚠️ Please select a file or enter a link!");
+    showToast(" Please select a file or enter a link!", "error");
     return;
   }
 

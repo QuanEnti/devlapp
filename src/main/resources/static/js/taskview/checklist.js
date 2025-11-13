@@ -7,7 +7,6 @@ const openChecklistBtn = document.getElementById("open-checklist-btn");
 const closeChecklistBtn = document.getElementById("close-checklist-btn");
 const addChecklistBtn = document.getElementById("add-checklist-btn");
 const checklistTitleInput = document.getElementById("checklist-title-input");
-const checklistCopyFrom = document.getElementById("checklist-copy-from");
 const addChecklistItemBtn = document.getElementById("add-checklist-item-btn");
 const checklistItemsList = document.getElementById("checklist-items-list");
 const checklistProgress = document.getElementById("checklist-progress");
@@ -20,6 +19,31 @@ const checklistSection = document.getElementById("checklist-section");
 // State để track việc hide/show checked items
 let hideCheckedItems = false;
 let allItems = []; // Lưu tất cả items để filter
+
+// ================== ROLE HELPERS ==================
+function getCurrentUserId() {
+  const raw = localStorage.getItem("currentUserId");
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function hasManagerChecklistPrivileges(role) {
+  const normalized = (role || window.CURRENT_ROLE || "").toUpperCase();
+  return normalized === "ROLE_PM" || normalized === "ROLE_ADMIN";
+}
+
+function canDeleteChecklistItem(item = {}) {
+  if (hasManagerChecklistPrivileges()) return true;
+  const currentUserId = getCurrentUserId();
+  const creatorId =
+    item?.createdById ??
+    (item?.createdBy && typeof item.createdBy === "object"
+      ? item.createdBy.userId
+      : null);
+  if (currentUserId == null || creatorId == null) return false;
+  return Number(currentUserId) === Number(creatorId);
+}
 
 // Mở popup checklist
 function openChecklistPopup(e) {
@@ -53,7 +77,6 @@ function closeChecklistPopup(e) {
   }
   // Reset form
   if (checklistTitleInput) checklistTitleInput.value = "";
-  if (checklistCopyFrom) checklistCopyFrom.value = "";
 }
 
 // Load checklist items
@@ -141,17 +164,40 @@ function renderChecklistItems(items) {
     return;
   }
 
+  const allowToggle = hasManagerChecklistPrivileges();
+
   checklistItemsList.innerHTML = filteredItems
-    .map(
-      (item) => `
+    .map((item) => {
+      const itemCanDelete = canDeleteChecklistItem(item);
+      const checkboxDisabledAttr = allowToggle
+        ? ""
+        : 'disabled data-disabled="true"';
+      const checkboxCursorClass = allowToggle
+        ? "cursor-pointer"
+        : "cursor-not-allowed opacity-60";
+      const convertButtonClasses = itemCanDelete
+        ? "w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+        : "w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-md";
+      const deleteMenuHtml = itemCanDelete
+        ? `<button
+          class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-100 rounded-b-md"
+          data-checklist-id="${item.checklistId}"
+          onclick="deleteChecklistItem(${item.checklistId})"
+        >
+          Delete
+        </button>`
+        : "";
+
+      return `
     <div class="flex items-center gap-2 group hover:bg-gray-50 rounded px-1 py-0.5 transition-colors relative" data-checklist-id="${
       item.checklistId
     }">
       <input
         type="checkbox"
         ${item.isDone ? "checked" : ""}
-        class="h-3.5 w-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer flex-shrink-0 mt-0.5"
+        class="h-3.5 w-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 ${checkboxCursorClass} flex-shrink-0 mt-0.5"
         data-checklist-id="${item.checklistId}"
+        ${checkboxDisabledAttr}
       />
       <span class="flex-1 text-sm font-normal text-gray-800 ${
         item.isDone ? "line-through text-gray-400" : ""
@@ -210,35 +256,31 @@ function renderChecklistItems(items) {
           </button>
         </div>
         <button
-          class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          class="${convertButtonClasses}"
           data-checklist-id="${item.checklistId}"
           onclick="convertChecklistItemToCard(${item.checklistId})"
         >
           Convert to card
         </button>
-        <button
-          class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-md"
-          data-checklist-id="${item.checklistId}"
-          onclick="deleteChecklistItem(${item.checklistId})"
-        >
-          Delete
-        </button>
+        ${deleteMenuHtml}
       </div>
     </div>
-  `
-    )
+  `;
+    })
     .join("");
 
   // Attach event listeners for checkboxes
-  checklistItemsList
-    .querySelectorAll('input[type="checkbox"]')
-    .forEach((checkbox) => {
-      checkbox.addEventListener("change", (e) => {
-        const checklistId = e.target.dataset.checklistId;
-        const isDone = e.target.checked;
-        toggleChecklistItem(checklistId, isDone);
+  if (allowToggle) {
+    checklistItemsList
+      .querySelectorAll('input[type="checkbox"]')
+      .forEach((checkbox) => {
+        checkbox.addEventListener("change", (e) => {
+          const checklistId = e.target.dataset.checklistId;
+          const isDone = e.target.checked;
+          toggleChecklistItem(checklistId, isDone);
+        });
       });
-    });
+  }
 }
 
 // Update progress bar
@@ -275,7 +317,6 @@ function updateProgress(items) {
     }
   }
 
-  // Hiển thị message khi 100% complete
   const completionMsg = document.getElementById("checklist-completion-message");
   if (percentage === 100) {
     if (!completionMsg && checklistItemsList) {
@@ -289,14 +330,12 @@ function updateProgress(items) {
   }
 }
 
-// Toggle hide/show checked items
 function toggleHideCheckedItems() {
   hideCheckedItems = !hideCheckedItems;
   renderChecklistItems(allItems);
   updateHideCheckedButton(allItems);
 }
 
-// Update hide checked button text và visibility
 function updateHideCheckedButton(items) {
   const hideBtn = document.getElementById("hide-checked-items-btn");
   if (!hideBtn) return;
@@ -304,7 +343,6 @@ function updateHideCheckedButton(items) {
   const checkedCount = items.filter((item) => item.isDone).length;
 
   if (checkedCount === 0) {
-    // Ẩn button nếu không có checked items
     hideBtn.classList.add("hidden");
   } else {
     hideBtn.classList.remove("hidden");
@@ -330,14 +368,24 @@ async function toggleChecklistItem(checklistId, isDone) {
     });
 
     if (!res.ok) {
-      console.error("❌ Failed to toggle checklist item");
+      if (res.status === 403) {
+        const message = await res.text();
+        const text =
+          (message && message.trim()) ||
+          "You do not have permission to update this checklist item.";
+        showToast(text, "error");
+      } else {
+        console.error(" Failed to toggle checklist item");
+        showToast("Failed to toggle checklist item", "error");
+      }
       return;
     }
 
     // Reload checklist items to update UI
     await loadChecklistItems();
   } catch (err) {
-    console.error("❌ Error toggling checklist item:", err);
+    console.error(" Error toggling checklist item:", err);
+    showToast("Error toggling checklist item", "error");
   }
 }
 
@@ -356,14 +404,24 @@ async function deleteChecklistItem(checklistId) {
     });
 
     if (!res.ok) {
-      console.error("❌ Failed to delete checklist item");
+      if (res.status === 403) {
+        const message = await res.text();
+        const text =
+          (message && message.trim()) ||
+          "You do not have permission to delete this checklist item.";
+        showToast(text, "error");
+      } else {
+        console.error(" Failed to delete checklist item");
+        showToast("Failed to delete checklist item", "error");
+      }
       return;
     }
 
     // Reload checklist items
     await loadChecklistItems();
   } catch (err) {
-    console.error("❌ Error deleting checklist item:", err);
+    console.error(" Error deleting checklist item:", err);
+    showToast("Error deleting checklist item", "error");
   }
 }
 
@@ -375,7 +433,7 @@ async function convertChecklistItemToCard(checklistId) {
 
   const taskId = window.CURRENT_TASK_ID;
   if (!taskId) {
-    alert("❌ Task ID not found");
+    showToast("Task ID not found", "error");
     return;
   }
 
@@ -442,7 +500,7 @@ async function convertChecklistItemToCard(checklistId) {
     }
 
     const newTask = await createRes.json();
-    console.log("✅ Card created:", newTask);
+    console.log(" Card created:", newTask);
 
     // 4. Xóa checklist item sau khi convert thành công
     const deleteRes = await fetch(`/api/checklists/${checklistId}`, {
@@ -453,7 +511,7 @@ async function convertChecklistItemToCard(checklistId) {
     });
 
     if (!deleteRes.ok) {
-      console.warn("⚠️ Failed to delete checklist item after conversion");
+      console.warn(" Failed to delete checklist item after conversion");
     }
 
     // 5. Xóa checklist item
@@ -487,7 +545,6 @@ async function convertChecklistItemToCard(checklistId) {
           </div>
         `;
 
-        // Thêm card vào cuối column (trước add-card-area nếu có)
         const addCardArea = tasksContainer.querySelector(".add-card-area");
         if (addCardArea) {
           addCardArea.insertAdjacentHTML("beforebegin", cardHtml);
@@ -495,48 +552,38 @@ async function convertChecklistItemToCard(checklistId) {
           tasksContainer.insertAdjacentHTML("beforeend", cardHtml);
         }
 
-        // Card sẽ tự động có click event từ event delegation trong main.js
-        console.log("✅ Card added to board:", newTask.taskId || newTask.id);
+        console.log(" Card added to board:", newTask.taskId || newTask.id);
       } else {
         console.warn(
-          "⚠️ Column container not found, card was created but not displayed"
+          " Column container not found, card was created but not displayed"
         );
       }
     } catch (err) {
-      console.warn(
-        "⚠️ Could not add card to board, but card was created:",
-        err
-      );
+      console.warn(" Could not add card to board, but card was created:", err);
     }
 
-    // Success - không hiển thị alert, chỉ log
-    console.log(
-      "✅ Checklist item đã được chuyển thành card mới trong column!"
-    );
+    console.log(" Checklist item đã được chuyển thành card mới trong column!");
   } catch (err) {
-    console.error("❌ Error converting checklist item to card:", err);
-    alert("❌ Failed to convert checklist item to card: " + err.message);
+    console.error(" Error converting checklist item to card:", err);
   }
 }
 
-// Helper function to escape HTML
 function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
 
-// Thêm checklist item
 async function addChecklistItem() {
   const taskId = window.CURRENT_TASK_ID;
   if (!taskId) {
-    alert("❌ Task ID not found");
+    showToast("Task ID not found", "error");
     return;
   }
 
   const title = checklistTitleInput?.value.trim() || "Add an item";
   if (!title || title === "Add an item") {
-    alert("Please enter a valid item title");
+    showToast("Please enter a valid item title", "error");
     return;
   }
 
@@ -558,7 +605,7 @@ async function addChecklistItem() {
       } catch (e) {
         errorText = "Unknown error";
       }
-      console.error("❌ Server error:", res.status, errorText);
+      console.error(" Server error:", res.status, errorText);
       throw new Error(`Server returned ${res.status}: ${errorText}`);
     }
 
@@ -566,12 +613,12 @@ async function addChecklistItem() {
     let newItem = null;
     try {
       newItem = await res.json();
-      console.log("✅ Checklist item added:", newItem);
+      console.log(" Checklist item added:", newItem);
     } catch (jsonErr) {
       // Nếu không phải JSON hoặc parse lỗi, nhưng status OK thì vẫn coi là thành công
       // (có thể response là empty hoặc không phải JSON format)
       console.log(
-        "✅ Checklist item added (status:",
+        " Checklist item added (status:",
         res.status + ", response may not be JSON)"
       );
     }
@@ -583,9 +630,8 @@ async function addChecklistItem() {
     await loadChecklistItems();
   } catch (err) {
     console.error(" Failed to add checklist item:", err);
-    // Chỉ alert nếu thực sự có lỗi, không phải warning
     if (err.message && !err.message.includes("but request succeeded")) {
-      alert(" Failed to add checklist item: " + err.message);
+      showToast("Failed to add checklist item: " + err.message, "error");
     }
   }
 }

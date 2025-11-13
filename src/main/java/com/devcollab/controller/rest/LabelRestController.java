@@ -1,79 +1,79 @@
 package com.devcollab.controller.rest;
 
-import com.devcollab.domain.Label;
-import com.devcollab.repository.TaskRepository;
+import com.devcollab.domain.User;
+import com.devcollab.dto.LabelDTO;
 import com.devcollab.service.feature.LabelService;
+import com.devcollab.service.system.AuthService;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.*;
+import org.springframework.security.core.Authentication;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class LabelRestController {
 
     private final LabelService labelService;
-    private final TaskRepository taskRepository;
+    private final AuthService authService;
 
-    public LabelRestController(LabelService labelService, TaskRepository taskRepository) {
-        this.labelService = labelService;
-        this.taskRepository = taskRepository;
-    }
-    
-    // 🔹 Lấy danh sách label của 1 project
     @GetMapping("/labels")
-    public ResponseEntity<?> getLabelsByProject(
-            @RequestParam Long projectId,
+    public ResponseEntity<?> getLabelsByProject(@RequestParam Long projectId,
             @RequestParam(required = false) String keyword) {
 
         return ResponseEntity.ok(labelService.getLabelsByProject(projectId, keyword));
     }
 
-    // 🔹 Tạo mới label
-    @PostMapping("/labels")
-    public ResponseEntity<?> createLabel(@RequestParam Long projectId,
-            @RequestParam String name,
-            @RequestParam(required = false) String color) {
-        try {
-            return ResponseEntity.ok(labelService.createLabel(projectId, name, color));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // 🔹 Cập nhật label
-    @PutMapping("/labels/{labelId}")
-    public ResponseEntity<?> updateLabel(@PathVariable Long labelId,
-            @RequestBody Map<String, String> body) {
-        String name = body.get("name");
-        String color = body.get("color");
-        try {
-            return ResponseEntity.ok(labelService.updateLabel(labelId, name, color));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-    
-    // 🔹 Lấy chi tiết 1 label theo ID (cho popup Edit Label)
     @GetMapping("/labels/{labelId}")
     public ResponseEntity<?> getLabelById(@PathVariable Long labelId) {
         try {
-            return ResponseEntity.ok(labelService.getLabelById(labelId));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
+            LabelDTO dto = labelService.getLabelById(labelId);
+            return ResponseEntity.ok(dto);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // 🔹 Xóa label
-    @DeleteMapping("/labels/{labelId}")
-    public ResponseEntity<?> deleteLabel(@PathVariable Long labelId) {
+    @PostMapping("/labels")
+    public ResponseEntity<?> createLabel(@RequestParam Long projectId, @RequestParam String name,
+            @RequestParam(required = false) String color, Authentication auth) {
+
         try {
-            labelService.deleteLabel(labelId);
+            User actor = authService.getCurrentUserEntity(auth);
+            LabelDTO dto = labelService.createLabel(projectId, name, color, actor);
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/labels/{labelId}")
+    public ResponseEntity<?> updateLabel(@PathVariable Long labelId,
+            @RequestBody Map<String, String> body, Authentication auth) {
+
+        try {
+            String name = body.get("name");
+            String color = body.get("color");
+
+            User actor = authService.getCurrentUserEntity(auth);
+            LabelDTO dto = labelService.updateLabel(labelId, name, color, actor);
+
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/labels/{labelId}")
+    public ResponseEntity<?> deleteLabel(@PathVariable Long labelId, Authentication auth) {
+
+        try {
+            User actor = authService.getCurrentUserEntity(auth);
+            labelService.deleteLabel(labelId, actor);
             return ResponseEntity.ok(Map.of("message", "Label deleted"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -86,31 +86,31 @@ public class LabelRestController {
     }
 
     @PostMapping("/tasks/{taskId}/labels/{labelId}")
-    public ResponseEntity<?> assignLabel(@PathVariable Long taskId, @PathVariable Long labelId) {
+    public ResponseEntity<?> assignLabel(@PathVariable Long taskId, @PathVariable Long labelId,
+            Authentication auth) {
+
         try {
-            labelService.assignLabelToTask(taskId, labelId);
+            User actor = authService.getCurrentUserEntity(auth);
+            labelService.assignLabelToTask(taskId, labelId, actor);
+
             return ResponseEntity.ok(Map.of("message", "✅ Label assigned successfully"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         }
     }
 
     @DeleteMapping("/tasks/{taskId}/labels/{labelId}")
-    public ResponseEntity<?> unassignLabel(@PathVariable Long taskId, @PathVariable Long labelId) {
+    public ResponseEntity<?> unassignLabel(@PathVariable Long taskId, @PathVariable Long labelId,
+            Authentication auth) {
+
         try {
-            labelService.removeLabelFromTask(taskId, labelId);
-            return ResponseEntity.ok(Map.of("message", "🗑️ Label unassigned successfully"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
+            User actor = authService.getCurrentUserEntity(auth);
+            labelService.removeLabelFromTask(taskId, labelId, actor);
+
+            return ResponseEntity.ok(Map.of("message", "🗑️ Label removed from task"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-
 }

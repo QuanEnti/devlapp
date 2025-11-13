@@ -362,7 +362,6 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
 
-        // ✅ Ghi lại ai là người tạo link (có thể là PM hoặc Member)
         project.setInviteCreatedBy(creatorEmail);
 
         boolean expired = project.getInviteExpiredAt() != null
@@ -401,7 +400,6 @@ public class ProjectServiceImpl implements ProjectService {
             activityService.log("PROJECT", projectId, "DISABLE_SHARE",
                     "Share link disabled (link preserved)");
         }
-
         return project;
     }
 
@@ -422,7 +420,6 @@ public class ProjectServiceImpl implements ProjectService {
                 && project.getInviteExpiredAt().isBefore(LocalDateTime.now());
         boolean limitReached = project.getInviteUsageCount() >= project.getInviteMaxUses();
 
-        // 🧠 Nếu link hết hạn hoặc đã vượt số lượng, tự regen link mới ngay lập tức
         if ((expired || limitReached) && project.isInviteAutoRegen()) {
             String newCode = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
             project.setInviteLink(newCode);
@@ -451,20 +448,17 @@ public class ProjectServiceImpl implements ProjectService {
         if (exists)
             throw new BadRequestException("Bạn đã là thành viên của dự án này!");
 
-        // 🧩 Kiểm tra người tạo link là ai
         String creatorEmail = project.getInviteCreatedBy();
         boolean creatorIsPm =
                 projectMemberRepository.existsByProject_ProjectIdAndUser_EmailAndRoleInProjectIn(
                         project.getProjectId(), creatorEmail, List.of("PM", "OWNER", "ADMIN"));
 
         if (!creatorIsPm) {
-            // 🚫 Nếu không phải PM/Owner/Admin → tạo Join Request chờ duyệt
             joinRequestService.createJoinRequest(project, user);
             notificationService.notifyJoinRequestToPM(project, user);
             throw new BadRequestException("Yêu cầu tham gia đã được gửi đến PM để phê duyệt.");
         }
 
-        // ✅ Nếu link do PM tạo → join trực tiếp
         ProjectMember newMember = new ProjectMember();
         newMember.setProject(project);
         newMember.setUser(user);

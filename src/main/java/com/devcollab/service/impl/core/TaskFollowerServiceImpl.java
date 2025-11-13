@@ -32,9 +32,6 @@ public class TaskFollowerServiceImpl implements TaskFollowerService {
     private final NotificationService notificationService;
     private final ActivityService activityService;
 
-    // =========================================================
-    // 🔹 Lấy danh sách follower trong 1 task
-    // =========================================================
     @Override
     @Transactional(readOnly = true)
     public List<TaskFollowerDTO> getFollowersByTask(Long taskId) {
@@ -45,12 +42,10 @@ public class TaskFollowerServiceImpl implements TaskFollowerService {
     @Override
     @Transactional
     public boolean assignMember(Long taskId, Long userId) {
-        // 🔍 1️⃣ Lấy thông tin Task và Project liên quan
         Task task = taskRepo.findById(taskId)
-                .orElseThrow(() -> new NotFoundException("❌ Task không tồn tại"));
+                .orElseThrow(() -> new NotFoundException(" Task không tồn tại"));
         Long projectId = task.getProject().getProjectId();
 
-        // 👤 2️⃣ Lấy actor hiện tại (người đang thao tác)
         User actor = getCurrentActor();
         if (actor == null)
             throw new AccessDeniedException(
@@ -58,30 +53,24 @@ public class TaskFollowerServiceImpl implements TaskFollowerService {
 
         String email = actor.getEmail();
 
-        // 🔐 3️⃣ Chỉ PM hoặc ADMIN của dự án mới được gán thành viên
         ProjectAuthorizationService authz =
                 SpringContext.getBean(ProjectAuthorizationService.class);
         authz.ensurePmOfProject(email, projectId);
 
-        // 🧭 4️⃣ Kiểm tra nếu user đã được gán trong task rồi
         if (followerRepo.existsByTask_TaskIdAndUser_UserId(taskId, userId)) {
-            log.warn("⚠️ User {} đã được gán vào task {}", userId, taskId);
+            log.warn(" User {} đã được gán vào task {}", userId, taskId);
             return false;
         }
 
-        // 🧩 5️⃣ Lấy user được thêm
         User addedUser = userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("❌ User không tồn tại"));
+                .orElseThrow(() -> new NotFoundException(" User không tồn tại"));
 
-        // 💾 6️⃣ Gán user vào task
         followerRepo.saveAndFlush(new TaskFollower(task, addedUser));
-        log.info("✅ Đã gán user {} ({}) vào task {}", userId, addedUser.getName(), taskId);
+        log.info(" Đã gán user {} ({}) vào task {}", userId, addedUser.getName(), taskId);
 
-        // 🪶 7️⃣ Ghi activity
         activityService.log("TASK", taskId, "ADD_MEMBER",
                 "{\"user\":\"" + addedUser.getName() + "\"}", actor);
 
-        // 🔔 8️⃣ Gửi thông báo (bỏ qua nếu actor = target)
         try {
             if (!addedUser.getUserId().equals(actor.getUserId())) {
                 String link = "/projects/" + projectId + "/tasks/" + task.getTaskId();
@@ -91,7 +80,7 @@ public class TaskFollowerServiceImpl implements TaskFollowerService {
                         task.getTaskId(), title, message, link, actor);
             }
         } catch (Exception e) {
-            log.error("⚠️ Lỗi khi gửi thông báo thêm member: {}", e.getMessage(), e);
+            log.error(" Lỗi khi gửi thông báo thêm member: {}", e.getMessage(), e);
         }
 
         return true;
@@ -102,10 +91,9 @@ public class TaskFollowerServiceImpl implements TaskFollowerService {
     @Transactional
     public boolean unassignMember(Long taskId, Long userId) {
         Task task = taskRepo.findById(taskId)
-                .orElseThrow(() -> new NotFoundException("❌ Task không tồn tại"));
+                .orElseThrow(() -> new NotFoundException(" Task không tồn tại"));
         Long projectId = task.getProject().getProjectId();
 
-        // 👤 Lấy actor hiện tại (dù local hay Google login)
         User actor = getCurrentActor();
         if (actor == null)
             throw new AccessDeniedException(
@@ -113,30 +101,25 @@ public class TaskFollowerServiceImpl implements TaskFollowerService {
 
         String email = actor.getEmail();
 
-        // 🔐 Chỉ PM hoặc ADMIN mới được bỏ gán
         ProjectAuthorizationService authz =
                 SpringContext.getBean(ProjectAuthorizationService.class);
         authz.ensurePmOfProject(email, projectId);
 
-        // ⚙️ Kiểm tra nếu user chưa được gán
         if (!followerRepo.existsByTask_TaskIdAndUser_UserId(taskId, userId)) {
-            log.warn("⚠️ User {} không được gán trong task {}", userId, taskId);
+            log.warn(" User {} không được gán trong task {}", userId, taskId);
             return false;
         }
 
-        // 🧩 Lấy user bị xóa
         User removedUser = userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("❌ User không tồn tại"));
+                .orElseThrow(() -> new NotFoundException(" User không tồn tại"));
 
-        // 💾 Xóa follower
         followerRepo.deleteByTaskAndUser(taskId, userId);
-        log.info("🗑️ Đã bỏ gán user {} ({}) khỏi task {}", userId, removedUser.getName(), taskId);
+        log.info(" Đã bỏ gán user {} ({}) khỏi task {}", userId, removedUser.getName(), taskId);
 
-        // 🪶 Ghi activity
+
         activityService.log("TASK", taskId, "REMOVE_MEMBER",
                 "{\"user\":\"" + removedUser.getName() + "\"}", actor);
 
-        // 🔔 Gửi thông báo (bỏ qua nếu actor = target)
         try {
             if (!removedUser.getUserId().equals(actor.getUserId())) {
                 String link = "/projects/" + projectId + "/tasks/" + task.getTaskId();
@@ -146,7 +129,7 @@ public class TaskFollowerServiceImpl implements TaskFollowerService {
                         task.getTaskId(), title, message, link, actor);
             }
         } catch (Exception e) {
-            log.error("⚠️ Lỗi khi gửi thông báo xóa member: {}", e.getMessage(), e);
+            log.error(" Lỗi khi gửi thông báo xóa member: {}", e.getMessage(), e);
         }
 
         return true;
@@ -172,7 +155,7 @@ public class TaskFollowerServiceImpl implements TaskFollowerService {
 
             return (email != null) ? userRepo.findByEmail(email).orElse(null) : null;
         } catch (Exception e) {
-            log.error("⚠️ getCurrentActor() failed: {}", e.getMessage());
+            log.error(" getCurrentActor() failed: {}", e.getMessage());
             return null;
         }
     }

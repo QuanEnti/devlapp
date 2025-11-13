@@ -23,24 +23,21 @@ public class NotificationSettingsController {
 
     @GetMapping
     public String view(Model model, Authentication auth) {
-        // Kiểm tra nếu Authentication là null
         if (auth == null || auth.getPrincipal() == null) {
-            log.error("❌ User not authenticated.");
-            return "redirect:/login"; // Chuyển hướng đến trang đăng nhập nếu chưa đăng nhập
+            log.error(" User not authenticated.");
+            return "redirect:/view/signin";
         }
 
-        // Lấy thông tin người dùng từ AuthService
         User user = authService.getCurrentUserEntity(auth);
         if (user == null) {
-            log.error("❌ Failed to get current user.");
-            return "redirect:/login"; // Chuyển hướng đến trang đăng nhập nếu không tìm thấy người dùng
+            log.error(" Failed to get current user.");
+            return "redirect:/view/signin";
         }
 
-        // Lấy cài đặt người dùng
         UserSettings settings = userSettingsService.getOrDefault(user);
         if (settings == null) {
-            log.warn("⚠️ User settings not found, using default settings.");
-            settings = new UserSettings(); // Trả về cài đặt mặc định nếu không có cài đặt người dùng
+            log.warn("User settings not found, using default settings.");
+            settings = new UserSettings();
         }
 
         model.addAttribute("settings", settings);

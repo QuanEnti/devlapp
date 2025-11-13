@@ -28,17 +28,11 @@ public class SecurityConfig {
                                 .sessionManagement(sess -> sess.sessionCreationPolicy(
                                                 SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth
-                                                // Các API public
                                                 .requestMatchers("/api/auth/**", "/api/users/**",
-                                                                "api/payment/webhook"
-                                                // "/api/pm/public/**",
-                                                ).permitAll()
-                                                // Admin-only APIs
-                                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                                // 🔹 Cho phép truy cập dashboard public nếu có
-                                                // .requestMatchers("/api/pm/project/*/dashboard").permitAll()
-                                                // 🔹 API join cần đăng nhập (Bearer hoặc cookie
-                                                // JWT)
+                                                                "api/payment/webhook")
+                                                .permitAll().requestMatchers("/api/admin/**")
+                                                .hasRole("ADMIN")
+
                                                 .requestMatchers("/api/tasks/**").authenticated()
                                                 .requestMatchers("/api/pm/invite/join/**")
                                                 .authenticated().anyRequest().authenticated())
