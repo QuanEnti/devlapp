@@ -40,6 +40,8 @@ public class SecurityConfig {
                                                 // 🔹 API join cần đăng nhập (Bearer hoặc cookie
                                                 // JWT)
                                                 .requestMatchers("/api/tasks/**").authenticated()
+                                        .requestMatchers("/api/notifications/**").authenticated()
+                                        .requestMatchers("/api/columns/**").authenticated()
                                                 .requestMatchers("/api/pm/invite/join/**")
                                                 .authenticated().anyRequest().authenticated())
                                 .addFilterBefore(jwtFilter,

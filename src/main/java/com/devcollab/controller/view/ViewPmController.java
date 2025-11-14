@@ -46,7 +46,22 @@ public class ViewPmController {
             model.addAttribute("unreadNotifications", notificationService.countUnread(userEmail));
         });
     }
+    @GetMapping("/project/schedule/calendar")
+    public String scheduleCalendar(@RequestParam Long projectId, Model model, Authentication auth) {
+        Project project = projectService.getById(projectId);
+        if (project == null) {
+            return "redirect:/user/view/dashboard";
+        }
 
+        String email = getEmailFromAuthentication(auth);
+        String userRole = projectService.getUserRoleInProjectByEmail(projectId, email);
+        System.out.println("User role in project " + projectId + ": " + userRole);
+        model.addAttribute("projectId", projectId);
+        model.addAttribute("project", project);
+        model.addAttribute("userRole", userRole);
+
+        return "pm/schedule-calendar";
+    }
     @GetMapping("/project/{id}/dashboard")
     public String dashboard(@PathVariable("id") Long id, Model model) {
         Project project = projectService.getByIdWithMembers(id);

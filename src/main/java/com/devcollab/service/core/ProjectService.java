@@ -71,4 +71,5 @@ public interface ProjectService {
     Page<ProjectSummaryDTO> getProjectsByUserPaginated(String email, int page, int size);
     long countAll();
     long countByStatus(String status);
+    public List<Project> getTop5ProjectsByUser(Long userId);
 }

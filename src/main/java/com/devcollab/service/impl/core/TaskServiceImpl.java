@@ -2,18 +2,18 @@ package com.devcollab.service.impl.core;
 
 import com.devcollab.config.SpringContext;
 import com.devcollab.domain.*;
-import com.devcollab.dto.MemberPerformanceDTO;
-import com.devcollab.dto.TaskDTO;
+import com.devcollab.dto.*;
 import com.devcollab.dto.request.MoveTaskRequest;
-import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
+import com.devcollab.service.core.TaskFollowerService;
 import com.devcollab.service.core.TaskService;
+import com.devcollab.service.feature.AttachmentService;
+import com.devcollab.service.feature.CommentService;
 import com.devcollab.service.system.ActivityService;
 import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.system.ProjectAuthorizationService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.hibernate.Hibernate;
@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -44,6 +45,9 @@ public class TaskServiceImpl implements TaskService {
     private final TaskFollowerRepository taskFollowerRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final TaskFollowerService taskFollowerService;
+    private final CommentService commentService;
+    private final AttachmentService attachmentService;
 
     // ----------------------------------------------------
     // ✅ 1. Tạo Task từ DTO
@@ -743,6 +747,7 @@ public class TaskServiceImpl implements TaskService {
         return taskRepository.findAllUserTasks(user);
     }
     @Override
+    @Transactional(readOnly = true)
     public Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size, String status) {
         Pageable pageable = PageRequest.of(page, size);
 
@@ -764,5 +769,102 @@ public class TaskServiceImpl implements TaskService {
     public List<Task> findUpcomingDeadlines(Long userId) {
         return taskRepository.findTopUpcoming(userId, PageRequest.of(0, 5));
     }
+    @Override
+    public TaskStatisticsDTO getTaskStatistics(User user) {
+        List<Task> userTasks = taskRepository.findAllUserTasks(user);
+
+        // Count tasks by status
+        Map<String, Long> statusCount = userTasks.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(
+                        task -> task.getStatus() != null ? task.getStatus() : "UNKNOWN",
+                        Collectors.counting()
+                ));
+
+        long totalTasks = userTasks.size();
+
+        // Calculate percentages
+        Map<String, Double> statusPercentages = new HashMap<>();
+        if (totalTasks > 0) {
+            statusCount.forEach((status, count) -> {
+                double percentage = (count.doubleValue() / totalTasks) * 100;
+                statusPercentages.put(status, Math.round(percentage * 100.0) / 100.0);
+            });
+        }
+
+        // Ensure we have all required statuses (even if count is 0)
+        ensureRequiredStatuses(statusCount, statusPercentages, totalTasks);
+
+        return new TaskStatisticsDTO(statusCount, statusPercentages, totalTasks);
+    }
+
+    private void ensureRequiredStatuses(Map<String, Long> statusCount,
+                                        Map<String, Double> statusPercentages,
+                                        long totalTasks) {
+        String[] requiredStatuses = {"OPEN", "IN_PROGRESS", "DONE"};
+
+        for (String status : requiredStatuses) {
+            if (!statusCount.containsKey(status)) {
+                statusCount.put(status, 0L);
+                statusPercentages.put(status, 0.0);
+            }
+        }
+    }
+    // In your TaskService
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TaskReviewDTO> getTasksForReviewPaged(Long projectId, int page, int size, String status, String search) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Task> taskPage;
+
+        // FILTER BY STATUS + SEARCH
+        if (status != null && !status.isBlank() && search != null && !search.isBlank()) {
+            taskPage = taskRepository
+                    .findByProject_ProjectIdAndStatusAndTitleContainingIgnoreCase(projectId, status, search, pageable);
+
+        } else if (status != null && !status.isBlank()) {
+            taskPage = taskRepository
+                    .findByProject_ProjectIdAndStatus(projectId, status, pageable);
+
+        } else if (search != null && !search.isBlank()) {
+            taskPage = taskRepository
+                    .findByProject_ProjectIdAndTitleContainingIgnoreCase(projectId, search, pageable);
+
+        } else {
+            taskPage = taskRepository.findByProject_ProjectId(projectId, pageable);
+        }
+
+        return taskPage.map(task -> {
+            List<TaskFollowerDTO> followers = taskFollowerService.getFollowersByTask(task.getTaskId());
+            return TaskReviewDTO.fromEntity(task, followers);
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TaskDetailDTO getTaskDetailForReview(Long taskId) {
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
+
+        // Fully initialize lazy fields INSIDE transaction
+        Hibernate.initialize(task.getAssignee());
+        Hibernate.initialize(task.getCreatedBy());
+        Hibernate.initialize(task.getProject());
+        Hibernate.initialize(task.getColumn());
+        Hibernate.initialize(task.getLabels());
+        Hibernate.initialize(task.getFollowers());
+
+        // Load DTO data
+        List<TaskFollowerDTO> followers = taskFollowerService.getFollowersByTask(taskId);
+        List<CommentDTO> comments = commentService.getCommentsByTask(taskId);
+        List<AttachmentDTO> attachments = attachmentService.getAttachmentDTOsByTask(taskId);
+
+        return TaskDetailDTO.fromEntity(task, followers, comments, attachments);
+    }
+
 
 }

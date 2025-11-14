@@ -3,8 +3,7 @@ package com.devcollab.service.core;
 import com.devcollab.domain.ProjectMember;
 import com.devcollab.domain.Task;
 import com.devcollab.domain.User;
-import com.devcollab.dto.MemberPerformanceDTO;
-import com.devcollab.dto.TaskDTO;
+import com.devcollab.dto.*;
 import com.devcollab.dto.request.MoveTaskRequest;
 import com.devcollab.dto.request.TaskDatesUpdateReq;
 import com.devcollab.dto.userTaskDto.TaskCardDTO;
@@ -71,5 +70,10 @@ public interface TaskService {
             String status);
 
     public List<Task> findUpcomingDeadlines(Long userId);
+    public TaskStatisticsDTO getTaskStatistics(User user);
+
+    public TaskDetailDTO getTaskDetailForReview(Long taskId);
+
+    public Page<TaskReviewDTO> getTasksForReviewPaged(Long projectId, int page, int size, String status, String search);
 }
 

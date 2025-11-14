@@ -77,12 +77,16 @@ public class ProjectServiceImpl implements ProjectService {
         project.setCreatedBy(creator);
         project.setCreatedAt(LocalDateTime.now());
         project.setUpdatedAt(LocalDateTime.now());
+        System.out.println("CvIMG"+project.getCoverImage());
+        project.setCoverImage(project.getCoverImage());
+
         if (project.getStatus() == null)
             project.setStatus("Active");
         if (project.getPriority() == null)
             project.setPriority("Normal");
         if (project.getVisibility() == null)
             project.setVisibility("private");
+
 
         Project saved = projectRepository.save(project);
 
@@ -160,6 +164,7 @@ public class ProjectServiceImpl implements ProjectService {
             }
             existing.setDueDate(patch.getDueDate());
         }
+        existing.setCoverImage(patch.getCoverImage());
         existing.setUpdatedAt(LocalDateTime.now());
         Project saved = projectRepository.save(existing);
 
@@ -576,6 +581,16 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public long countByStatus(String status) {
         return projectRepository.countByStatus(status);
+    }
+    @Override
+    public List<Project> getTop5ProjectsByUser(Long userId) {
+        try {
+            Pageable pageable = PageRequest.of(0, 5);
+            return projectRepository.findTopProjectsByUser(userId, pageable);
+        } catch (Exception e) {
+            log.error("Error fetching top 5 projects for user {}: {}", userId, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 }
 

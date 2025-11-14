@@ -88,4 +88,7 @@ public interface NotificationService {
 
     List<Map<String, Object>> findRecentByProject(Long projectId);
 
+    // Add this to your NotificationService interface
+    void notifyScheduleCreated(Project project, User creator, ProjectSchedule schedule);
+
 }

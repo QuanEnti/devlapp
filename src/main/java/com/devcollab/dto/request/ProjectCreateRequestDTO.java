@@ -10,4 +10,5 @@ public class ProjectCreateRequestDTO {
     private String startDate;
     private String endDate;
     private String businessRule;
+    private String coverImage;
 }

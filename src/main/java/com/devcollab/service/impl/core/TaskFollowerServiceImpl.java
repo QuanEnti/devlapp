@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TaskFollowerServiceImpl implements TaskFollowerService {
+public class    TaskFollowerServiceImpl implements TaskFollowerService {
 
     private final TaskFollowerRepository followerRepo;
     private final TaskRepository taskRepo;
