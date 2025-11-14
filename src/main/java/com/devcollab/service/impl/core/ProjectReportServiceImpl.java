@@ -23,12 +23,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.devcollab.domain.ProjectMember;
+import com.devcollab.repository.ProjectMemberRepository;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ProjectReportServiceImpl implements ProjectReportService {
-
+        private final ProjectMemberRepository projectMemberRepository;
         private final ProjectReportRepository reportRepo;
         private final ProjectRepository projectRepo;
         private final UserRepository userRepo;
@@ -124,16 +126,19 @@ public class ProjectReportServiceImpl implements ProjectReportService {
                 reportRepo.save(report);
 
                 // Send notification
-                Notification n = new Notification();
-                n.setUser(owner);
-                n.setType("WARNING");
-                n.setReferenceId(id);
-                n.setMessage("⚠️ Your project " + project.getName() + " receive a warning: "
-                                + message);
-                n.setStatus("unread");
-                n.setCreatedAt(java.time.LocalDateTime.now());
-                n.setLink("/view/project-report/" + id);
-                notificationRepo.save(n);
+                List<ProjectMember> members = projectMemberRepository.findByProject_ProjectId(project.getProjectId());
+
+                for (ProjectMember pm : members) {
+                        Notification n = new Notification();
+                        n.setUser(pm.getUser());
+                        n.setType("WARNING");
+                        n.setReferenceId(id);
+                        n.setMessage("🚫 Project \"" + project.getName() + "\" has been removed due to violations.");
+                        n.setStatus("unread");
+                        n.setCreatedAt(java.time.LocalDateTime.now());
+                        n.setLink("/view/project-report/" + id);
+                        notificationRepo.save(n);
+                }
 
                 // Log action
                 activityService.logWithActor(admin.getUserId(), "ProjectReport", id, "warn",
@@ -161,16 +166,19 @@ public class ProjectReportServiceImpl implements ProjectReportService {
                 reportRepo.save(report);
 
                 // Send notification
-                Notification n = new Notification();
-                n.setUser(project.getCreatedBy());
-                n.setType("BAN");
-                n.setReferenceId(id);
-                n.setMessage("🚫 Your project \"" + project.getName()
-                                + "\" has been removed due to violations.");
-                n.setStatus("unread");
-                n.setCreatedAt(java.time.LocalDateTime.now());
-                n.setLink("/view/project-report/" + id);
-                notificationRepo.save(n);
+                List<ProjectMember> members = projectMemberRepository.findByProject_ProjectId(project.getProjectId());
+
+                for (ProjectMember pm : members) {
+                        Notification n = new Notification();
+                        n.setUser(pm.getUser());
+                        n.setType("BAN");
+                        n.setReferenceId(project.getProjectId());
+                        n.setMessage("🚫 Project \"" + project.getName() + "\" has been removed due to violations.");
+                        n.setStatus("unread");
+                        n.setCreatedAt(java.time.LocalDateTime.now());
+                        n.setLink("/view/project-report/" + id);
+                        notificationRepo.save(n);
+                }
 
                 // Log admin action
                 activityService.logWithActor(admin.getUserId(), "ProjectReport", id, "ban",
@@ -181,9 +189,8 @@ public class ProjectReportServiceImpl implements ProjectReportService {
         /** 🔍 Get single project report by ID */
         @Override
         public ProjectReportDto getReportById(Long id) {
-                ProjectReport report =
-                                reportRepo.findById(id).orElseThrow(() -> new NotFoundException(
-                                                "Project report not found with id: " + id));
+                ProjectReport report = reportRepo.findById(id).orElseThrow(() -> new NotFoundException(
+                                "Project report not found with id: " + id));
 
                 return new ProjectReportDto(report);
         }

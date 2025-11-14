@@ -127,6 +127,7 @@ public class UserViewController {
         List<Project> projectList = memberPage.getContent()
                 .stream()
                 .map(ProjectMember::getProject)
+                .filter(p -> !"Archived".equalsIgnoreCase(p.getStatus()))
                 .toList();
 
         model.addAttribute("projects", projectList);
