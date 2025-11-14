@@ -186,7 +186,7 @@
             }
 
             const roles = data.user?.roles || data.roles || [];
-            if (roles.includes("ADMIN")) {
+            if (roles.includes("ROLE_ADMIN")) {
               setTimeout(
                 () => (window.location.href = "/admin/dashboard"),
                 800

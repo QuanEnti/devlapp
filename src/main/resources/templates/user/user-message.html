@@ -1,239 +1,313 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Messaging - DevCollab</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Messaging - DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- ✅ Thêm thư viện WebSocket -->
-  <script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
-  <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
+    <!-- ✅ Thêm thư viện WebSocket -->
+    <script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
+    <script
+      type="module"
+      src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"
+    ></script>
 
-  <style>
-    body {
-      font-family: "Inter", sans-serif;
-    }
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
 
-    .sidebar {
-      height: calc(100vh - 4rem);
-      top: 4rem;
-    }
+      .sidebar {
+        height: calc(100vh - 4rem);
+        top: 4rem;
+      }
 
-    .projects-scroll {
-      height: calc(100vh - 8rem);
-      overflow-y: auto;
-    }
+      .projects-scroll {
+        height: calc(100vh - 8rem);
+        overflow-y: auto;
+      }
 
-    .messages-container {
-      height: calc(100vh - 12rem);
-      overflow-y: auto;
-    }
+      .messages-container {
+        height: calc(100vh - 12rem);
+        overflow-y: auto;
+      }
 
-    .projects-scroll::-webkit-scrollbar,
-    .messages-container::-webkit-scrollbar {
-      width: 8px;
-    }
+      .projects-scroll::-webkit-scrollbar,
+      .messages-container::-webkit-scrollbar {
+        width: 8px;
+      }
 
-    .projects-scroll::-webkit-scrollbar-thumb,
-    .messages-container::-webkit-scrollbar-thumb {
-      background: #d1d5db;
-      border-radius: 4px;
-    }
+      .projects-scroll::-webkit-scrollbar-thumb,
+      .messages-container::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 4px;
+      }
 
-    .chat-list-item:hover {
-      background-color: #f3f4f6;
-    }
+      .chat-list-item:hover {
+        background-color: #f3f4f6;
+      }
 
-    .chat-list-item-active {
-      background-color: #3b82f6;
-      color: white;
-    }
-  </style>
-</head>
+      .chat-list-item-active {
+        background-color: #3b82f6;
+        color: white;
+      }
+    </style>
+  </head>
 
-<body class="bg-gray-50 font-sans">
-  <!-- ✅ Header -->
-  <div th:replace="fragments/header :: header"></div>
+  <body class="bg-gray-50 font-sans">
+    <!-- ✅ Header -->
+    <div th:replace="fragments/header :: header"></div>
 
-  <div class="flex min-h-[calc(100vh-4rem)]">
-    <!-- ✅ Sidebar -->
-    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <div class="flex min-h-[calc(100vh-4rem)]">
+      <!-- ✅ Sidebar -->
+      <div th:replace="fragments/sidebar :: sidebar"></div>
 
-    <!-- ✅ Main Chat -->
-    <div class="flex-1 flex bg-gray-50">
-      <!-- 🔹 Danh sách Project -->
-      <div class="w-80 border-r bg-white flex flex-col">
-        <div class="p-4 border-b">
-          <h2 class="font-semibold text-lg text-gray-700">My Projects</h2>
+      <!-- ✅ Main Chat -->
+      <div class="flex-1 flex bg-gray-50">
+        <!-- 🔹 Danh sách Project -->
+        <div class="w-80 border-r bg-gray-100 flex flex-col">
+          <div class="p-4 border-b">
+            <h2 class="font-semibold text-lg text-gray-700">My Projects</h2>
+          </div>
+
+          <div class="projects-scroll">
+            <div th:if="${projects != null and !#lists.isEmpty(projects)}">
+              <div
+                th:each="project : ${projects}"
+                th:data-id="${project.projectId}"
+                class="chat-list-item px-4 py-3 cursor-pointer border-b hover:bg-gray-50"
+                onclick="loadMessages(this.getAttribute('data-id'), this)"
+              >
+                <p
+                  class="font-semibold text-gray-800"
+                  th:text="${project.name}"
+                >
+                  Project Name
+                </p>
+                <p
+                  class="text-sm text-gray-500 truncate"
+                  th:text="${project.description}"
+                >
+                  No messages yet
+                </p>
+              </div>
+            </div>
+
+            <div
+              th:if="${projects == null or #lists.isEmpty(projects)}"
+              class="text-center text-gray-500 p-6 text-sm"
+            >
+              You have not joined any projects yet.
+            </div>
+          </div>
         </div>
 
-        <div class="projects-scroll">
-          <div th:if="${projects != null and !#lists.isEmpty(projects)}">
-            <div
-              th:each="project : ${projects}"
-              th:data-id="${project.projectId}"
-              class="chat-list-item px-4 py-3 cursor-pointer border-b hover:bg-gray-50"
-              onclick="loadMessages(this.getAttribute('data-id'), this)"
-            >
-              <p class="font-semibold text-gray-800" th:text="${project.name}">
-                Project Name
-              </p>
-              <p
-                class="text-sm text-gray-500 truncate"
-                th:text="${project.description}"
-              >
-                No messages yet
-              </p>
-            </div>
+        <!-- 🔹 Khu vực Chat -->
+        <div class="flex-1 flex flex-col bg-gray-50">
+          <div
+            id="chatHeader"
+            class="flex items-center p-4 border-b bg-gray-100"
+          >
+            <h2 class="font-semibold text-gray-700" id="chatProjectName">
+              Select a project to start chatting
+            </h2>
           </div>
 
           <div
-            th:if="${projects == null or #lists.isEmpty(projects)}"
-            class="text-center text-gray-500 p-6 text-sm"
+            id="chatBox"
+            class="messages-container p-6 space-y-4"
+            style="
+              background-image: url('https://img.freepik.com/free-vector/elegant-flowing-wavy-line-white-backdrop-presentation_1017-56484.jpg');
+              background-size: cover;
+              background-position: center;
+              background-repeat: repeat;
+            "
+          ></div>
+
+          <div
+            class="relative p-4 border-t bg-white flex items-center space-x-3"
+            style="
+              background-image: url('https://img.freepik.com/free-vector/elegant-flowing-wavy-line-white-backdrop-presentation_1017-56484.jpg');
+              background-size: cover;
+              background-position: center;
+              background-repeat: repeat;
+            "
           >
-            You have not joined any projects yet.
+            <button
+              id="emojiBtn"
+              class="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition flex-shrink-0"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="w-6 h-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm4.5 0c0 .414-.168.75-.375.75S13.5 10.164 13.5 9.75s.168-.75.375-.75.375.336.375.75Z"
+                />
+              </svg>
+            </button>
+
+            <input
+              id="messageInput"
+              type="text"
+              placeholder="Type your message..."
+              class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled
+            />
+
+            <button
+              id="sendBtn"
+              class="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition flex-shrink-0"
+              disabled
+            >
+              Send
+            </button>
+
+            <div
+              class="absolute bottom-20 left-4 z-10 hidden"
+              id="emojiPickerContainer"
+            >
+              <emoji-picker class="light"></emoji-picker>
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- 🔹 Khu vực Chat -->
-      <div class="flex-1 flex flex-col bg-gray-50">
-        <div id="chatHeader" class="flex items-center p-4 border-b bg-white">
-          <h2 class="font-semibold text-gray-700" id="chatProjectName">
-            Select a project to start chatting
-          </h2>
-        </div>
-
-        <div id="chatBox" class="messages-container p-6 space-y-4 bg-gray-50"></div>
-
-        <div class="p-4 border-t bg-white flex items-center space-x-3">
-          <input
-            id="messageInput"
-            type="text"
-            placeholder="Type your message..."
-            class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled
-          />
-          <button
-            id="sendBtn"
-            class="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition"
-            disabled
-          >
-            Send
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <!-- ✅ JavaScript -->
-  <script th:inline="javascript">
-    const chatBox = document.getElementById("chatBox");
-    const sendBtn = document.getElementById("sendBtn");
-    const input = document.getElementById("messageInput");
-    const chatProjectName = document.getElementById("chatProjectName");
+    <!-- ✅ JavaScript -->
+    <script th:inline="javascript">
+      const chatBox = document.getElementById("chatBox");
+      const sendBtn = document.getElementById("sendBtn");
+      const input = document.getElementById("messageInput");
+      const chatProjectName = document.getElementById("chatProjectName");
 
-    let currentProjectId = null;
-    let stompClient = null;
-    let subscription = null;
+      let currentProjectId = null;
+      let stompClient = null;
+      let subscription = null;
 
-    const username = /*[[${#strings.escapeJavaScript(username)}]]*/ "";
-    const userEmail = /*[[${#strings.escapeJavaScript(user.email)}]]*/ "";
+      const username = /*[[${#strings.escapeJavaScript(username)}]]*/ "";
+      const userEmail = /*[[${#strings.escapeJavaScript(user.email)}]]*/ "";
 
-    // ✅ Kết nối WebSocket
-    function connectWs() {
-      const socket = new SockJS("/ws");
-      stompClient = Stomp.over(socket);
-      stompClient.connect({}, () => console.log("✅ WebSocket connected"));
-    }
-    connectWs();
+      // ✅ Kết nối WebSocket
+      function connectWs() {
+        const socket = new SockJS("/ws");
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, () => console.log("✅ WebSocket connected"));
+      }
+      connectWs();
 
-    // ✅ Khi gửi tin nhắn
-    function sendMessage() {
-      const text = input.value.trim();
-      if (!text || !currentProjectId || !stompClient.connected) return;
+      // ✅ Khi gửi tin nhắn
+      function sendMessage() {
+        const text = input.value.trim();
+        if (!text || !currentProjectId || !stompClient.connected) return;
 
-      const msg = {
-        projectId: currentProjectId,
-        content: text,
-        senderEmail: userEmail
-      };
+        const msg = {
+          projectId: currentProjectId,
+          content: text,
+          senderEmail: userEmail,
+        };
 
-      stompClient.send(`/app/chat/${currentProjectId}`, {}, JSON.stringify(msg));
-      input.value = "";
-    }
+        stompClient.send(
+          `/app/chat/${currentProjectId}`,
+          {},
+          JSON.stringify(msg)
+        );
+        input.value = "";
+      }
 
-    // ✅ Khi chọn project để xem tin nhắn
-    function loadMessages(projectId, element) {
-      currentProjectId = projectId;
-      input.disabled = false;
-      sendBtn.disabled = false;
+      // ✅ Khi chọn project để xem tin nhắn
+      function loadMessages(projectId, element) {
+        currentProjectId = projectId;
+        input.disabled = false;
+        sendBtn.disabled = false;
 
-      document
-        .querySelectorAll(".chat-list-item")
-        .forEach((el) => el.classList.remove("chat-list-item-active"));
-      element.classList.add("chat-list-item-active");
+        document
+          .querySelectorAll(".chat-list-item")
+          .forEach((el) => el.classList.remove("chat-list-item-active"));
+        element.classList.add("chat-list-item-active");
 
-      chatProjectName.textContent =
-        element.querySelector("p.font-semibold").textContent;
-      chatBox.innerHTML =
-        "<p class='text-center text-gray-500'>Loading messages...</p>";
+        chatProjectName.textContent =
+          element.querySelector("p.font-semibold").textContent;
+        chatBox.innerHTML =
+          "<p class='text-center text-gray-500'>Loading messages...</p>";
 
-      fetch(`/api/messages/${projectId}`)
-        .then((res) => res.json())
-        .then((messages) => {
-          chatBox.innerHTML = "";
-          messages.forEach((msg) =>
+        fetch(`/api/messages/${projectId}`)
+          .then((res) => res.json())
+          .then((messages) => {
+            chatBox.innerHTML = "";
+            messages.forEach((msg) =>
+              appendMessage(
+                msg.senderName,
+                msg.content,
+                msg.senderEmail,
+                msg.senderAvatar,
+                msg.createdAt
+              )
+            );
+            chatBox.scrollTop = chatBox.scrollHeight;
+          })
+          .catch(console.error);
+
+        // ✅ Đăng ký nhận tin nhắn realtime
+        if (subscription) subscription.unsubscribe();
+        subscription = stompClient.subscribe(
+          `/topic/project.${projectId}`,
+          (message) => {
+            const msg = JSON.parse(message.body);
             appendMessage(
               msg.senderName,
               msg.content,
               msg.senderEmail,
-              msg.senderAvatar
-            )
-          );
-          chatBox.scrollTop = chatBox.scrollHeight;
-        })
-        .catch(console.error);
+              msg.senderAvatar,
+              msg.createdAt
+            );
+          }
+        );
+      }
+      window.loadMessages = loadMessages;
 
-      // ✅ Đăng ký nhận tin nhắn realtime
-      if (subscription) subscription.unsubscribe();
-      subscription = stompClient.subscribe(
-        `/topic/project.${projectId}`,
-        (message) => {
-          const msg = JSON.parse(message.body);
-          appendMessage(
-            msg.senderName,
-            msg.content,
-            msg.senderEmail,
-            msg.senderAvatar
-          );
+      // ✅ Hiển thị tin nhắn trong chat box
+      function appendMessage(
+        senderName,
+        content,
+        senderEmail,
+        avatarUrl,
+        createdAt
+      ) {
+        const msgDate = createdAt ? createdAt.split("T")[0] : null;
+
+        if (msgDate && msgDate !== lastMessageDate) {
+          appendDateDivider(formatDateLabel(createdAt));
+          lastMessageDate = msgDate;
         }
-      );
-    }
-    window.loadMessages = loadMessages;
+        const msgDiv = document.createElement("div");
+        const isCurrentUser =
+          senderEmail?.trim().toLowerCase() === userEmail?.trim().toLowerCase();
 
-    // ✅ Hiển thị tin nhắn trong chat box
-    function appendMessage(senderName, content, senderEmail, avatarUrl) {
-      const msgDiv = document.createElement("div");
-      const isCurrentUser =
-        senderEmail?.trim().toLowerCase() === userEmail?.trim().toLowerCase();
+        const avatar = avatarUrl
+          ? avatarUrl
+          : `https://i.pravatar.cc/40?u=${senderEmail}`;
 
-      const avatar = avatarUrl
-        ? avatarUrl
-        : `https://i.pravatar.cc/40?u=${senderEmail}`;
-
-      if (isCurrentUser) {
-        msgDiv.className = "flex justify-end mb-3";
-        msgDiv.innerHTML = `
+        if (isCurrentUser) {
+          msgDiv.className = "flex justify-end mb-3";
+          msgDiv.innerHTML = `
           <div class="flex flex-col items-end max-w-[70%]">
             <div class="bg-blue-600 text-white px-4 py-2 rounded-2xl shadow text-sm text-right break-words">
               ${content}
             </div>
+            <p class="text-xs text-gray-400 mt-1">${formatTime(createdAt)}</p>
           </div>`;
-      } else {
-        msgDiv.className = "flex justify-start mb-3";
-        msgDiv.innerHTML = `
+        } else {
+          msgDiv.className = "flex justify-start mb-3";
+          msgDiv.innerHTML = `
           <div class="flex items-start space-x-2 max-w-[70%]">
             <img src="${avatar}" class="w-8 h-8 rounded-full border" alt="${senderName}">
             <div>
@@ -241,19 +315,105 @@
               <div class="bg-gray-200 text-gray-800 px-4 py-2 rounded-2xl shadow text-sm break-words">
                 ${content}
               </div>
+              <p class="text-xs text-gray-400 mt-1">${formatTime(createdAt)}</p>
             </div>
           </div>`;
+        }
+
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
       }
 
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
+      // ✅ Event listener
+      sendBtn.addEventListener("click", sendMessage);
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+      // ✅ Event listener (DÁN VÀO CUỐI THẺ SCRIPT)
 
-    // ✅ Event listener
-    sendBtn.addEventListener("click", sendMessage);
-    input.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-  </script>
-</body>
+      // Lấy các phần tử mới
+      const emojiBtn = document.getElementById("emojiBtn");
+      const emojiPicker = document.getElementById("emojiPickerContainer");
+      const picker = emojiPicker.querySelector("emoji-picker");
+
+      // 1. Bật/tắt bảng emoji khi nhấp vào nút
+      emojiBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+        emojiPicker.classList.toggle("hidden");
+      });
+
+      // 2. Chèn emoji vào ô input khi được chọn
+      picker.addEventListener("emoji-click", (e) => {
+        // Lấy vị trí con trỏ hiện tại
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+
+        // Chèn emoji vào vị trí con trỏ
+        const currentValue = input.value;
+        const newValue =
+          currentValue.substring(0, start) +
+          e.detail.unicode +
+          currentValue.substring(end);
+
+        input.value = newValue;
+
+        // Di chuyển con trỏ đến ngay sau emoji vừa chèn
+        input.selectionStart = input.selectionEnd =
+          start + e.detail.unicode.length;
+
+        // Focus lại vào input để người dùng có thể gõ tiếp
+        input.focus();
+
+        // Ẩn bảng emoji đi
+        // emojiPicker.classList.add("hidden"); // (Tùy chọn: bạn có thể bỏ dòng này nếu muốn chọn nhiều emoji)
+      });
+
+      // 3. Ẩn bảng emoji khi nhấp ra bên ngoài
+      document.addEventListener("click", (e) => {
+        if (
+          !emojiPicker.classList.contains("hidden") &&
+          !emojiPicker.contains(e.target) &&
+          e.target !== emojiBtn
+        ) {
+          emojiPicker.classList.add("hidden");
+        }
+      });
+      function formatTime(isoString) {
+        if (!isoString) return "";
+        const date = new Date(isoString);
+        return date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+      let lastMessageDate = null;
+
+      function formatDateLabel(dateString) {
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        const d = date.toDateString();
+        const t = today.toDateString();
+        const y = yesterday.toDateString();
+
+        if (d === t) return "Hôm nay";
+        if (d === y) return "Hôm qua";
+
+        return date.toLocaleDateString("vi-VN");
+      }
+
+      function appendDateDivider(label) {
+        const div = document.createElement("div");
+        div.className = "text-center my-4";
+        div.innerHTML = `
+        <span class="px-4 py-1 bg-gray-300 text-gray-700 text-xs rounded-full">
+            ${label}
+        </span>
+    `;
+        chatBox.appendChild(div);
+      }
+    </script>
+  </body>
 </html>
