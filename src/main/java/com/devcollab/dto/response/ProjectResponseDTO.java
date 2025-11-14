@@ -20,4 +20,5 @@ public class ProjectResponseDTO {
     private LocalDate startDate;
     private LocalDate dueDate;
     private String createdByEmail;
+    private String coverImage;
 }

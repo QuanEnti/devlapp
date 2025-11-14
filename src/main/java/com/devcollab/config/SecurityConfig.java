@@ -34,6 +34,8 @@ public class SecurityConfig {
                                                 .hasRole("ADMIN")
 
                                                 .requestMatchers("/api/tasks/**").authenticated()
+                                        .requestMatchers("/api/notifications/**").authenticated()
+                                        .requestMatchers("/api/columns/**").authenticated()
                                                 .requestMatchers("/api/pm/invite/join/**")
                                                 .authenticated().anyRequest().authenticated())
                                 .addFilterBefore(jwtFilter,

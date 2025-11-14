@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +47,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         return attachmentRepository.findActiveByTaskId(taskId);
     }
 
+
     @Override
     @Transactional(readOnly = true)
     public List<AttachmentDTO> getAttachmentDTOsByTask(Long taskId) {
@@ -62,7 +64,20 @@ public class AttachmentServiceImpl implements AttachmentService {
 
         if (uploader == null || uploader.getUserId() == null)
             throw new IllegalStateException("Uploader not found or not saved in database");
+        // 🔥 CHECK PREMIUM FILE SIZE LIMIT
+        boolean isPremium = Boolean.TRUE.equals(uploader.isPremium())
+                && uploader.getPremiumExpiry() != null
+                && uploader.getPremiumExpiry().isAfter(Instant.now());
 
+        long maxSize = isPremium ? 100L * 1024 * 1024 : 10L * 1024 * 1024; // 100MB vs 10MB
+
+        if (file.getSize() > maxSize) {
+            if (isPremium) {
+                throw new IllegalArgumentException("Premium users can upload up to 100 MB per file.");
+            } else {
+                throw new IllegalArgumentException("Free users can upload up to 10 MB per file.");
+            }
+        }
         if (!Files.exists(uploadDir))
             Files.createDirectories(uploadDir);
 

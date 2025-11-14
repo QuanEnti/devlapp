@@ -1,16 +1,20 @@
 package com.devcollab.controller.view;
 
-import com.devcollab.domain.Project;
-import com.devcollab.domain.ProjectMember;
-import com.devcollab.domain.Task;
+import com.devcollab.domain.*;
+import com.devcollab.dto.MemberDTO;
 import com.devcollab.dto.TaskDTO;
+import com.devcollab.dto.TaskStatisticsDTO;
 import com.devcollab.dto.UserTaskViewDTO;
+import com.devcollab.repository.ProjectMemberRepository;
+import com.devcollab.repository.ProjectRepository;
+import com.devcollab.repository.ProjectScheduleRepository;
+import com.devcollab.repository.TaskRepository;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.TaskService;
 import com.devcollab.service.feature.MessageService;
 import com.devcollab.service.system.NotificationService;
-import com.devcollab.domain.User;
 import com.devcollab.service.core.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,7 +31,13 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Controller
 @RequestMapping("/user/view")
@@ -38,6 +49,11 @@ public class UserViewController {
     private final NotificationService notificationService;
     private final UserService userService;
     private final TaskService taskService;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectRepository projectRepository;
+    private final TaskRepository taskRepository;
+    private final ProjectScheduleRepository projectScheduleRepository;
+    private final TaskService taskStatisticsService;
 
     /**
      * ✅ Thêm user + unreadNotifications cho MỌI VIEW
@@ -71,20 +87,157 @@ public class UserViewController {
 
     // 🏠 Dashboard
     @GetMapping("/dashboard")
-    public String viewHome(Model model, Authentication auth) {
-        String email = getEmailFromAuthentication(auth);
-        User user = userService.getByEmail(email).orElse(null);
-        List<Project> activeProjects = projectService.getProjectsByUser(user.getUserId());
-        List<Task> myTasks = taskService.getTasksByUser(user);
-        List<Task> upcoming = taskService.findUpcomingDeadlines(user.getUserId());
+    public String getDashboard(Model model, Authentication auth) {
+        try {
+            String email = getEmailFromAuthentication(auth);
+            User user = userService.getByEmail(email).orElse(null);
+            if (user == null) {
+                return "redirect:/view/login";
+            }
 
-        model.addAttribute("user", user);
-        model.addAttribute("activeProjects", activeProjects);
-        model.addAttribute("myTasks", myTasks);
-        model.addAttribute("upcoming", upcoming);
-        return "user/home";
+            // Get user's projects
+            List<Project> projects = Collections.emptyList();
+            try {
+                projects = projectService.getTop5ProjectsByUser(user.getUserId());
+                projects = projects.stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                System.err.println("Error loading projects: " + e.getMessage());
+                projects = Collections.emptyList();
+            }
+            System.out.println("pro: "+projects);
+            model.addAttribute("projects", projects);
+
+            // Get task counts - ONLY 3 DATA POINTS
+            long openCount = 0;
+            long inProgressCount = 0;
+            long doneCount = 0;
+            long totalTasks = 0;
+
+            try {
+                List<Task> userTasks = taskRepository.findAllUserTasks(user);
+                totalTasks = userTasks.size();
+
+                openCount = userTasks.stream()
+                        .filter(task -> task != null && "OPEN".equals(task.getStatus()))
+                        .count();
+
+                inProgressCount = userTasks.stream()
+                        .filter(task -> task != null && "IN_PROGRESS".equals(task.getStatus()))
+                        .count();
+
+                doneCount = userTasks.stream()
+                        .filter(task -> task != null && "DONE".equals(task.getStatus()))
+                        .count();
+
+                // Print the 3 data points
+                System.out.println("📊 Task Statistics:");
+                System.out.println("  - OPEN: " + openCount + " tasks");
+                System.out.println("  - IN_PROGRESS: " + inProgressCount + " tasks");
+                System.out.println("  - DONE: " + doneCount + " tasks");
+                System.out.println("  - Total: " + totalTasks + " tasks");
+
+            } catch (Exception e) {
+                System.err.println("Error loading task statistics: " + e.getMessage());
+            }
+            model.addAttribute("openCount", openCount);
+            model.addAttribute("inProgressCount", inProgressCount);
+            model.addAttribute("doneCount", doneCount);
+            model.addAttribute("totalTasks", totalTasks);
+
+            // Get today's schedule
+            List<ProjectSchedule> todaysSchedules = Collections.emptyList();
+            try {
+                LocalDate today = LocalDate.now();
+                LocalDateTime startOfDay = today.atStartOfDay();
+                LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+
+                todaysSchedules = projects.stream()
+                        .filter(Objects::nonNull)
+                        .flatMap(project -> {
+                            try {
+                                return projectScheduleRepository
+                                        .findByProject_ProjectIdAndDatetimeBetween(
+                                                project.getProjectId(),
+                                                startOfDay.toInstant(ZoneOffset.UTC),
+                                                endOfDay.toInstant(ZoneOffset.UTC)
+                                        ).stream();
+                            } catch (Exception e) {
+                                System.err.println("Error loading schedule for project " + project.getProjectId() + ": " + e.getMessage());
+                                return Stream.empty();
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                System.err.println("Error loading today's schedule: " + e.getMessage());
+            }
+            model.addAttribute("todaysSchedules", todaysSchedules);
+
+            // Get upcoming tasks
+            List<Task> upcomingTasks = Collections.emptyList();
+            try {
+                Pageable topThree = PageRequest.of(0, 3);
+                upcomingTasks = taskRepository.findTopUpcoming(user.getUserId(), topThree);
+                upcomingTasks = upcomingTasks.stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                System.err.println("Error loading upcoming tasks: " + e.getMessage());
+            }
+            model.addAttribute("upcomingTasks", upcomingTasks);
+
+            // Get performance data
+            int janCount = 0, febCount = 0, marCount = 0, aprCount = 0, mayCount = 0, junCount = 0;
+
+            try {
+                List<Task> userTasks = taskRepository.findAllUserTasks(user);
+
+                // Count completed tasks for each month
+                for (Task task : userTasks) {
+                    if (task != null && "DONE".equals(task.getStatus()) && task.getClosedAt() != null) {
+                        int month = task.getClosedAt().getMonthValue(); // 1=Jan, 2=Feb, etc.
+
+                        switch (month) {
+                            case 1: janCount++; break;
+                            case 2: febCount++; break;
+                            case 3: marCount++; break;
+                            case 4: aprCount++; break;
+                            case 5: mayCount++; break;
+                            case 6: junCount++; break;
+                        }
+                    }
+                }
+
+                System.out.println("📈 Performance Data:");
+                System.out.println("  - Jan: " + janCount + " completed tasks");
+                System.out.println("  - Feb: " + febCount + " completed tasks");
+                System.out.println("  - Mar: " + marCount + " completed tasks");
+                System.out.println("  - Apr: " + aprCount + " completed tasks");
+                System.out.println("  - May: " + mayCount + " completed tasks");
+                System.out.println("  - Jun: " + junCount + " completed tasks");
+
+            } catch (Exception e) {
+                System.err.println("Error loading performance data: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            // Add performance counts to model
+            model.addAttribute("janCount", janCount);
+            model.addAttribute("febCount", febCount);
+            model.addAttribute("marCount", marCount);
+            model.addAttribute("aprCount", aprCount);
+            model.addAttribute("mayCount", mayCount);
+            model.addAttribute("junCount", junCount);
+
+            return "user/user-dashboard1";
+
+        } catch (Exception e) {
+            System.err.println("Critical error in dashboard: " + e.getMessage());
+            return "redirect:/view/login";
+        }
     }
-
 
     // ➕ Create Project Page
     @GetMapping("/create-project")
@@ -121,21 +274,42 @@ public class UserViewController {
         User currentUser = userService.getByEmail(email).orElseThrow();
 
         Pageable pageable = PageRequest.of(page, 9);
-        Page<ProjectMember> memberPage = projectService.getProjectsByUserSorted(currentUser, role, pageable);
+        Page<ProjectMember> memberPage =
+                projectService.getProjectsByUserSorted(currentUser, role, pageable);
 
+<<<<<<< HEAD
         // ✅ Just extract the Project entity, no role injection
         List<Project> projectList = memberPage.getContent()
                 .stream()
                 .map(ProjectMember::getProject)
                 .filter(p -> !"Archived".equalsIgnoreCase(p.getStatus()))
                 .toList();
+=======
+        // Build a wrapper list to send to UI
+        List<Map<String, Object>> projectCards = new ArrayList<>();
+>>>>>>> payment
 
-        model.addAttribute("projects", projectList);
-        model.addAttribute("page", memberPage);
+        for (ProjectMember pm : memberPage.getContent()) {
+            Project project = pm.getProject();
+
+            List<MemberDTO> members =
+                    projectMemberRepository.findMembersByProject(project.getProjectId());
+
+            Map<String, Object> card = new HashMap<>();
+            card.put("project", project);
+            card.put("role", pm.getRoleInProject());
+            card.put("members", members);
+
+            projectCards.add(card);
+        }
+
+        model.addAttribute("cards", projectCards);
         model.addAttribute("role", role);
+        model.addAttribute("page", memberPage);
 
         return "user/user-viewallprojects";
     }
+
 
 
     // ✉️ Danh sách lời mời

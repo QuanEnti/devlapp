@@ -76,6 +76,7 @@
       <div th:replace="fragments/sidebar :: sidebar"></div>
 
       <!-- ✅ Main content -->
+<<<<<<< HEAD
       <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
         <div class="grid grid-cols-12 gap-8">
           <!-- ✅ Left Profile Card -->
@@ -101,6 +102,169 @@
               >
                 Chưa có mô tả cá nhân
               </p>
+=======
+        <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
+            <div class="grid grid-cols-12 gap-8">
+                <!-- ✅ Left Profile Card -->
+                <div class="col-span-4 bg-white rounded-2xl shadow p-6 text-center">
+                    <img
+                            th:src="${user.avatarUrl != null ? user.avatarUrl : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}"
+                            alt="Avatar"
+                            class="w-36 h-36 mx-auto rounded-full object-cover border-4 border-blue-500"
+                    />
+                    <h2 class="text-lg font-semibold mt-4" th:text="${user.name}">User Name</h2>
+                    <p class="text-gray-500" th:text="${user.timezone != null ? user.timezone : 'Không có múi giờ'}">Asia/Ho_Chi_Minh</p>
+                    <div class="mt-3 px-4">
+                        <p class="text-sm text-gray-600 italic" th:text="${user.bio != null ? user.bio : 'Chưa có mô tả cá nhân'}">
+                            Chưa có mô tả cá nhân
+                        </p>
+                    </div>
+
+                    <div class="mt-6 space-y-2 text-sm text-gray-700">
+                        <div><span class="font-semibold text-gray-600">Skill:</span>
+                            <span th:text="${user.skills != null ? user.skills : 'Chưa cập nhật kỹ năng'}">Java</span>
+                        </div>
+                        <div><span class="font-semibold text-gray-600">Email:</span>
+                            <span th:text="${user.email}">example@email.com</span>
+                        </div>
+                        <div><span class="font-semibold text-gray-600">Language:</span>
+                            <span th:text="${user.preferredLanguage != null ? user.preferredLanguage : 'Chưa chọn ngôn ngữ'}">English</span>
+                        </div>
+                        <div><span class="font-semibold text-gray-600">User Verified:</span>
+                            <span th:text="${user.status}" th:classappend="${user.status == 'active'} ? 'text-green-600 font-medium' : 'text-red-500 font-medium'">
+            active
+          </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ✅ Right Profile Form (fills more width) -->
+                <div class="col-span-8 bg-white rounded-2xl shadow p-8">
+                    <h2 class="text-2xl font-semibold mb-6 border-b pb-3">👤 Thông tin cá nhân</h2>
+
+                    <form th:action="@{/user/update}" th:object="${user}" method="post" id="profileForm" th:data-user-id="${user.userId}" class="space-y-5">
+                        <!-- Avatar Upload -->
+                        <div class="flex items-center space-x-6">
+                            <img th:src="${user.avatarUrl != null ? user.avatarUrl : '/images/default-avatar.png'}"
+                                 alt="Avatar" class="w-24 h-24 rounded-full border object-cover" id="avatarPreview" />
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">Ảnh đại diện</label>
+                                <button type="button" id="changeAvatarBtn"
+                                        class="px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300"
+                                        onclick="document.getElementById('avatarInput').click()" disabled>
+                                    Thay ảnh
+                                </button>
+                                <input type="file" name="avatarFile" id="avatarInput" accept="image/*" class="hidden" onchange="previewAvatar(event)" disabled />
+                            </div>
+                        </div>
+
+                        <!-- Info Inputs -->
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">Họ và tên</label>
+                                <input type="text" th:field="*{name}" class="form-input bg-gray-100" disabled />
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">Kỹ năng</label>
+                                <input type="text" th:field="*{skills}" class="form-input bg-gray-100" disabled />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-1">Giới thiệu bản thân</label>
+                            <textarea th:field="*{bio}" rows="3" class="form-input bg-gray-100" disabled></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">Múi giờ</label>
+                                <input type="text" th:field="*{timezone}" class="form-input bg-gray-100" disabled />
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">Ngôn ngữ ưu tiên</label>
+                                <input type="text" th:field="*{preferredLanguage}" class="form-input bg-gray-100" disabled />
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="pt-4 flex flex-wrap gap-3">
+                            <button type="button" id="editBtn" class="bg-blue-500 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-600 transition">
+                                ✏️ Chỉnh sửa hồ sơ
+                            </button>
+                            <button type="submit" id="saveBtn" class="bg-green-500 text-white px-5 py-2 rounded-lg shadow hover:bg-green-600 transition hidden">
+                                💾 Lưu thay đổi
+                            </button>
+                            <button type="button" id="cancelBtn" class="bg-gray-400 text-white px-5 py-2 rounded-lg shadow hover:bg-gray-500 transition hidden">
+                                ❌ Hủy
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- 🔒 Change Password Section -->
+                    <div class="mt-10 border-t pt-6 space-y-4">
+                        <button type="button" id="togglePasswordBtn" class="text-blue-500 hover:underline font-medium">
+                            🔒 Thay đổi mật khẩu
+                        </button>
+
+                        <form th:action="@{/user/change-password}" method="post" id="passwordForm" class="space-y-4 hidden">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-gray-700 font-medium mb-1">Mật khẩu hiện tại</label>
+                                    <input type="password" name="oldPassword" class="form-input" placeholder="Nhập mật khẩu hiện tại" />
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 font-medium mb-1">Mật khẩu mới</label>
+                                    <input type="password" name="newPassword" class="form-input" placeholder="Nhập mật khẩu mới" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-1">Xác nhận mật khẩu mới</label>
+                                <input type="password" name="confirmPassword" class="form-input" placeholder="Nhập lại mật khẩu mới" />
+                            </div>
+                            <div class="pt-4">
+                                <button type="submit" class="bg-pink-500 text-white px-6 py-2 rounded-lg shadow hover:bg-pink-600 transition">
+                                    🔄 Cập nhật mật khẩu
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 🚀 Upgrade Plan -->
+                    <div class="pt-8 border-t mt-6 text-center">
+                        <h3 class="text-gray-700 font-semibold mb-2">
+                            <span th:text="${user.premium} ? '♻️ Gia hạn Premium' : '🚀 Nâng cấp tài khoản của bạn'"></span>
+                        </h3>
+                        <p class="text-gray-500 text-sm mb-3">
+          <span th:if="${user.premium}">
+            Hạn sử dụng đến: <b th:text="${#temporals.format(user.premiumExpiry, 'dd/MM/yyyy')}">--/--/----</b>
+          </span>
+                            <span th:unless="${user.premium}">
+            Mở khóa nhiều tính năng chuyên nghiệp hơn, hỗ trợ tốt hơn và quyền truy cập nâng cao.
+          </span>
+                        </p>
+                        <button id="upgradeBtn" class="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition">
+                            <span th:text="${user.premium} ? '♻️ Gia hạn Premium' : '🌟 Mua gói Pro'"></span>
+                        </button>
+                    </div>
+                    <div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
+                            <h3 class="text-xl font-bold text-blue-600 mb-3">Xác nhận nâng cấp tài khoản</h3>
+                            <p class="text-gray-600 mb-4">Gói <b>DevCollab Pro</b> mang lại:</p>
+                            <ul class="text-sm text-gray-700 text-left mb-4 list-disc list-inside">
+                                <li>💡 Truy cập AI Assistant thông minh</li>
+                                <li>📈 Phân tích dự án nâng cao</li>
+                                <li>📂 Lưu trữ không giới hạn</li>
+                                <li>👥 Tăng số lượng thành viên mỗi dự án lên 20+</li>
+                            </ul>
+                            <p class="text-gray-600 mb-4">Phí: <b>2.000đ / tháng</b></p>
+                            <div class="flex justify-center space-x-4">
+                                <button id="confirmBuyBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Xác nhận</button>
+                                <button id="cancelBuyBtn" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500">Hủy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+>>>>>>> payment
             </div>
 
             <div class="mt-6 space-y-2 text-sm text-gray-700">

@@ -52,6 +52,7 @@ public class ProjectRestController {
             if (creator == null) {
                 return ApiResponse.error("Không tìm thấy người dùng: " + email, 404);
             }
+            System.out.println("Creating project with coverImage:"+ request.getCoverImage());
 
             // ✅ Kiểm tra xem người dùng đã có project cùng tên chưa
             boolean exists = projectService.existsByNameAndCreatedBy_UserId(request.getName(), creator.getUserId());
@@ -64,6 +65,7 @@ public class ProjectRestController {
             project.setName(request.getName());
             project.setDescription(request.getDescription());
             project.setPriority(request.getPriority());
+            project.setCoverImage(request.getCoverImage());
 
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
                 project.setStartDate(LocalDate.parse(request.getStartDate()));
@@ -165,6 +167,8 @@ public class ProjectRestController {
             patch.setDescription(request.getDescription());
             patch.setBusinessRule(request.getBusinessRule());
             patch.setPriority(request.getPriority());
+            System.out.println("CverImg: "+request.getCoverImage());
+            patch.setCoverImage(request.getCoverImage());
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
                 patch.setStartDate(LocalDate.parse(request.getStartDate()));
             }
@@ -183,7 +187,8 @@ public class ProjectRestController {
                     updated.getVisibility(),
                     updated.getStartDate(),
                     updated.getDueDate(),
-                    updated.getCreatedBy() != null ? updated.getCreatedBy().getEmail() : null
+                    updated.getCreatedBy() != null ? updated.getCreatedBy().getEmail() : null,
+                    updated.getCoverImage()
             );
             return ApiResponse.success("Cập nhật project thành công", dto);
 
@@ -192,6 +197,39 @@ public class ProjectRestController {
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("Đã xảy ra lỗi khi cập nhật project: " + e.getMessage());
+        }
+    }
+    @DeleteMapping("/{projectId}")
+    public ApiResponse<?> deleteProject(
+            @PathVariable Long projectId,
+            Authentication authentication) {
+
+        String email = getEmailFromAuthentication(authentication);
+        if (email == null) {
+            return ApiResponse.error("Bạn chưa đăng nhập", 401);
+        }
+
+        try {
+            User currentUser = userService.getByEmail(email).orElse(null);
+            if (currentUser == null) {
+                return ApiResponse.error("Không tìm thấy người dùng: " + email, 404);
+            }
+
+            Project project = projectService.getById(projectId);
+
+            // ✅ Only project creator can delete
+            if (!Objects.equals(project.getCreatedBy().getUserId(), currentUser.getUserId())) {
+                return ApiResponse.error("Bạn không có quyền xóa project này!", 403);
+            }
+
+            projectService.deleteProject(projectId);
+            return ApiResponse.success("Đã xóa project thành công");
+
+        } catch (NotFoundException e) {
+            return ApiResponse.error(e.getMessage(), 404);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.error("Đã xảy ra lỗi khi xóa project: " + e.getMessage());
         }
     }
 

@@ -161,9 +161,17 @@ async function handleFileUpload() {
         body: formData,
       }
     );
-    if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+          let errorMsg = "Upload failed";
+          try {
+              const text = await res.text();
+              const json = JSON.parse(text);
+              errorMsg = json.message || json.error || text;
+          } catch (e) {}
+          throw new Error(errorMsg);
+      }
 
-    // Hide uploading notification
+      // Hide uploading notification
     hideUploadingNotification();
 
     await loadAttachments(window.CURRENT_TASK_ID);
@@ -171,7 +179,7 @@ async function handleFileUpload() {
     // Hide uploading notification
     hideUploadingNotification();
 
-    showToast(" Failed to upload attachment", "error");
+    showToast(err.message, "error");
   } finally {
     fileInput.value = "";
   }
@@ -897,9 +905,21 @@ async function handlePopupInsert() {
           body: formData,
         }
       );
-      if (!res.ok) throw new Error("Upload failed");
+        if (!res.ok) {
+            let errorMsg = "Upload failed";
 
-      // Hide uploading notification
+            try {
+                const text = await res.text();
+                const json = JSON.parse(text);
+                errorMsg = json.message || json.error || text;
+            } catch (e) {
+                // fallback
+            }
+
+            throw new Error(errorMsg);
+        }
+
+        // Hide uploading notification
       hideUploadingNotification();
     } else {
       const res = await fetch(
@@ -926,7 +946,7 @@ async function handlePopupInsert() {
     // Hide uploading notification if shown
     hideUploadingNotification();
 
-    showToast(" Failed to upload or attach link.", "error");
+    showToast(err.message, "error");
   } finally {
     popupFileInput.value = "";
     linkInput.value = "";

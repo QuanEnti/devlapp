@@ -201,5 +201,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     ORDER BY t.deadline ASC
 """)
     List<Task> findTopUpcoming(@Param("userId") Long userId, Pageable pageable);
+    Page<Task> findByProject_ProjectId(Long projectId, Pageable pageable);
+
+    Page<Task> findByProject_ProjectIdAndStatus(Long projectId, String status, Pageable pageable);
+
+    Page<Task> findByProject_ProjectIdAndTitleContainingIgnoreCase(Long projectId, String title, Pageable pageable);
+
+    Page<Task> findByProject_ProjectIdAndStatusAndTitleContainingIgnoreCase(
+            Long projectId, String status, String title, Pageable pageable);
+
 }
 

@@ -1,6 +1,7 @@
 package com.devcollab.repository;
 
 import com.devcollab.domain.Project;
+import com.devcollab.domain.User;
 import com.devcollab.dto.ProjectDTO;
 
 import com.devcollab.dto.userTaskDto.ProjectFilterDTO;
@@ -192,5 +193,14 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 ORDER BY pm.joinedAt DESC
             """)
     Page<Project> findByUserEmail(@Param("email") String email, Pageable pageable);
-
+    @Query("""
+            SELECT p
+            FROM Project p
+            JOIN p.members pm
+            WHERE pm.user.userId = :userId
+              AND p.status IS NOT NULL
+              AND p.status <> 'Archived'
+            ORDER BY p.updatedAt DESC
+            """)
+    List<Project> findTopProjectsByUser(@Param("userId") Long userId, Pageable pageable);
 }

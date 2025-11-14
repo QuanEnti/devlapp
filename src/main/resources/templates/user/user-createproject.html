@@ -73,199 +73,127 @@
 
     <!-- Main Content -->
     <main class="flex-1 p-10 overflow-y-auto">
-        <div class="max-w-7xl mx-auto w-[90%]">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                Create New Project
-            </h1>
-            <p class="text-gray-500 mb-10">
-                Set up your project details, timeline and priorities.
-            </p>
+        <div class="max-w-5xl mx-auto w-full">
 
-
-            <!-- Main Card -->
-            <div
-                    class="bg-white p-12 rounded-2xl shadow-lg border border-gray-200 fadeIn"
-            >
-                <form id="createProjectForm" class="space-y-10">
-
-
-                    <!-- Project Info Section -->
-                    <div
-                            class="border border-gray-200 bg-gray-50 rounded-xl p-8 hover:shadow-sm transition"
-                    >
-                        <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b border-gray-300 pb-2">
-                            Project Information
-                        </h2>
-
-
-                        <div class="space-y-6">
-                            <!-- Project Name -->
-                            <div>
-                                <label
-                                        for="project-name"
-                                        class="block text-sm font-semibold text-gray-700 mb-2"
-                                >Project Name</label
-                                >
-                                <input
-                                        type="text"
-                                        id="project-name"
-                                        name="project-name"
-                                        placeholder="Enter project name"
-                                        class="form-input text-base bg-white border-black"
-                                        required
-                                />
-                            </div>
-
-
-                            <!-- Description -->
-                            <div>
-                                <label
-                                        for="project-description"
-                                        class="block text-sm font-semibold text-gray-700 mb-2"
-                                >Description</label
-                                >
-                                <textarea
-                                        id="project-description"
-                                        name="project-description"
-                                        rows="5"
-                                        placeholder="Briefly describe your project"
-                                        class="form-input resize-none text-base bg-white border-black"
-                                ></textarea>
-                            </div>
-
-
-                            <!-- Business Rule -->
-                            <div>
-                                <label
-                                        for="business-rule"
-                                        class="block text-sm font-semibold text-gray-700 mb-2"
-                                >Business Rule</label
-                                >
-                                <textarea
-                                        id="business-rule"
-                                        name="business-rule"
-                                        rows="5"
-                                        placeholder="Enter business rules for your project"
-                                        class="form-input resize-none text-base bg-white border-black"
-                                ></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    <!-- Settings Section -->
-                    <div
-                            class="border border-gray-200 bg-gray-50 rounded-xl p-8 hover:shadow-sm transition"
-                    >
-                        <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b border-gray-300 pb-2">
-                            Settings
-                        </h2>
-
-
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-                            <!-- Priority -->
-                            <div>
-                                <label
-                                        class="block text-sm font-semibold text-gray-700 mb-3"
-                                >Priority</label
-                                >
-                                <div class="flex flex-wrap gap-4">
-                                    <label
-                                            class="flex items-center gap-2 cursor-pointer px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-                                    >
-                                        <input
-                                                type="radio"
-                                                name="priority"
-                                                value="Low"
-                                                class="text-green-500 focus:ring-green-500"
-                                        />
-                                        <span class="text-green-600 font-medium">Low</span>
-                                    </label>
-
-
-                                    <label
-                                            class="flex items-center gap-2 cursor-pointer px-4 py-2 border border-blue-400 rounded-lg bg-blue-50"
-                                    >
-                                        <input
-                                                type="radio"
-                                                name="priority"
-                                                value="Normal"
-                                                checked
-                                                class="text-blue-500 focus:ring-blue-500"
-                                        />
-                                        <span class="text-blue-600 font-medium">Normal</span>
-                                    </label>
-
-
-                                    <label
-                                            class="flex items-center gap-2 cursor-pointer px-4 py-2 border border-red-400 rounded-lg hover:bg-red-50"
-                                    >
-                                        <input
-                                                type="radio"
-                                                name="priority"
-                                                value="High"
-                                                class="text-red-500 focus:ring-red-500"
-                                        />
-                                        <span class="text-red-600 font-medium">High</span>
-                                    </label>
-                                </div>
-                            </div>
-
-
-                            <!-- Date Range -->
-                            <div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <!-- Start Date -->
-                                    <div>
-                                        <label
-                                                for="startDate"
-                                                class="block text-sm font-semibold text-gray-700 mb-2"
-                                        >Start Date</label
-                                        >
-                                        <input
-                                                type="date"
-                                                id="startDate"
-                                                name="startDate"
-                                                class="form-input text-base bg-white rounded-lg"
-                                        />
-                                    </div>
-                                    <!-- End Date -->
-                                    <div>
-                                        <label for="endDate" class="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
-                                        <input type="date" id="endDate" name="endDate" class="form-input text-base bg-white rounded-lg"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    <!-- Submit -->
-                    <div class="flex justify-end pt-8 border-t border-gray-200">
-                        <button
-                                type="submit"
-                                id="create-btn"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all duration-150 shadow-md hover:scale-[1.03]"
-                        >
-                            <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                            >
-                                <path
-                                        fill-rule="evenodd"
-                                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                        clip-rule="evenodd"
-                                />
-                            </svg>
-                            <span>Create Project</span>
-                        </button>
-                    </div>
-                </form>
+            <!-- HEADER -->
+            <div class="flex items-center justify-between mb-10">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Create New Project</h1>
+                    <p class="text-gray-500">Set up your project details and timeline.</p>
+                </div>
             </div>
+
+            <!-- COVER IMAGE UPLOAD -->
+            <div class="mb-10">
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Project Cover Image</label>
+
+                <div id="cover-preview-container"
+                     class="w-full h-56 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden relative cursor-pointer hover:opacity-90 transition">
+
+                    <img id="cover-preview" class="w-full h-full object-cover hidden"/>
+
+                    <div id="cover-placeholder" class="flex flex-col items-center text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2 opacity-50"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M4 16l4.586-4.586a1 1 0 011.414 0L14 16m0
+                              0l4-4m-4 4v6m0-6V4m0 0l-4 4m4-4l4 4"/>
+                        </svg>
+                        <p class="text-sm">Click to upload cover image</p>
+                    </div>
+
+                    <input id="cover-input" type="file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer"/>
+                </div>
+            </div>
+
+            <!-- FORM -->
+            <form id="createProjectForm" class="space-y-12">
+
+                <!-- SECTION: INFO -->
+                <section class="space-y-6">
+                    <h2 class="text-xl font-semibold text-gray-800">Project Information</h2>
+
+                    <!-- PROJECT NAME -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Project Name</label>
+                        <input type="text" id="project-name" required
+                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"/>
+                    </div>
+
+                    <!-- DESCRIPTION -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                        <textarea id="project-description" rows="5"
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                    </div>
+
+                    <!-- BUSINESS RULE -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Business Rule</label>
+                        <textarea id="business-rule" rows="5"
+                                  class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                    </div>
+                </section>
+
+                <!-- SECTION: SETTINGS -->
+                <section class="space-y-8">
+                    <h2 class="text-xl font-semibold text-gray-800">Settings</h2>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+                        <!-- PRIORITY -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Priority</label>
+
+                            <div class="flex gap-3">
+                                <label class="px-4 py-2 border rounded-lg cursor-pointer flex items-center gap-2">
+                                    <input type="radio" name="priority" value="Low"/>
+                                    <span class="text-green-600">Low</span>
+                                </label>
+
+                                <label class="px-4 py-2 border rounded-lg cursor-pointer flex items-center gap-2 bg-blue-50 border-blue-400">
+                                    <input type="radio" name="priority" value="Normal" checked/>
+                                    <span class="text-blue-600">Normal</span>
+                                </label>
+
+                                <label class="px-4 py-2 border rounded-lg cursor-pointer flex items-center gap-2">
+                                    <input type="radio" name="priority" value="High"/>
+                                    <span class="text-red-600">High</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- DATE RANGE -->
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+                                <input type="date" id="startDate"
+                                       class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"/>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                                <input type="date" id="endDate"
+                                       class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"/>
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+
+                <!-- SUBMIT -->
+                <div class="flex justify-end">
+                    <button id="create-btn"
+                            class="bg-blue-600 text-white px-10 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow">
+                        Create Project
+                    </button>
+                </div>
+
+            </form>
         </div>
     </main>
+
+
 </div>
 
 
@@ -284,8 +212,44 @@
         const descInput = document.getElementById("project-description");
         const businessInput = document.getElementById("business-rule");
         let typingTimer, currentSuggestion = "";
+        let uploadedCoverUrl = null;
         const TYPING_DELAY = 1500;
 
+        const coverInput = document.getElementById("cover-input");
+        const coverPreview = document.getElementById("cover-preview");
+        const coverPlaceholder = document.getElementById("cover-placeholder");
+
+        coverInput.addEventListener("change", async () => {
+            const file = coverInput.files[0];
+            if (!file) return;
+
+            // preview
+            const reader = new FileReader();
+            reader.onload = () => {
+                coverPreview.src = reader.result;
+                coverPreview.classList.remove("hidden");
+                coverPlaceholder.classList.add("hidden");
+            };
+            reader.readAsDataURL(file);
+
+            // upload to server
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/api/upload/project-cover", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await res.json();
+            const imageUrl = result.url || result.data?.url;
+            if (imageUrl) {
+                uploadedCoverUrl = result.url;
+                console.log("Uploaded:", uploadedCoverUrl);
+            } else {
+                showToast("Upload failed: " + result.message);
+            }
+        });
 
         function showToast(message, type = "success") {
             const toast = document.getElementById("toast");
@@ -459,7 +423,15 @@
                 return;
             }
 
-            const data = { name, description, businessRule, priority, startDate: startDate || null, endDate: endDate || null };
+            const data = {
+                name,
+                description,
+                businessRule,
+                priority,
+                startDate: startDate || null,
+                endDate: endDate || null,
+                coverImage: uploadedCoverUrl || null
+            };
 
 
             try {
@@ -497,10 +469,8 @@
             }
         });
     })();
-
 </script>
 </body>
-
 <div th:replace="fragments/chatbox :: chatbox"></div>
 <script th:src="@{/js/chatbox.js}"></script>
 </html>

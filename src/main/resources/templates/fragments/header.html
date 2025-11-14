@@ -188,43 +188,42 @@
             <span
               class="block text-sm font-semibold text-gray-800"
               th:text="${user != null ? user.name : 'User'}"
-              >User</span
-            >
+              >User</span>
 
-            <!-- 🏆 Premium -->
-            <span
-              th:if="${user != null && user.isPremium}"
-              class="bg-yellow-400 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center space-x-1"
-              title="Tài khoản Premium"
-            >
+                        <!-- 🏆 Premium -->
+                          <span
+                                  th:if="${user != null && (user.isPremium || user.premium)}"
+                                  class="bg-yellow-400 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center space-x-1"
+                                  title="Tài khoản Premium"
+                          >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                class="w-3.5 h-3.5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      class="w-3.5 h-3.5"
               >
                 <path
-                  fill-rule="evenodd"
-                  d="M10 2a1 1 0 01.894.553l1.382 2.802
-                                         3.09.45a1 1 0 01.554 1.707l-2.236
-                                         2.18.528 3.078a1 1 0 01-1.45
-                                         1.054L10 12.347l-2.762
-                                         1.457a1 1 0 01-1.45-1.054l.528-3.078-2.236-2.18a1
-                                         1 0 01.554-1.707l3.09-.45L9.106
-                                         2.553A1 1 0 0110 2z"
-                  clip-rule="evenodd"
+                        fill-rule="evenodd"
+                        d="M10 2a1 1 0 01.894.553l1.382 2.802
+                  3.09.45a1 1 0 01.554 1.707l-2.236
+                  2.18.528 3.078a1 1 0 01-1.45
+                  1.054L10 12.347l-2.762
+                  1.457a1 1 0 01-1.45-1.054l.528-3.078-2.236-2.18a1
+                  1 0 01.554-1.707l3.09-.45L9.106
+                  2.553A1 1 0 0110 2z"
+                        clip-rule="evenodd"
                 />
               </svg>
               <span>Premium</span>
             </span>
 
-            <!-- 🆓 Free -->
-            <span
-              th:if="${user != null && !user.isPremium}"
-              class="bg-gray-200 text-gray-600 text-[11px] font-medium px-2 py-0.5 rounded-full shadow-sm"
-              title="Tài khoản miễn phí"
+              <!-- 🆓 Free -->
+              <span
+                      th:if="${user != null && !(user.isPremium || user.premium)}"
+                      class="bg-gray-200 text-gray-600 text-[11px] font-medium px-2 py-0.5 rounded-full shadow-sm"
+                      title="Tài khoản miễn phí"
               >Free</span
-            >
+              >
           </div>
 
           <span
@@ -843,69 +842,69 @@
         return `${days} day${days > 1 ? "s" : ""} ago`;
       }
       // --- Search ---
-      const searchInput = document.getElementById("searchInput");
-      const searchDropdown = document.getElementById("searchDropdown");
-      const searchResults = document.getElementById("searchResults");
+        const searchInput = document.getElementById("searchInput");
+        const searchDropdown = document.getElementById("searchDropdown");
+        const searchResults = document.getElementById("searchResults");
 
-      if (searchInput && searchDropdown && searchResults) {
-        searchInput.addEventListener("focus", () => {
-          searchDropdown.classList.remove("hidden");
-          searchResults.innerHTML =
-            "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
-        });
+        function escapeHtml(unsafe) {
+            if (!unsafe) return "";
+            return unsafe.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
-        document.addEventListener("click", (e) => {
-          if (!searchDropdown.contains(e.target) && e.target !== searchInput) {
-            searchDropdown.classList.add("hidden");
-          }
-        });
+        if (searchInput && searchDropdown && searchResults) {
+            let searchTimeout;
 
-        let searchTimeout;
-        searchInput.addEventListener("input", () => {
-          clearTimeout(searchTimeout);
-          const query = searchInput.value.trim();
+            searchInput.addEventListener("focus", () => {
+                searchDropdown.classList.remove("hidden");
+                searchResults.innerHTML =
+                    "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
+            });
 
-          if (query.length < 2) {
-            searchResults.innerHTML =
-              "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
-            return;
-          }
+            document.addEventListener("click", (e) => {
+                if (!searchDropdown.contains(e.target) && e.target !== searchInput) {
+                    searchDropdown.classList.add("hidden");
+                }
+            });
 
-          searchTimeout = setTimeout(() => {
-            fetch(`/api/search?query=${encodeURIComponent(query)}`)
-              .then((res) => res.json())
-              .then((data) => {
-                if (!data || data.length === 0) {
-                  searchResults.innerHTML =
-                    "<p class='p-4 text-gray-500 text-sm text-center'>Không có kết quả</p>";
-                  return;
+            searchInput.addEventListener("input", () => {
+                clearTimeout(searchTimeout);
+                const query = searchInput.value.trim();
+                if (query.length < 1) {
+                    searchResults.innerHTML =
+                        "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
+                    return;
                 }
 
-                searchResults.innerHTML = data
-                  .map(
-                    (item) => `
-                                    <div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition"
-                                         onclick="window.location.href='/view/project/${
-                                           item.projectId
-                                         }'">
-                                        <p class="text-sm font-medium text-gray-800">${this.escapeHtml(
-                                          item.name
-                                        )}</p>
-                                        <p class="text-xs text-gray-500">${
-                                          item.description
-                                            ? this.escapeHtml(item.description)
-                                            : ""
-                                        }</p>
-                                    </div>
-                                `
-                  )
-                  .join("");
-              })
-              .catch(() => {
-                searchResults.innerHTML =
-                  "<p class='p-4 text-gray-500 text-sm text-center'>Không thể tải kết quả</p>";
-              });
-          }, 300);
+                searchTimeout = setTimeout(() => {
+                    fetch("/api/search?query=" + encodeURIComponent(query))
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!Array.isArray(data) || data.length === 0) {
+                                searchResults.innerHTML =
+                                    "<p class='p-4 text-gray-500 text-sm text-center'>Không có kết quả</p>";
+                                return;
+                            }
+
+                            searchResults.innerHTML = data.map(function(item) {
+                                return '' +
+                                    '<div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition" ' +
+                                    '     onclick="window.location.href=\'/view/pm/project/board?projectId=' + item.projectId + '\'">' +
+                                    '  <p class="text-sm font-semibold text-gray-800">' + escapeHtml(item.name) + '</p>' +
+                                    '  <p class="text-xs text-gray-500 truncate">' + escapeHtml(item.description || "") + '</p>' +
+                                    '  <p class="text-[11px] text-gray-400 mt-0.5">Status: ' + (item.status || "") + '</p>' +
+                                    '</div>';
+                            }).join("");
+                        })
+                        .catch(err => {
+                            console.error("Search error:", err);
+                            searchResults.innerHTML =
+                                "<p class='p-4 text-gray-500 text-sm text-center'>Không thể tải kết quả</p>";
+                        });
+                }, 300);
         });
       }
 
@@ -944,90 +943,104 @@
       }
     });
   </script>
-  <script>
-    (async () => {
-      try {
-        // 👤 Lấy các phần tử trong header
-        const nameEl = document.querySelector(
-          "#userMenuButton span[th\\:text]"
-        );
-        const emailEl = document.querySelector("#userMenuButton .text-xs");
-        const freeBadge = document.querySelector(
-          "#userMenuButton .bg-gray-200"
-        );
-        const premiumBadge = document.querySelector(
-          "#userMenuButton .bg-yellow-400"
-        );
-        const avatarImg = document.querySelector(
-          '#userMenuButton img[alt="User Avatar"]'
-        );
+    <script>
+        (async () => {
+            try {
+                // 👤 Lấy các phần tử trong header
+                const nameEl = document.querySelector(
+                    "#userMenuButton span[th\\:text]"
+                );
+                const emailEl = document.querySelector("#userMenuButton .text-xs");
+                const freeBadge = document.querySelector(
+                    "#userMenuButton .bg-gray-200"
+                );
+                const premiumBadge = document.querySelector(
+                    "#userMenuButton .bg-yellow-400"
+                );
+                const avatarImg = document.querySelector(
+                    '#userMenuButton img[alt="User Avatar"]'
+                );
 
-        // Nếu đã có dữ liệu Thymeleaf thì không cần fetch
-        if (
-          nameEl &&
-          nameEl.textContent.trim() !== "User" &&
-          emailEl &&
-          emailEl.textContent.trim() !== ""
-        ) {
-          return;
-        }
+                // 🔍 QUAN TRỌNG: Kiểm tra xem Thymeleaf đã render badge chưa
+                const hasThymeleafBadge = freeBadge && premiumBadge &&
+                    (!freeBadge.classList.contains("hidden") ||
+                        !premiumBadge.classList.contains("hidden"));
 
-        const token = localStorage.getItem("token");
-        const res = await fetch("/api/auth/me", {
-          headers: token ? { Authorization: "Bearer " + token } : {},
-          credentials: "include",
-        });
+                // Nếu Thymeleaf đã render badge thành công, KHÔNG làm gì cả
+                if (hasThymeleafBadge) {
+                    console.log("✅ Thymeleaf đã render badge - không cần JavaScript");
+                    return;
+                }
 
-        if (!res.ok) throw new Error("Unauthorized");
-        const data = await res.json();
-        const u = data.user || data;
+                // Nếu Thymeleaf chưa render (trang không dùng Thymeleaf hoặc lỗi), thì mới fetch API
+                console.log("🔄 Thymeleaf chưa render - dùng JavaScript fallback");
 
-        const user = {
-          name: u.name || u.fullName || "User",
-          email: u.email || "",
-          avatarUrl:
-            u.avatarUrl && u.avatarUrl.trim() !== "" ? u.avatarUrl : "",
-          isPremium: !!u.isPremium || (u.roles || []).includes("ROLE_PREMIUM"),
-        };
+                const token = localStorage.getItem("token");
+                const res = await fetch("/api/auth/me", {
+                    headers: token ? { Authorization: "Bearer " + token } : {},
+                    credentials: "include",
+                });
 
-        // 🟩 Ghi đè thông tin
-        if (nameEl) nameEl.textContent = user.name;
-        if (emailEl) emailEl.textContent = user.email;
+                if (!res.ok) throw new Error("Unauthorized");
+                const data = await res.json();
+                const u = data.user || data;
 
-        // 🏆 Cập nhật badge Free / Premium
-        if (user.isPremium) {
-          freeBadge?.classList.add("hidden");
-          premiumBadge?.classList.remove("hidden");
-        } else {
-          premiumBadge?.classList.add("hidden");
-          freeBadge?.classList.remove("hidden");
-        }
+                const user = {
+                    name: u.name || u.fullName || "User",
+                    email: u.email || "",
+                    avatarUrl: u.avatarUrl && u.avatarUrl.trim() !== "" ? u.avatarUrl : "",
+                    isPremium: !!u.isPremium || !!u.premium || (u.roles || []).includes("ROLE_PREMIUM"),
+                };
 
-        // 🟦 Cập nhật avatar
-        if (avatarImg) {
-          if (user.avatarUrl) {
-            avatarImg.src = user.avatarUrl;
-          } else {
-            // Tạo avatar chữ cái đầu
-            const canvas = document.createElement("canvas");
-            canvas.width = 100;
-            canvas.height = 100;
-            const ctx = canvas.getContext("2d");
-            ctx.fillStyle = "#2563eb"; // xanh dương
-            ctx.beginPath();
-            ctx.arc(50, 50, 50, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 50px Inter, sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(user.name.charAt(0).toUpperCase(), 50, 55);
-            avatarImg.src = canvas.toDataURL();
-          }
-        }
-      } catch (err) {
-        console.warn("⚠️ Auto-load user header failed:", err);
-      }
-    })();
-  </script>
+                // 🟩 Chỉ cập nhật nếu element tồn tại VÀ chưa có nội dung từ Thymeleaf
+                if (nameEl && (!nameEl.textContent || nameEl.textContent.trim() === "User")) {
+                    nameEl.textContent = user.name;
+                }
+                if (emailEl && (!emailEl.textContent || emailEl.textContent.trim() === "")) {
+                    emailEl.textContent = user.email;
+                }
+
+                // 🏆 Cập nhật badge Free / Premium - CHỈ khi chưa có từ Thymeleaf
+                if (freeBadge && premiumBadge) {
+                    if (freeBadge.classList.contains("hidden") && premiumBadge.classList.contains("hidden")) {
+                        // Cả hai đều hidden -> chưa được render từ Thymeleaf
+                        if (user.isPremium) {
+                            freeBadge.classList.add("hidden");
+                            premiumBadge.classList.remove("hidden");
+                        } else {
+                            premiumBadge.classList.add("hidden");
+                            freeBadge.classList.remove("hidden");
+                        }
+                    }
+                    // Nếu một trong hai đang hiện -> Thymeleaf đã render, không làm gì
+                }
+
+                // 🟦 Cập nhật avatar - CHỈ khi avatar mặc định
+                if (avatarImg && avatarImg.src.includes("default-avatar.png")) {
+                    if (user.avatarUrl) {
+                        avatarImg.src = user.avatarUrl;
+                    } else {
+                        // Tạo avatar chữ cái đầu
+                        const canvas = document.createElement("canvas");
+                        canvas.width = 100;
+                        canvas.height = 100;
+                        const ctx = canvas.getContext("2d");
+                        ctx.fillStyle = "#2563eb";
+                        ctx.beginPath();
+                        ctx.arc(50, 50, 50, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = "#fff";
+                        ctx.font = "bold 50px Inter, sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(user.name.charAt(0).toUpperCase(), 50, 55);
+                        avatarImg.src = canvas.toDataURL();
+                    }
+                }
+
+            } catch (err) {
+                console.warn("⚠️ Auto-load user header failed:", err);
+            }
+        })();
+    </script>
 </header>

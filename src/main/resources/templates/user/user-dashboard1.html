@@ -1,391 +1,663 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>User Dashboard - DevCollab</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
-      .sidebar {
-        height: calc(100vh - 4rem);
-        top: 4rem;
-        transition: all 0.3s ease;
-      }
-
-      .project-card-item {
-        border: 1px solid #e5e7eb;
-        transition: transform 0.2s, box-shadow 0.2s;
-        cursor: pointer;
-      }
-      .project-card-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      }
-
-      .bg-color-teal {
-        background-color: #008080;
-      }
-      .bg-color-blue {
-        background-color: #4169e1;
-      }
-      .bg-color-orange {
-        background-color: #ff8c00;
-      }
-      .bg-color-red {
-        background-color: #dc143c;
-      }
-
-      .sidebar-item-active {
-        background-color: #eff6ff;
-        color: #2563eb;
-        font-weight: 600;
-        border-right: 4px solid #2563eb;
-      }
-      .sidebar-item {
-        color: #4b5563;
-        transition: background-color 0.15s;
-        border-right: 4px solid transparent;
-      }
-      .sidebar-item:hover {
-        background-color: #f9fafb;
-        color: #1f2937;
-      }
+        /* Keep all your existing styles */
+        .sidebar { height: calc(100vh - 4rem); top: 4rem; transition: all 0.3s ease; }
+        .project-card-item { border: 1px solid #e5e7eb; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .project-card-item:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .sidebar-item-active { background-color: #eff6ff; color: #2563eb; font-weight: 600; border-right: 4px solid #2563eb; }
+        .sidebar-item { color: #4b5563; transition: background-color 0.15s; border-right: 4px solid transparent; }
+        .sidebar-item:hover { background-color: #f9fafb; color: #1f2937; }
+        .chart-container { position: relative; height: 180px; width: 100%; }
+        .project-carousel { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        .nav-button { transition: all 0.2s ease; }
+        .nav-button:hover:not(:disabled) { transform: scale(1.05); background-color: #3b82f6; }
+        .nav-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pie-chart-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 280px;
+            height: 280px;
+            margin: 0 auto;
+        }
     </style>
-  </head>
+</head>
 
-  <body class="bg-gray-50 font-sans">
-    <!-- ✅ HEADER -->
-    <div th:replace="~{fragments/header :: header}"></div>
+<body class="bg-gray-50 font-sans">
+<!-- ✅ HEADER -->
+<div th:replace="~{fragments/header :: header}"></div>
 
-    <div class="flex min-h-[calc(100vh-4rem)]">
-      <!-- ✅ SIDEBAR -->
-      <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <!-- ✅ SIDEBAR -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-      <!-- ✅ MAIN CONTENT -->
-      <main class="flex-1 p-8 overflow-y-auto">
+    <!-- ✅ MAIN CONTENT -->
+    <main class="flex-1 p-8 overflow-y-auto">
         <h1 class="text-3xl font-bold text-gray-800 mb-8">Dashboard</h1>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div
-            class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200"
-          >
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
-              <h2 class="text-xl font-bold text-gray-800">Projects</h2>
-              <div class="text-sm text-gray-500">52 files</div>
-            </div>
-
-            <div class="flex space-x-4 overflow-x-auto pb-4">
-              <div
-                class="project-card-item w-72 flex-shrink-0 bg-gray-50 p-4 rounded-xl"
-              >
-                <h3 class="font-bold mb-3 text-blue-700">Mobile UI Design</h3>
-                <div class="space-y-3">
-                  <img
-                    src="https://placehold.co/100x180/ADD8E6/000000?text=Mobile+App"
-                    class="w-full h-44 rounded-lg object-cover shadow-md"
-                    alt="Mobile App UI"
-                  />
-                  <p class="text-xs text-gray-500 line-clamp-2">
-                    Creating high-fidelity mockups for a new social networking
-                    mobile application...
-                  </p>
-                  <div
-                    class="flex items-center justify-between pt-2 border-t border-gray-200"
-                  >
-                    <span
-                      class="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full"
-                      >Completed</span
-                    >
-                    <div class="flex items-center text-xs text-gray-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-4 w-4 mr-1 text-red-500"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z"
-                          clip-rule="evenodd"
-                        />
-                      </svg>
-                      Due: 12/03
+            <!-- Projects Section -->
+            <!-- Projects Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h2 class="text-xl font-bold text-gray-800">Projects</h2>
+                    <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-500" id="project-counter">
+                <span th:text="${#lists.size(projects)}">0</span> projects
+            </span>
+                        <div class="flex space-x-1" th:if="${not #lists.isEmpty(projects)}">
+                            <button id="prev-project" class="nav-button p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 transition" disabled>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </button>
+                            <button id="next-project" class="nav-button p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                  </div>
                 </div>
-              </div>
 
-              <div
-                class="project-card-item w-72 flex-shrink-0 bg-gray-50 p-4 rounded-xl"
-              >
-                <h3 class="font-bold mb-3 text-blue-700">Papeer Sumeiran</h3>
-                <div class="space-y-3">
-                  <img
-                    src="https://placehold.co/100x180/FF6347/FFFFFF?text=Product+Launch"
-                    class="w-full h-44 rounded-lg object-cover shadow-md"
-                    alt="Product Launch"
-                  />
-                  <p class="text-xs text-gray-500 line-clamp-2">
-                    Finalizing documentation and marketing assets for the Q3
-                    product release...
-                  </p>
-                  <div
-                    class="flex items-center justify-between pt-2 border-t border-gray-200"
-                  >
-                    <span
-                      class="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full"
-                      >On Hold</span
-                    >
-                    <div class="flex items-center text-xs text-gray-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-4 w-4 mr-1 text-red-500"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z"
-                          clip-rule="evenodd"
-                        />
-                      </svg>
-                      Due: 28/03
+                <div class="project-carousel" id="project-carousel">
+                    <!-- No projects message -->
+                    <div th:if="${#lists.isEmpty(projects)}" class="text-center text-gray-500 py-8">
+                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>No projects found</p>
+                        <a href="/user/view/create-project" class="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block">
+                            Create your first project
+                        </a>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              <div
-                class="project-card-item w-72 flex-shrink-0 bg-gray-50 p-4 rounded-xl"
-              >
-                <h3 class="font-bold mb-3 text-blue-700">E-commerce Backend</h3>
-                <div class="space-y-3">
-                  <img
-                    src="https://placehold.co/100x180/B0E0E6/000000?text=Backend+Code"
-                    class="w-full h-44 rounded-lg object-cover shadow-md"
-                    alt="Backend Code"
-                  />
-                  <p class="text-xs text-gray-500 line-clamp-2">
-                    Developing and testing new API endpoints for product and
-                    order management...
-                  </p>
-                  <div
-                    class="flex items-center justify-between pt-2 border-t border-gray-200"
-                  >
-                    <span
-                      class="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full"
-                      >In Progress</span
-                    >
-                    <div class="flex items-center text-xs text-gray-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-4 w-4 mr-1 text-red-500"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z"
-                          clip-rule="evenodd"
-                        />
-                      </svg>
-                      Due: 05/04
+                    <!-- Project Cards - Show ALL projects but only display one at a time -->
+                    <div th:each="project, stat : ${projects}"
+                         th:if="${project != null and project.projectId != null}"
+                         th:data-project-index="${stat.index}"
+                         th:class="${stat.first} ? 'project-card-item block' : 'project-card-item hidden'"
+                         class="project-card-item bg-gray-50 p-6 rounded-xl border-2 border-blue-100">
+
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-bold text-xl text-blue-700" th:text="${project.name} ?: 'Unnamed Project'">Project Name</h3>
+                            <span th:class="${project.priority == 'HIGH'} ? 'bg-red-100 text-red-700' :
+                            (${project.priority == 'MEDIUM'} ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')"
+                                  class="text-xs font-semibold px-3 py-1 rounded-full"
+                                  th:text="${project.priority} ?: 'NORMAL'">NORMAL</span>
+                        </div>
+
+                        <div th:if="${project.coverImage != null and project.coverImage != ''}" class="mb-4 rounded-lg overflow-hidden h-48 bg-gray-200">
+                            <img th:src="${project.coverImage}"
+                                 th:alt="${project.name} ?: 'Project'"
+                                 class="w-full h-full object-cover"
+                                 loading="lazy" />
+                        </div>
+
+                        <div th:if="${project.coverImage == null or project.coverImage == ''}" class="mb-4 rounded-lg overflow-hidden h-48 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                <span class="text-white font-semibold text-2xl"
+                      th:text="${#strings.substring(project.name ?: 'Project', 0, 1).toUpperCase()}">P</span>
+                        </div>
+
+                        <p class="text-sm text-gray-600 mb-4 leading-relaxed"
+                           th:text="${project.description} ?: 'No description available'">
+                            Project description...
+                        </p>
+
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                <span th:class="${project.status == 'COMPLETED'} ? 'bg-green-100 text-green-700' :
+                              (${project.status == 'IN_PROGRESS'} ? 'bg-blue-100 text-blue-700' :
+                              (${project.status == 'ON_HOLD'} ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'))"
+                      class="text-sm font-semibold px-3 py-1 rounded-full"
+                      th:text="${project.status} ?: 'UNKNOWN'">Status</span>
+                            <div class="flex items-center text-sm text-gray-600" th:if="${project.dueDate != null}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z" clip-rule="evenodd" />
+                                </svg>
+                                Due: <span th:text="${#temporals.format(project.dueDate, 'MMM dd')}">Dec 03</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-500" th:if="${project.dueDate == null}">
+                                No due date
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center mt-4">
+                <span class="text-xs text-gray-500">
+                    Project <span th:text="${stat.index + 1}">1</span> of <span th:text="${#lists.size(projects)}">0</span>
+                </span>
+                            <!-- Safe projectId access -->
+                            <a th:href="@{'/view/pm/project/detail?projectId=' + ${project.projectId}}"
+                               class="text-blue-600 hover:text-blue-800 font-medium text-sm transition">
+                                View Details →
+                            </a>
+                        </div>
                     </div>
-                  </div>
                 </div>
-              </div>
             </div>
-          </div>
-
-          <div
-            class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200"
-          >
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
-              <h2 class="text-xl font-bold text-gray-800">Tasks</h2>
-              <select
-                class="text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option>This Week</option>
-                <option>This Month</option>
-              </select>
-            </div>
-
-            <div
-              class="flex flex-col lg:flex-row items-center justify-around space-y-4 lg:space-y-0 lg:space-x-4"
-            >
-              <div class="relative w-40 h-40 flex items-center justify-center">
-                <div
-                  class="w-full h-full rounded-full"
-                  style="
-                    background: conic-gradient(
-                      #008080 0% 32%,
-                      /* Completed (Teal) */ #4169e1 32% 57%,
-                      /* On Hold (Blue) */ #dc143c 57% 75%,
-                      /* Pending (Red) */ #ff8c00 75% 100%
-                        /* In Progress (Orange) */
-                    );
-                  "
-                ></div>
-                <div
-                  class="absolute w-24 h-24 bg-white rounded-full shadow-inner"
-                ></div>
-              </div>
-
-              <div class="space-y-3 w-full max-w-xs p-4">
-                <div class="flex items-center space-x-2">
-                  <span class="block w-3 h-3 rounded-full bg-color-teal"></span>
-                  <span class="text-sm text-gray-700">Completed (32%)</span>
+            <!-- Tasks Section with Real Data -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h2 class="text-xl font-bold text-gray-800">Task Overview</h2>
+                    <span class="text-sm text-gray-600" th:text="'Total: ' + ${totalTasks} + ' tasks'"></span>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <span class="block w-3 h-3 rounded-full bg-color-blue"></span>
-                  <span class="text-sm text-gray-700">On Hold (25%)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span
-                    class="block w-3 h-3 rounded-full bg-color-orange"
-                  ></span>
-                  <span class="text-sm text-gray-700">In Progress (25%)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span class="block w-3 h-3 rounded-full bg-color-red"></span>
-                  <span class="text-sm text-gray-700">Pending (18%)</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div
-            class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200"
-          >
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
-              <h2 class="text-xl font-bold text-gray-800">Work Log</h2>
-              <select
-                class="text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option>This Week</option>
-                <option>This Month</option>
-              </select>
+                <div th:if="${totalTasks > 0}" class="flex flex-col lg:flex-row items-center justify-around space-y-4 lg:space-y-0 lg:space-x-4">
+                    <!-- Pie Chart Container -->
+                    <div class="relative w-64 h-64 flex items-center justify-center">
+                        <canvas id="task-pie-chart" width="256" height="256"></canvas>
+                    </div>
+
+                    <!-- Task Counts and Percentages Display -->
+                    <div class="space-y-4 w-full max-w-xs p-4">
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <span class="block w-3 h-3 rounded-full bg-blue-500"></span>
+                                <span class="text-sm font-medium text-gray-700">OPEN</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-blue-600" th:text="${openCount}">0</div>
+                                <div class="text-xs text-gray-500" th:text="${totalTasks > 0 ? T(java.lang.Math).round(openCount * 100.0 / totalTasks) : 0} + '%'">0%</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <span class="block w-3 h-3 rounded-full bg-yellow-500"></span>
+                                <span class="text-sm font-medium text-gray-700">IN_PROGRESS</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-yellow-600" th:text="${inProgressCount}">0</div>
+                                <div class="text-xs text-gray-500" th:text="${totalTasks > 0 ? T(java.lang.Math).round(inProgressCount * 100.0 / totalTasks) : 0} + '%'">0%</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <span class="block w-3 h-3 rounded-full bg-green-500"></span>
+                                <span class="text-sm font-medium text-gray-700">DONE</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-green-600" th:text="${doneCount}">0</div>
+                                <div class="text-xs text-gray-500" th:text="${totalTasks > 0 ? T(java.lang.Math).round(doneCount * 100.0 / totalTasks) : 0} + '%'">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${totalTasks == 0}" class="text-center text-gray-500 py-8">
+                    <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    <p>No tasks assigned</p>
+                </div>
             </div>
 
-            <div
-              class="flex flex-col lg:flex-row items-center justify-around space-y-4 lg:space-y-0 lg:space-x-4"
-            >
-              <div class="relative w-40 h-40 flex items-center justify-center">
-                <div
-                  class="w-full h-full rounded-full"
-                  style="
-                    background: conic-gradient(
-                      #dc143c 0% 15%,
-                          /* Product 1 (Đỏ) */ #ff8c00 15% 35%,
-                          /* Product 2 (Cam) */ #008080 35% 55%,
-                          /* Product 3 (Teal) */ #4169e1 55% 80%,
-                          /* Product 4 (Xanh dương) */ #b0c4de 80% 100%    
-                        /* Product 5 (Xanh nhạt) */
-                    );
-                  "
-                ></div>
-                <div
-                  class="absolute w-24 h-24 bg-white rounded-full shadow-inner"
-                ></div>
-              </div>
+            <!-- Today's Schedule with Real Data -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h2 class="text-xl font-bold text-gray-800">Today's Schedule</h2>
+                    <!-- Safe projectId access in calendar link -->
+                    <a th:if="${not #lists.isEmpty(projects) and projects[0] != null and projects[0].projectId != null}"
+                       th:href="@{'/view/pm/project/schedule/calendar?projectId=' + ${projects[0].projectId}}"
+                       class="text-blue-600 hover:text-blue-800 text-sm font-semibold">
+                        View Calendar →
+                    </a>
+                    <span th:if="${#lists.isEmpty(projects) or projects[0] == null or projects[0].projectId == null}"
+                          class="text-gray-400 text-sm">
+                        No Calendar Available
+                    </span>
+                </div>
 
-              <div class="space-y-3 w-full max-w-xs p-4 text-sm">
-                <div class="flex items-center space-x-2">
-                  <span class="block w-3 h-3 rounded-full bg-color-red"></span
-                  ><span class="text-gray-700">Product 1 (15%)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span
-                    class="block w-3 h-3 rounded-full bg-color-orange"
-                  ></span
-                  ><span class="text-gray-700">Product 2 (20%)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span class="block w-3 h-3 rounded-full bg-color-teal"></span
-                  ><span class="text-gray-700">Product 3 (20%)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span class="block w-3 h-3 rounded-full bg-color-blue"></span
-                  ><span class="text-gray-700">Product 4 (25%)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span class="block w-3 h-3 rounded-full bg-gray-400"></span
-                  ><span class="text-gray-700">Product 5 (20%)</span>
-                </div>
-              </div>
-            </div>
-          </div>
+                <div class="space-y-4 max-h-64 overflow-y-auto">
+                    <div th:if="${#lists.isEmpty(todaysSchedules)}" class="text-center text-gray-500 py-4">
+                        <p>No events scheduled for today</p>
+                    </div>
 
-          <div
-            class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200"
-          >
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
-              <h2 class="text-xl font-bold text-gray-800">Performance</h2>
-              <select
-                class="text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option>This Week</option>
-                <option>This Month</option>
-              </select>
+                    <div th:each="schedule : ${todaysSchedules}"
+                         th:if="${schedule != null}"
+                         class="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="flex-shrink-0 w-2 h-12 bg-blue-500 rounded-full mt-1"></div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 text-sm"
+                                th:text="${schedule.title} ?: 'Untitled Event'">Event Title</h4>
+                            <p class="text-xs text-gray-600"
+                               th:text="${schedule.note} ?: 'No description'">Event description</p>
+                            <div class="flex items-center text-xs text-gray-500 mt-1">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+
+                                <span th:text="${#temporals.format(schedule.datetime, 'yyyy-MM-dd HH:mm')}">2024-01-01 14:30</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="h-64 flex flex-col justify-end">
-              <div class="relative h-full">
-                <div
-                  class="absolute inset-y-0 left-0 border-r border-gray-200 w-full"
-                  style="z-index: 0"
-                ></div>
-
-                <svg
-                  class="absolute w-full h-full"
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                >
-                  <polyline
-                    fill="none"
-                    stroke="#ff8c00"
-                    stroke-width="2"
-                    points="0,80 15,30 30,50 45,20 60,60 75,10 90,40"
-                  />
-
-                  <polyline
-                    fill="none"
-                    stroke="#4169e1"
-                    stroke-width="2"
-                    points="0,90 15,40 30,60 45,30 60,70 75,20 90,50"
-                  />
-                </svg>
-              </div>
-
-              <div
-                class="flex justify-between text-xs text-gray-500 mt-2 border-t border-gray-200 pt-1"
-              >
-                <span>Oct 2023</span>
-                <span>Dec 2023</span>
-                <span>Feb 2024</span>
-                <span>Apr 2024</span>
-              </div>
+            <!-- Performance Section with Real Data -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h2 class="text-xl font-bold text-gray-800">Performance</h2>
+                    <span class="text-sm text-gray-600">Last 6 Months</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="lineChart"></canvas>
+                </div>
             </div>
 
-            <div class="flex justify-center space-x-4 mt-6">
-              <div class="flex items-center space-x-2">
-                <span class="block w-3 h-3 rounded-full bg-color-orange"></span>
-                <span class="text-sm text-gray-700">7 Projects</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <span class="block w-3 h-3 rounded-full bg-color-blue"></span>
-                <span class="text-sm text-gray-700">5 Projects</span>
-              </div>
+            <!-- Upcoming Tasks Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 lg:col-span-2">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h2 class="text-xl font-bold text-gray-800">Upcoming Tasks</h2>
+                    <a href="/view/pm/project/board" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">
+                        View All Tasks →
+                    </a>
+                </div>
+
+                <div class="space-y-3">
+                    <div th:if="${#lists.isEmpty(upcomingTasks)}" class="text-center text-gray-500 py-4">
+                        <p>No upcoming tasks with deadlines</p>
+                    </div>
+
+                    <div th:each="task : ${upcomingTasks}"
+                         th:if="${task != null and task.project != null}"
+                         class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div th:class="${task.priority == 'HIGH'} ? 'w-3 h-3 bg-red-500 rounded-full' :
+                                         (${task.priority == 'MEDIUM'} ? 'w-3 h-3 bg-yellow-500 rounded-full' :
+                                         'w-3 h-3 bg-green-500 rounded-full')"></div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800" th:text="${task.title} ?: 'Untitled Task'">Task Title</h4>
+                                <p class="text-sm text-gray-600" th:text="${task.project.name} ?: 'No Project'">Project Name</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span th:class="${task.status == 'DONE'} ? 'bg-green-100 text-green-700' :
+                                         (${task.status == 'IN_PROGRESS'} ? 'bg-blue-100 text-blue-700' :
+                                         (${task.status == 'TODO'} ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700'))"
+                                  class="text-xs font-semibold px-2 py-1 rounded-full"
+                                  th:text="${task.status} ?: 'UNKNOWN'">Status</span>
+                            <div class="text-sm text-gray-600" th:if="${task.deadline != null}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z" clip-rule="evenodd" />
+                                </svg>
+                                Due: <span th:text="${#temporals.format(task.deadline, 'MMM dd, yyyy')}">Dec 03</span>
+                            </div>
+                            <div class="text-sm text-gray-400" th:if="${task.deadline == null}">
+                                No deadline
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </main>
-    </div>
-    <!-- ✅ CHATBOX FRAGMENT -->
-    <div th:replace="fragments/chatbox :: chatbox"></div>
-    <!-- Gọi script riêng -->
-    <script th:src="@{/js/chatbox.js}"></script>
-  </body>
+        <input type="hidden" id="openCount" th:value="${openCount}" />
+        <input type="hidden" id="inProgressCount" th:value="${inProgressCount}" />
+        <input type="hidden" id="doneCount" th:value="${doneCount}" />
+        <input type="hidden" id="totalTasks" th:value="${totalTasks}" />
+        <input type="hidden" id="janCount" th:value="${janCount}" />
+        <input type="hidden" id="febCount" th:value="${febCount}" />
+        <input type="hidden" id="marCount" th:value="${marCount}" />
+        <input type="hidden" id="aprCount" th:value="${aprCount}" />
+        <input type="hidden" id="mayCount" th:value="${mayCount}" />
+        <input type="hidden" id="junCount" th:value="${junCount}" />
+    </main>
+</div>
+
+<!-- ✅ CHATBOX FRAGMENT -->
+<div th:replace="fragments/chatbox :: chatbox"></div>
+<script th:src="@{/js/chatbox.js}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('✅ DOM Loaded - Initializing dashboard');
+
+        // Project carousel state
+        let currentProjectIndex = 0;
+        let projects = [];
+        let projectCards = [];
+
+        // Get DOM elements
+        const projectCarousel = document.getElementById('project-carousel');
+        const prevButton = document.getElementById('prev-project');
+        const nextButton = document.getElementById('next-project');
+        const projectCounter = document.getElementById('project-counter');
+
+        // Get task data from hidden inputs
+        const openCount = parseInt(document.getElementById('openCount')?.value) || 0;
+        const inProgressCount = parseInt(document.getElementById('inProgressCount')?.value) || 0;
+        const doneCount = parseInt(document.getElementById('doneCount')?.value) || 0;
+        const totalTasks = parseInt(document.getElementById('totalTasks')?.value) || 0;
+
+        console.log('📊 Task Data:', { openCount, inProgressCount, doneCount, totalTasks });
+
+        // Initialize everything
+        function initializeDashboard() {
+            try {
+                initializeProjectCarousel();
+                initializeTaskChart();
+                initializePerformanceChart();
+                console.log('✅ Dashboard fully initialized');
+            } catch (error) {
+                console.error('❌ Error initializing dashboard:', error);
+            }
+        }
+
+        // ✅ Project Carousel Functions
+        function initializeProjectCarousel() {
+            if (!projectCarousel) {
+                console.warn('Project carousel element not found');
+                return;
+            }
+
+            // Get project cards from Thymeleaf-rendered HTML
+            projectCards = Array.from(projectCarousel.querySelectorAll('.project-card-item'));
+            projects = projectCards.map((card, index) => ({
+                element: card,
+                index: index,
+                projectId: card.getAttribute('data-project-index')
+            }));
+
+            console.log(`🔄 Carousel initialized with ${projects.length} projects`);
+
+            if (projects.length > 0) {
+                updateCarousel();
+                updateNavigationButtons();
+            }
+
+            // Setup event listeners
+            setupEventListeners();
+        }
+
+        function updateCarousel() {
+            projectCards.forEach((card, index) => {
+                if (index === currentProjectIndex) {
+                    card.classList.remove('hidden');
+                    card.classList.add('block');
+                } else {
+                    card.classList.remove('block');
+                    card.classList.add('hidden');
+                }
+            });
+
+            // Update counter text
+            if (projectCounter) {
+                projectCounter.innerHTML = `<span>${currentProjectIndex + 1}</span> of <span>${projects.length}</span> projects`;
+            }
+        }
+
+        function updateNavigationButtons() {
+            if (prevButton) {
+                prevButton.disabled = currentProjectIndex === 0;
+            }
+            if (nextButton) {
+                nextButton.disabled = currentProjectIndex === projects.length - 1;
+            }
+        }
+
+        function showNextProject() {
+            if (currentProjectIndex < projects.length - 1) {
+                currentProjectIndex++;
+                updateCarousel();
+                updateNavigationButtons();
+            }
+        }
+
+        function showPreviousProject() {
+            if (currentProjectIndex > 0) {
+                currentProjectIndex--;
+                updateCarousel();
+                updateNavigationButtons();
+            }
+        }
+
+        function setupEventListeners() {
+            // Remove existing event listeners to avoid duplicates
+            if (prevButton) {
+                prevButton.replaceWith(prevButton.cloneNode(true));
+            }
+            if (nextButton) {
+                nextButton.replaceWith(nextButton.cloneNode(true));
+            }
+
+            // Get fresh references after cloning
+            const freshPrevButton = document.getElementById('prev-project');
+            const freshNextButton = document.getElementById('next-project');
+
+            if (freshPrevButton) {
+                freshPrevButton.addEventListener('click', showPreviousProject);
+            }
+            if (freshNextButton) {
+                freshNextButton.addEventListener('click', showNextProject);
+            }
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft') {
+                    showPreviousProject();
+                } else if (e.key === 'ArrowRight') {
+                    showNextProject();
+                }
+            });
+        }
+
+        // ✅ Task Chart Functions
+        function initializeTaskChart() {
+            const canvas = document.getElementById('task-pie-chart');
+            if (!canvas) {
+                console.log('Task pie chart canvas not found');
+                return;
+            }
+
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js is not loaded');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+
+            // Use the 3 data points directly
+            const statuses = ['OPEN', 'IN_PROGRESS', 'DONE'];
+            const data = [openCount, inProgressCount, doneCount];
+
+            // Calculate percentages
+            const percentages = data.map(count => {
+                return totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0;
+            });
+
+            const colors = statuses.map(status => getStatusColor(status));
+
+            console.log('📊 Creating task chart with:', {
+                statuses: statuses,
+                data: data,
+                percentages: percentages
+            });
+
+            // Destroy existing chart
+            if (window.taskPieChart) {
+                window.taskPieChart.destroy();
+            }
+
+            // Create chart
+            const chartConfig = {
+                type: 'doughnut',
+                data: {
+                    labels: statuses,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: '#ffffff',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const percentage = percentages[context.dataIndex] || 0;
+                                    return `${label}: ${value} tasks (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Add datalabels if available
+            if (typeof ChartDataLabels !== 'undefined') {
+                chartConfig.options.plugins.datalabels = {
+                    color: '#ffffff',
+                    font: { weight: 'bold', size: 12 },
+                    formatter: (value, context) => {
+                        const percentage = percentages[context.dataIndex] || 0;
+                        return percentage > 0 ? percentage + '%' : '';
+                    }
+                };
+                chartConfig.plugins = [ChartDataLabels];
+            }
+
+            window.taskPieChart = new Chart(ctx, chartConfig);
+            console.log('✅ Task chart initialized');
+        }
+
+        function getStatusColor(status) {
+            const colorMap = {
+                'OPEN': '#3b82f6',        // Blue
+                'IN_PROGRESS': '#f59e0b', // Amber/Yellow
+                'DONE': '#10b981'         // Green
+            };
+            return colorMap[status] || '#9ca3af';
+        }
+
+        // ✅ Performance Chart Functions
+        function initializePerformanceChart() {
+            const lineCtx = document.getElementById('lineChart')?.getContext('2d');
+            if (!lineCtx) {
+                console.log('Line chart canvas not found');
+                return;
+            }
+
+            // Get performance data from hidden inputs
+            const janCount = parseInt(document.getElementById('janCount')?.value) || 0;
+            const febCount = parseInt(document.getElementById('febCount')?.value) || 0;
+            const marCount = parseInt(document.getElementById('marCount')?.value) || 0;
+            const aprCount = parseInt(document.getElementById('aprCount')?.value) || 0;
+            const mayCount = parseInt(document.getElementById('mayCount')?.value) || 0;
+            const junCount = parseInt(document.getElementById('junCount')?.value) || 0;
+
+            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            const data = [janCount, febCount, marCount, aprCount, mayCount, junCount];
+
+            console.log('📈 Creating performance chart with REAL data:', {
+                labels: labels,
+                data: data
+            });
+
+            if (window.performanceChart) {
+                window.performanceChart.destroy();
+            }
+
+            window.performanceChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Completed Tasks',
+                        data: data,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Completed: ${context.raw} tasks`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            title: {
+                                display: true,
+                                text: 'Completed Tasks'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Months'
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log('✅ Performance chart initialized with REAL data');
+        }
+
+        // ✅ Utility Functions
+        function escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return unsafe
+                .toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            } catch (e) {
+                return 'Invalid date';
+            }
+        }
+
+        // ✅ Expose functions globally (for debugging if needed)
+        window.showNextProject = showNextProject;
+        window.showPreviousProject = showPreviousProject;
+        window.getCurrentProjectIndex = () => currentProjectIndex;
+        window.getProjects = () => projects;
+
+        // ✅ Initialize the dashboard
+        initializeDashboard();
+    });
+</script>
+</body>
 </html>

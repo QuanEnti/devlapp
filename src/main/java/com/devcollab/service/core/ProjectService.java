@@ -75,4 +75,5 @@ public interface ProjectService {
     long countAll();
 
     long countByStatus(String status);
+    public List<Project> getTop5ProjectsByUser(Long userId);
 }

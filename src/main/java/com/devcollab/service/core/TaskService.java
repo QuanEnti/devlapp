@@ -2,8 +2,7 @@ package com.devcollab.service.core;
 
 import com.devcollab.domain.Task;
 import com.devcollab.domain.User;
-import com.devcollab.dto.MemberPerformanceDTO;
-import com.devcollab.dto.TaskDTO;
+import com.devcollab.dto.*;
 import com.devcollab.dto.request.MoveTaskRequest;
 import org.springframework.data.domain.Page;
 
@@ -66,5 +65,14 @@ public interface TaskService {
 
     Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size, String status);
 
+<<<<<<< HEAD
     List<Task> findUpcomingDeadlines(Long userId);
+=======
+    public List<Task> findUpcomingDeadlines(Long userId);
+    public TaskStatisticsDTO getTaskStatistics(User user);
+
+    public TaskDetailDTO getTaskDetailForReview(Long taskId);
+
+    public Page<TaskReviewDTO> getTasksForReviewPaged(Long projectId, int page, int size, String status, String search);
+>>>>>>> payment
 }
