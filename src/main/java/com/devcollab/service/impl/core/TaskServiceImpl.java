@@ -44,13 +44,10 @@ public class TaskServiceImpl implements TaskService {
     private final TaskFollowerRepository taskFollowerRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-<<<<<<< HEAD
     private final ProjectAuthorizationService projectAuthorizationService;
-=======
     private final TaskFollowerService taskFollowerService;
     private final CommentService commentService;
     private final AttachmentService attachmentService;
->>>>>>> payment
 
     @Override
     public Task createTaskFromDTO(TaskDTO dto, Long creatorId) {
@@ -876,14 +873,10 @@ public class TaskServiceImpl implements TaskService {
         return taskRepository.findAllUserTasks(user);
     }
 
-    @Override
-<<<<<<< HEAD
+
+    @Transactional(readOnly = true)
     public Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size,
             String status) {
-=======
-    @Transactional(readOnly = true)
-    public Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size, String status) {
->>>>>>> payment
         Pageable pageable = PageRequest.of(page, size);
 
         if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
@@ -903,17 +896,16 @@ public class TaskServiceImpl implements TaskService {
     public List<Task> findUpcomingDeadlines(Long userId) {
         return taskRepository.findTopUpcoming(userId, PageRequest.of(0, 5));
     }
+
     @Override
     public TaskStatisticsDTO getTaskStatistics(User user) {
         List<Task> userTasks = taskRepository.findAllUserTasks(user);
 
         // Count tasks by status
-        Map<String, Long> statusCount = userTasks.stream()
-                .filter(Objects::nonNull)
+        Map<String, Long> statusCount = userTasks.stream().filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(
                         task -> task.getStatus() != null ? task.getStatus() : "UNKNOWN",
-                        Collectors.counting()
-                ));
+                        Collectors.counting()));
 
         long totalTasks = userTasks.size();
 
@@ -933,8 +925,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private void ensureRequiredStatuses(Map<String, Long> statusCount,
-                                        Map<String, Double> statusPercentages,
-                                        long totalTasks) {
+            Map<String, Double> statusPercentages, long totalTasks) {
         String[] requiredStatuses = {"OPEN", "IN_PROGRESS", "DONE"};
 
         for (String status : requiredStatuses) {
@@ -948,7 +939,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TaskReviewDTO> getTasksForReviewPaged(Long projectId, int page, int size, String status, String search) {
+    public Page<TaskReviewDTO> getTasksForReviewPaged(Long projectId, int page, int size,
+            String status, String search) {
 
         Pageable pageable = PageRequest.of(page, size);
 
@@ -956,23 +948,23 @@ public class TaskServiceImpl implements TaskService {
 
         // FILTER BY STATUS + SEARCH
         if (status != null && !status.isBlank() && search != null && !search.isBlank()) {
-            taskPage = taskRepository
-                    .findByProject_ProjectIdAndStatusAndTitleContainingIgnoreCase(projectId, status, search, pageable);
+            taskPage = taskRepository.findByProject_ProjectIdAndStatusAndTitleContainingIgnoreCase(
+                    projectId, status, search, pageable);
 
         } else if (status != null && !status.isBlank()) {
-            taskPage = taskRepository
-                    .findByProject_ProjectIdAndStatus(projectId, status, pageable);
+            taskPage = taskRepository.findByProject_ProjectIdAndStatus(projectId, status, pageable);
 
         } else if (search != null && !search.isBlank()) {
-            taskPage = taskRepository
-                    .findByProject_ProjectIdAndTitleContainingIgnoreCase(projectId, search, pageable);
+            taskPage = taskRepository.findByProject_ProjectIdAndTitleContainingIgnoreCase(projectId,
+                    search, pageable);
 
         } else {
             taskPage = taskRepository.findByProject_ProjectId(projectId, pageable);
         }
 
         return taskPage.map(task -> {
-            List<TaskFollowerDTO> followers = taskFollowerService.getFollowersByTask(task.getTaskId());
+            List<TaskFollowerDTO> followers =
+                    taskFollowerService.getFollowersByTask(task.getTaskId());
             return TaskReviewDTO.fromEntity(task, followers);
         });
     }

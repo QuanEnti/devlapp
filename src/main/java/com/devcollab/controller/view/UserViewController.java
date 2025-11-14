@@ -99,14 +99,12 @@ public class UserViewController {
             List<Project> projects = Collections.emptyList();
             try {
                 projects = projectService.getTop5ProjectsByUser(user.getUserId());
-                projects = projects.stream()
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+                projects = projects.stream().filter(Objects::nonNull).collect(Collectors.toList());
             } catch (Exception e) {
                 System.err.println("Error loading projects: " + e.getMessage());
                 projects = Collections.emptyList();
             }
-            System.out.println("pro: "+projects);
+            System.out.println("pro: " + projects);
             model.addAttribute("projects", projects);
 
             // Get task counts - ONLY 3 DATA POINTS
@@ -120,16 +118,14 @@ public class UserViewController {
                 totalTasks = userTasks.size();
 
                 openCount = userTasks.stream()
-                        .filter(task -> task != null && "OPEN".equals(task.getStatus()))
-                        .count();
+                        .filter(task -> task != null && "OPEN".equals(task.getStatus())).count();
 
                 inProgressCount = userTasks.stream()
                         .filter(task -> task != null && "IN_PROGRESS".equals(task.getStatus()))
                         .count();
 
                 doneCount = userTasks.stream()
-                        .filter(task -> task != null && "DONE".equals(task.getStatus()))
-                        .count();
+                        .filter(task -> task != null && "DONE".equals(task.getStatus())).count();
 
                 // Print the 3 data points
                 System.out.println("📊 Task Statistics:");
@@ -153,23 +149,17 @@ public class UserViewController {
                 LocalDateTime startOfDay = today.atStartOfDay();
                 LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
 
-                todaysSchedules = projects.stream()
-                        .filter(Objects::nonNull)
-                        .flatMap(project -> {
-                            try {
-                                return projectScheduleRepository
-                                        .findByProject_ProjectIdAndDatetimeBetween(
-                                                project.getProjectId(),
-                                                startOfDay.toInstant(ZoneOffset.UTC),
-                                                endOfDay.toInstant(ZoneOffset.UTC)
-                                        ).stream();
-                            } catch (Exception e) {
-                                System.err.println("Error loading schedule for project " + project.getProjectId() + ": " + e.getMessage());
-                                return Stream.empty();
-                            }
-                        })
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+                todaysSchedules = projects.stream().filter(Objects::nonNull).flatMap(project -> {
+                    try {
+                        return projectScheduleRepository.findByProject_ProjectIdAndDatetimeBetween(
+                                project.getProjectId(), startOfDay.toInstant(ZoneOffset.UTC),
+                                endOfDay.toInstant(ZoneOffset.UTC)).stream();
+                    } catch (Exception e) {
+                        System.err.println("Error loading schedule for project "
+                                + project.getProjectId() + ": " + e.getMessage());
+                        return Stream.empty();
+                    }
+                }).filter(Objects::nonNull).collect(Collectors.toList());
             } catch (Exception e) {
                 System.err.println("Error loading today's schedule: " + e.getMessage());
             }
@@ -180,8 +170,7 @@ public class UserViewController {
             try {
                 Pageable topThree = PageRequest.of(0, 3);
                 upcomingTasks = taskRepository.findTopUpcoming(user.getUserId(), topThree);
-                upcomingTasks = upcomingTasks.stream()
-                        .filter(Objects::nonNull)
+                upcomingTasks = upcomingTasks.stream().filter(Objects::nonNull)
                         .collect(Collectors.toList());
             } catch (Exception e) {
                 System.err.println("Error loading upcoming tasks: " + e.getMessage());
@@ -196,16 +185,29 @@ public class UserViewController {
 
                 // Count completed tasks for each month
                 for (Task task : userTasks) {
-                    if (task != null && "DONE".equals(task.getStatus()) && task.getClosedAt() != null) {
+                    if (task != null && "DONE".equals(task.getStatus())
+                            && task.getClosedAt() != null) {
                         int month = task.getClosedAt().getMonthValue(); // 1=Jan, 2=Feb, etc.
 
                         switch (month) {
-                            case 1: janCount++; break;
-                            case 2: febCount++; break;
-                            case 3: marCount++; break;
-                            case 4: aprCount++; break;
-                            case 5: mayCount++; break;
-                            case 6: junCount++; break;
+                            case 1:
+                                janCount++;
+                                break;
+                            case 2:
+                                febCount++;
+                                break;
+                            case 3:
+                                marCount++;
+                                break;
+                            case 4:
+                                aprCount++;
+                                break;
+                            case 5:
+                                mayCount++;
+                                break;
+                            case 6:
+                                junCount++;
+                                break;
                         }
                     }
                 }
@@ -253,7 +255,7 @@ public class UserViewController {
             System.out.println("User found: " + (user != null));
 
             if (user != null) {
-                isPremium = user.isPremium( );
+                isPremium = user.isPremium();
                 System.out.println("User is premium: " + isPremium);
             } else {
                 System.out.println("❌ User not found in database");
@@ -264,11 +266,10 @@ public class UserViewController {
         model.addAttribute("isPremium", isPremium);
         return "user/user-createproject";
     }
+
     @GetMapping("/view-all-projects")
-    public String viewAllProjects(Model model,
-                                  @RequestParam(defaultValue = "0") int page,
-                                  Authentication auth,
-                                  @RequestParam(defaultValue = "all") String role) {
+    public String viewAllProjects(Model model, @RequestParam(defaultValue = "0") int page,
+            Authentication auth, @RequestParam(defaultValue = "all") String role) {
 
         String email = getEmailFromAuthentication(auth);
         User currentUser = userService.getByEmail(email).orElseThrow();
@@ -277,17 +278,8 @@ public class UserViewController {
         Page<ProjectMember> memberPage =
                 projectService.getProjectsByUserSorted(currentUser, role, pageable);
 
-<<<<<<< HEAD
-        // ✅ Just extract the Project entity, no role injection
-        List<Project> projectList = memberPage.getContent()
-                .stream()
-                .map(ProjectMember::getProject)
-                .filter(p -> !"Archived".equalsIgnoreCase(p.getStatus()))
-                .toList();
-=======
         // Build a wrapper list to send to UI
         List<Map<String, Object>> projectCards = new ArrayList<>();
->>>>>>> payment
 
         for (ProjectMember pm : memberPage.getContent()) {
             Project project = pm.getProject();
@@ -321,8 +313,7 @@ public class UserViewController {
     // 📧 Tin nhắn theo từng project
     @GetMapping("/message")
     public String userMessagePage(
-            @RequestParam(value = "projectId", required = false) Long projectId,
-            Model model,
+            @RequestParam(value = "projectId", required = false) Long projectId, Model model,
             Authentication auth) {
 
         String email = getEmailFromAuthentication(auth);
@@ -356,17 +347,17 @@ public class UserViewController {
     }
 
     @GetMapping("/tasks")
-    public String userTasksPage(Model model,
-                                Authentication auth,
-                                @RequestParam(defaultValue = "0") int page,
-                                @RequestParam(defaultValue = "10") int size,
-                                @RequestParam(required = false) String sortBy,
-                                @RequestParam(required = false) String status) {
-        if (auth == null || !auth.isAuthenticated()) return "redirect:/view/login";
+    public String userTasksPage(Model model, Authentication auth,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String status) {
+        if (auth == null || !auth.isAuthenticated())
+            return "redirect:/view/login";
 
         String email = getEmailFromAuthentication(auth);
         User user = userService.getByEmail(email).orElse(null);
-        if (user == null) return "redirect:/view/login";
+        if (user == null)
+            return "redirect:/view/login";
 
         Page<Task> taskPage = taskService.getUserTasksPaged(user, sortBy, page, size, status);
 

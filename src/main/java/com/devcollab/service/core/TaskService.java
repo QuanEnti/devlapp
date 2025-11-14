@@ -65,14 +65,13 @@ public interface TaskService {
 
     Page<Task> getUserTasksPaged(User user, String sortBy, int page, int size, String status);
 
-<<<<<<< HEAD
+
     List<Task> findUpcomingDeadlines(Long userId);
-=======
-    public List<Task> findUpcomingDeadlines(Long userId);
+
     public TaskStatisticsDTO getTaskStatistics(User user);
 
     public TaskDetailDTO getTaskDetailForReview(Long taskId);
 
-    public Page<TaskReviewDTO> getTasksForReviewPaged(Long projectId, int page, int size, String status, String search);
->>>>>>> payment
+    public Page<TaskReviewDTO> getTasksForReviewPaged(Long projectId, int page, int size,
+            String status, String search);
 }
