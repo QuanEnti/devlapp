@@ -5,7 +5,6 @@ import com.devcollab.domain.*;
 import com.devcollab.dto.MemberPerformanceDTO;
 import com.devcollab.dto.TaskDTO;
 import com.devcollab.dto.request.MoveTaskRequest;
-import com.devcollab.dto.userTaskDto.TaskCardDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.*;
@@ -25,7 +24,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -44,7 +42,7 @@ public class TaskServiceImpl implements TaskService {
     private final TaskFollowerRepository taskFollowerRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-
+    private final ProjectAuthorizationService projectAuthorizationService;
 
     @Override
     public Task createTaskFromDTO(TaskDTO dto, Long creatorId) {
@@ -153,8 +151,6 @@ public class TaskServiceImpl implements TaskService {
         return saved;
     }
 
-
-
     @Override
     public Task createTask(Task task, Long creatorId) {
         if (task == null)
@@ -236,7 +232,6 @@ public class TaskServiceImpl implements TaskService {
         log.info(" Task '{}' (ID={}) đã bị xóa bởi {}", task.getTitle(), id, actor.getName());
     }
 
-
     @Override
     public Task assignTask(Long taskId, Long assigneeId) {
         Task task = taskRepository.findById(taskId)
@@ -285,7 +280,6 @@ public class TaskServiceImpl implements TaskService {
         ProjectAuthorizationService authz =
                 SpringContext.getBean(ProjectAuthorizationService.class);
         authz.ensurePmOfProject(email, projectId);
-
 
         BoardColumn oldCol = task.getColumn();
         BoardColumn newCol = boardColumnRepository.findById(req.getTargetColumnId())
@@ -394,7 +388,6 @@ public class TaskServiceImpl implements TaskService {
 
         return TaskDTO.fromEntity(saved);
     }
-
 
     @Override
     @Transactional
@@ -541,7 +534,6 @@ public class TaskServiceImpl implements TaskService {
         return TaskDTO.fromEntity(task);
     }
 
-
     private String escapeJson(String text) {
         return text == null ? ""
                 : text.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
@@ -616,18 +608,39 @@ public class TaskServiceImpl implements TaskService {
         return true;
     }
 
-
     @Override
     @Transactional
     public TaskDTO markComplete(Long taskId, Long userId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy task"));
 
-        boolean allowed = taskFollowerRepository.existsByTask_TaskIdAndUser_UserId(taskId, userId)
-                || (task.getCreatedBy() != null && task.getCreatedBy().getUserId().equals(userId));
+        Long projectId = task.getProject().getProjectId();
 
-        if (!allowed) {
-            throw new SecurityException(" Chỉ thành viên của task mới có thể đánh dấu hoàn thành");
+        // 1️⃣ Kiểm tra PM / ADMIN của dự án
+        boolean isPmOrAdmin = false;
+        try {
+            User currentUser = userRepository.findById(userId)
+                    .orElseThrow(() -> new NotFoundException("User không tồn tại"));
+            projectAuthorizationService.ensurePmOfProject(currentUser.getEmail(), projectId);
+            isPmOrAdmin = true; // nếu không exception => là PM/ADMIN
+        } catch (Exception ignored) {
+        }
+
+        // 2️⃣ Kiểm tra follower
+        boolean isFollower =
+                taskFollowerRepository.existsByTask_TaskIdAndUser_UserId(taskId, userId);
+
+        // 3️⃣ Kiểm tra creator
+        boolean isCreator =
+                task.getCreatedBy() != null && task.getCreatedBy().getUserId().equals(userId);
+
+        // 4️⃣ Kiểm tra assignee
+        boolean isAssignee =
+                task.getAssignee() != null && task.getAssignee().getUserId().equals(userId);
+
+        // 🔥 Quyền hợp lệ = PM/ADMIN OR Assignee OR Follower OR Creator
+        if (!(isPmOrAdmin || isAssignee || isFollower || isCreator)) {
+            throw new SecurityException("Bạn không có quyền đánh dấu hoàn thành task này");
         }
 
         if ("DONE".equalsIgnoreCase(task.getStatus())) {
@@ -654,7 +667,54 @@ public class TaskServiceImpl implements TaskService {
         return TaskDTO.fromEntity(saved);
     }
 
+    @Override
+    @Transactional
+    public TaskDTO markIncomplete(Long taskId, Long userId, String email) {
 
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Task không tồn tại"));
+
+        Long projectId = task.getProject().getProjectId();
+
+        // 1️⃣ Kiểm tra PM / ADMIN của dự án (xài hàm có sẵn)
+        boolean isPmOrAdmin = false;
+        try {
+            projectAuthorizationService.ensurePmOfProject(email, projectId);
+            isPmOrAdmin = true; // nếu không exception => là PM/ADMIN
+        } catch (Exception ignored) {
+        }
+
+        // 2️⃣ Kiểm tra assignee
+        boolean isAssignee =
+                task.getAssignee() != null && task.getAssignee().getUserId().equals(userId);
+
+        // 3️⃣ Kiểm tra follower
+        boolean isFollower =
+                taskFollowerRepository.existsByTask_TaskIdAndUser_UserId(taskId, userId);
+
+        // 4️⃣ Kiểm tra creator
+        boolean isCreator =
+                task.getCreatedBy() != null && task.getCreatedBy().getUserId().equals(userId);
+
+        // 🔥 Quyền hợp lệ = PM/ADMIN OR Assignee OR Follower OR Creator
+        if (!(isPmOrAdmin || isAssignee || isFollower || isCreator)) {
+            throw new AccessDeniedException("Bạn không có quyền mở lại task này.");
+        }
+
+        // Nếu không phải DONE → không làm gì
+        if (!"DONE".equalsIgnoreCase(task.getStatus())) {
+            return TaskDTO.fromEntity(task);
+        }
+
+        // Cập nhật lại trạng thái
+        task.setStatus("OPEN");
+        task.setClosedAt(null);
+        task.setUpdatedAt(LocalDateTime.now());
+
+        Task saved = taskRepository.save(task);
+
+        return TaskDTO.fromEntity(saved);
+    }
 
     private void sendDeadlineNotification(Task task, User actor) {
         try {

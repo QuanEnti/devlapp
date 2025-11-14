@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
         @Override
         public UserDTO getCurrentUser(Authentication auth) {
                 if (auth == null || !auth.isAuthenticated()) {
-                        log.warn("⚠️ Attempted to access current user without authentication");
+                        log.warn(" Attempted to access current user without authentication");
                         throw new SecurityException("Unauthorized");
                 }
 
@@ -44,8 +44,10 @@ public class AuthServiceImpl implements AuthService {
                         String avatar = oauthUser.getAttribute("picture");
 
                         if (email == null || email.isBlank()) {
-                                log.error("❌ Missing email attribute from OAuth2 user: {}", oauthUser);
-                                throw new IllegalStateException("Missing email attribute from Google account");
+                                log.error(" Missing email attribute from OAuth2 user: {}",
+                                                oauthUser);
+                                throw new IllegalStateException(
+                                                "Missing email attribute from Google account");
                         }
 
                         // ✅ Luôn fetch từ DB để lấy roles thật
@@ -55,7 +57,8 @@ public class AuthServiceImpl implements AuthService {
 
                                 // Nếu user Google chưa có provider hoặc avatar → cập nhật thêm
                                 boolean changed = false;
-                                if (user.getProvider() == null || !user.getProvider().equalsIgnoreCase("google")) {
+                                if (user.getProvider() == null
+                                                || !user.getProvider().equalsIgnoreCase("google")) {
                                         user.setProvider("google");
                                         changed = true;
                                 }
@@ -67,8 +70,9 @@ public class AuthServiceImpl implements AuthService {
                                 if (changed)
                                         userRepository.save(user);
 
-                                log.info("✅ Authenticated via Google OAuth2: {} | Roles: {}", email,
-                                                user.getRoles().stream().map(Role::getName).toList());
+                                log.info("Authenticated via Google OAuth2: {} | Roles: {}", email,
+                                                user.getRoles().stream().map(Role::getName)
+                                                                .toList());
                                 return UserDTO.fromEntity(user);
                         }
 
@@ -93,19 +97,19 @@ public class AuthServiceImpl implements AuthService {
                         var userOpt = userRepository.findByEmailFetchRoles(email);
 
                         if (userOpt.isEmpty()) {
-                                log.error("❌ User not found in DB: {}", email);
+                                log.error(" User not found in DB: {}", email);
                                 throw new IllegalArgumentException("USER_NOT_FOUND");
                         }
 
                         var user = userOpt.get();
-                        log.info("✅ Authenticated via Local account: {} | Roles: {}", email,
+                        log.info(" Authenticated via Local account: {} | Roles: {}", email,
                                         user.getRoles().stream().map(Role::getName).toList());
                         return UserDTO.fromEntity(user);
                 }
 
                 // =============== CASE 3: Unsupported ===============
                 String type = principal != null ? principal.getClass().getSimpleName() : "null";
-                log.error("❌ Unsupported authentication principal type: {}", type);
+                log.error(" Unsupported authentication principal type: {}", type);
                 throw new IllegalArgumentException("Unsupported authentication type: " + type);
         }
 
@@ -123,7 +127,8 @@ public class AuthServiceImpl implements AuthService {
                                 user.setName(dto.getName());
                                 changed = true;
                         }
-                        if (dto.getAvatarUrl() != null && !dto.getAvatarUrl().equals(user.getAvatarUrl())) {
+                        if (dto.getAvatarUrl() != null
+                                        && !dto.getAvatarUrl().equals(user.getAvatarUrl())) {
                                 user.setAvatarUrl(dto.getAvatarUrl());
                                 changed = true;
                         }
@@ -143,7 +148,7 @@ public class AuthServiceImpl implements AuthService {
                 newUser.setStatus("active");
 
                 User saved = userRepository.save(newUser);
-                log.info("🆕 Created new user from OAuth2 login: {}", saved.getEmail());
+                log.info(" Created new user from OAuth2 login: {}", saved.getEmail());
                 return saved;
         }
 }

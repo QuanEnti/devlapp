@@ -1,6 +1,5 @@
 package com.devcollab.controller.rest;
 
-import com.devcollab.domain.Notification;
 import com.devcollab.domain.Project;
 import com.devcollab.domain.Role;
 import com.devcollab.domain.User;
@@ -21,14 +20,12 @@ import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.system.OtpService;
 import com.devcollab.service.system.*;
 
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -47,7 +44,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 
 @RestController
 @RequestMapping("/api/auth")
@@ -344,7 +340,6 @@ public class AuthController {
                                 "OTP_SENT", "otp", null, email, "/view/verify-otp"));
         }
 
-
         @PostMapping("/resend-otp")
         public ResponseEntity<?> resendOtp(@Valid @RequestBody EmailOnlyDTO request) {
                 String email = request.getEmail();
@@ -416,8 +411,8 @@ public class AuthController {
         }
 
         @PostMapping("/refresh")
-        public ResponseEntity<?> refreshToken(@CookieValue(value = "REFRESH_TOKEN",
-                        defaultValue = "") String refreshToken) {
+        public ResponseEntity<?> refreshToken(
+                        @CookieValue(value = "REFRESH_TOKEN", defaultValue = "") String refreshToken) {
                 try {
                         if (refreshToken.isEmpty() || !jwtService.isValid(refreshToken)) {
                                 return ResponseEntity.status(401).body(new ErrorResponseDTO(
@@ -428,10 +423,9 @@ public class AuthController {
                         String email = jwtService.extractEmail(refreshToken);
                         String newAccessToken = jwtService.generateAccessToken(email);
 
-                        ResponseCookie newAccessCookie =
-                                        ResponseCookie.from("AUTH_TOKEN", newAccessToken)
-                                                        .httpOnly(true).secure(false).path("/")
-                                                        .maxAge(15 * 60).sameSite("Lax").build();
+                        ResponseCookie newAccessCookie = ResponseCookie.from("AUTH_TOKEN", newAccessToken)
+                                        .httpOnly(true).secure(false).path("/")
+                                        .maxAge(15 * 60).sameSite("Lax").build();
 
                         return ResponseEntity.ok()
                                         .header(HttpHeaders.SET_COOKIE, newAccessCookie.toString())
@@ -517,15 +511,13 @@ public class AuthController {
                                                 "Tài khoản của bạn đã bị khóa bởi quản trị viên."));
                         }
 
-
                         // ✅ Lấy roles riêng, không chạm UserDTO
                         Optional<User> userOpt = userRepository
                                         .findByEmailFetchRoles(currentUser.getEmail());
-                        List<String> roles =
-                                        userOpt.isPresent()
-                                                        ? userOpt.get().getRoles().stream()
-                                                                        .map(Role::getName).toList()
-                                                        : List.of("ROLE_MEMBER");
+                        List<String> roles = userOpt.isPresent()
+                                        ? userOpt.get().getRoles().stream()
+                                                        .map(Role::getName).toList()
+                                        : List.of("ROLE_MEMBER");
 
                         // ✅ Gói vào 1 JSON object
                         Map<String, Object> response = new LinkedHashMap<>();

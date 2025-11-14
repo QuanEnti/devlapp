@@ -5,50 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tham gia dự án - DevCollab</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      body {
-        font-family: "Inter", sans-serif;
-        background: linear-gradient(135deg, #4f46e5, #9333ea);
-      }
-    </style>
   </head>
 
-  <body class="min-h-screen flex items-center justify-center">
+  <body
+    class="min-h-screen bg-gray-50 text-gray-800 flex items-center justify-center"
+  >
     <div
       id="invite-card"
-      class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center"
+      class="bg-white rounded-lg shadow-2xl w-full max-w-md p-8"
     >
-      <img
-        src="/assets/devcollab-logo.svg"
-        alt="DevCollab"
-        class="w-14 h-14 mx-auto mb-3"
-      />
+      <div class="text-center mb-6">
+        <img
+          src="/photo/logo1.png"
+          alt="DevCollab"
+          class="w-16 h-16 mx-auto mb-4 object-contain"
+        />
 
-      <h1 id="invite-title" class="text-lg font-semibold text-gray-800 mb-1">
-        Nguyễn Tiến Quân đã chia sẻ
-        <span class="font-bold text-indigo-600">Design Project Template</span>
-        với bạn.
-      </h1>
+        <h1 id="invite-title" class="text-xl font-semibold text-gray-800 mb-2">
+          Bạn được mời tham gia dự án
+        </h1>
 
-      <p class="text-gray-500 text-sm mb-6">
-        Bạn được mời tham gia dự án trên DevCollab. Hãy xác nhận để bắt đầu cộng
-        tác cùng nhóm!
-      </p>
+        <p class="text-gray-600 text-sm">
+          Hãy xác nhận để bắt đầu cộng tác cùng nhóm
+        </p>
+      </div>
 
       <button
         id="join-btn"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2.5 rounded-md shadow transition"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-md shadow-sm transition-all duration-200 hover:shadow-md"
       >
-        🚀 Tham gia dự án
+        Tham gia dự án
       </button>
 
-      <p class="text-xs text-gray-400 mt-5">
+      <p class="text-xs text-gray-400 mt-5 text-center">
         Không phải bạn?
-        <a href="/logout" class="text-indigo-600 hover:underline">Đăng xuất</a>
+        <a href="#" id="logout-link" class="text-blue-600 hover:underline"
+          >Đăng xuất</a
+        >
       </p>
     </div>
 
     <script>
+      // ✅ Toast notification (thay thế alert) - hiển thị ở giữa màn hình
+      function showToast(message, type = "info") {
+        const toast = document.createElement("div");
+        toast.textContent = message;
+        toast.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-6 py-4 rounded-lg text-white z-[9999] shadow-2xl transition-all duration-300 text-center min-w-[300px] max-w-[500px] ${
+          type === "error"
+            ? "bg-red-500"
+            : type === "success"
+            ? "bg-green-600"
+            : "bg-blue-600"
+        }`;
+        document.body.appendChild(toast);
+
+        // Auto remove sau 3 giây
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translate(-50%, -50%) scale(0.95)";
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
       // ✅ Đọc cookie
       function getCookie(name) {
         const value = document.cookie.match(
@@ -82,7 +100,7 @@
 
         joinBtn.addEventListener("click", async () => {
           joinBtn.disabled = true;
-          joinBtn.textContent = "⏳ Đang xử lý...";
+          joinBtn.textContent = "Đang xử lý...";
 
           const token =
             localStorage.getItem("token") || getCookie("AUTH_TOKEN");
@@ -99,39 +117,150 @@
 
             const text = await res.text();
 
-            // 🟢 Nếu backend trả lỗi "đã là thành viên"
+            // 🟢 Nếu backend trả lỗi
             if (!res.ok) {
-              if (text.includes("đã là thành viên")) {
-                alert(
-                  "✅ Bạn đã là thành viên của dự án này. Đang chuyển đến bảng công việc..."
-                );
+              let errorMessage = "Không thể tham gia dự án";
 
-                try {
-                  const errObj = JSON.parse(text);
-                  if (errObj.projectId) {
+              // ✅ Parse JSON error nếu có
+              try {
+                const errObj = JSON.parse(text);
+                errorMessage = errObj.error || errObj.message || errorMessage;
+
+                // ✅ Nếu đã gửi join request → redirect về user dashboard
+                if (
+                  errorMessage.includes("đã gửi yêu cầu") ||
+                  errorMessage.includes("đang chờ phê duyệt")
+                ) {
+                  showToast(errorMessage, "info");
+                  setTimeout(() => {
+                    window.location.href = `/user/view/dashboard`;
+                  }, 2000);
+                  return;
+                }
+
+                // Nếu có projectId trong error → redirect
+                if (errObj.projectId) {
+                  showToast(errorMessage, "info");
+                  setTimeout(() => {
                     window.location.href = `/view/pm/project/board?projectId=${errObj.projectId}`;
-                    return;
-                  }
-                } catch (_) {}
-
-                window.location.href = `/view/pm/dashboard?joined=true`;
-                return;
+                  }, 1500);
+                  return;
+                }
+              } catch (_) {
+                // Nếu không parse được JSON → dùng text trực tiếp
+                if (text.includes("đã là thành viên")) {
+                  errorMessage =
+                    "Bạn đã là thành viên của dự án này. Đang chuyển đến bảng công việc...";
+                  showToast(errorMessage, "info");
+                  setTimeout(() => {
+                    window.location.href = `/view/pm/dashboard?joined=true`;
+                  }, 1500);
+                  return;
+                }
+                // ✅ Kiểm tra nếu text chứa thông báo đã gửi request
+                if (
+                  text.includes("đã gửi yêu cầu") ||
+                  text.includes("đang chờ phê duyệt")
+                ) {
+                  errorMessage = text;
+                  showToast(errorMessage, "info");
+                  setTimeout(() => {
+                    window.location.href = `/user/view/dashboard`;
+                  }, 2000);
+                  return;
+                }
+                errorMessage = text || errorMessage;
               }
-              throw new Error(text);
+
+              showToast(errorMessage, "error");
+              return;
             }
 
-            // 🟢 Tham gia mới thành công
+            // 🟢 Xử lý response dựa trên message
             const data = JSON.parse(text);
-            alert(`🎉 Tham gia dự án thành công!\n📁 ${data.projectName}`);
-            window.location.href = `/view/pm/project/board?projectId=${data.projectId}`;
+
+            if (data.message === "join_request_sent") {
+              showToast(
+                `Yêu cầu tham gia đã được gửi! Dự án: ${data.projectName}. Vui lòng đợi PM duyệt.`,
+                "info"
+              );
+              // ✅ Chuyển về dashboard user sau 2 giây
+              setTimeout(() => {
+                window.location.href = `/user/view/dashboard`;
+              }, 2000);
+            } else if (data.message === "joined_success") {
+              showToast(
+                `Tham gia dự án thành công! ${data.projectName}`,
+                "success"
+              );
+              setTimeout(() => {
+                window.location.href = `/view/pm/project/board?projectId=${data.projectId}`;
+              }, 1500);
+            } else {
+              // Fallback cho các message khác
+              showToast(`${data.message} - ${data.projectName}`, "info");
+              if (data.projectId) {
+                setTimeout(() => {
+                  window.location.href = `/view/pm/project/board?projectId=${data.projectId}`;
+                }, 1500);
+              }
+            }
           } catch (err) {
-            console.error("❌ Join failed:", err);
-            alert("❌ Không thể tham gia dự án!\n" + (err.message || ""));
+            console.error("Join failed:", err);
+            // ✅ Lấy message từ error, nếu là object thì parse
+            let errorMessage = "Không thể tham gia dự án";
+            if (err.message) {
+              try {
+                // Thử parse nếu là JSON string
+                const parsed = JSON.parse(err.message);
+                errorMessage = parsed.error || parsed.message || errorMessage;
+              } catch (_) {
+                // Nếu không phải JSON → dùng trực tiếp
+                errorMessage = err.message;
+              }
+            }
+            showToast(errorMessage, "error");
           } finally {
             joinBtn.disabled = false;
-            joinBtn.textContent = "🚀 Tham gia dự án";
+            joinBtn.textContent = "Tham gia dự án";
           }
         });
+
+        // ✅ Xử lý nút đăng xuất
+        const logoutLink = document.getElementById("logout-link");
+        if (logoutLink) {
+          logoutLink.addEventListener("click", async (e) => {
+            e.preventDefault();
+            try {
+              // Gọi API logout
+              await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  Authorization:
+                    "Bearer " +
+                    (localStorage.getItem("token") || getCookie("AUTH_TOKEN")),
+                },
+              });
+
+              // Xóa cookie và localStorage
+              document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/;";
+              document.cookie = "REFRESH_TOKEN=; Max-Age=0; path=/;";
+              localStorage.removeItem("token");
+              localStorage.removeItem("AUTH_TOKEN");
+              localStorage.removeItem("REFRESH_TOKEN");
+
+              // Redirect về trang đăng nhập
+              window.location.href = "/view/signin";
+            } catch (err) {
+              console.error("Logout error:", err);
+              // Vẫn redirect về signin nếu có lỗi
+              document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/;";
+              localStorage.clear();
+              window.location.href = "/view/signin";
+            }
+          });
+        }
       });
     </script>
   </body>

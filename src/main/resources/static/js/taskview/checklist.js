@@ -1,6 +1,7 @@
 // ============================================================
 // ✅ CHECKLIST MODULE – Manage Checklists for Tasks
 // ============================================================
+import { showToast } from "./utils.js";
 
 const checklistPopup = document.getElementById("checklist-popup");
 const openChecklistBtn = document.getElementById("open-checklist-btn");
@@ -98,7 +99,8 @@ async function loadChecklistItems() {
     });
 
     if (!res.ok) {
-      console.error("❌ Failed to load checklist items");
+      console.error(" Failed to load checklist items");
+      showToast("Failed to load checklist items", "error");
       // Ẩn section nếu load thất bại (giống due date khi null)
       if (checklistSection) {
         checklistSection.classList.add("hidden");
@@ -126,7 +128,8 @@ async function loadChecklistItems() {
     updateProgress(safeItems);
     updateHideCheckedButton(safeItems);
   } catch (err) {
-    console.error("❌ Error loading checklist items:", err);
+    console.error(" Error loading checklist items:", err);
+    showToast("Failed to load checklist items", "error");
     // Ẩn section nếu có lỗi (giống due date khi null)
     if (checklistSection) {
       checklistSection.classList.add("hidden");
@@ -446,13 +449,15 @@ async function convertChecklistItemToCard(checklistId) {
     });
 
     if (!checklistRes.ok) {
-      throw new Error("Failed to load checklist items");
+      showToast("Failed to load checklist items", "error");
+      return;
     }
 
     const items = await checklistRes.json();
     const item = items.find((i) => i.checklistId === checklistId);
     if (!item) {
-      throw new Error("Checklist item not found");
+      showToast("Checklist item not found", "error");
+      return;
     }
 
     // 2. Lấy thông tin task để có columnId
@@ -463,7 +468,8 @@ async function convertChecklistItemToCard(checklistId) {
     });
 
     if (!taskRes.ok) {
-      throw new Error("Failed to load task");
+      showToast("Failed to load task", "error");
+      return;
     }
 
     const task = await taskRes.json();
@@ -473,11 +479,13 @@ async function convertChecklistItemToCard(checklistId) {
       new URLSearchParams(window.location.search).get("projectId");
 
     if (!columnId) {
-      throw new Error("Column ID not found");
+      showToast("Column ID not found", "error");
+      return;
     }
 
     if (!projectId) {
-      throw new Error("Project ID not found");
+      showToast("Project ID not found", "error");
+      return;
     }
 
     // 3. Tạo task mới từ checklist item
@@ -496,7 +504,8 @@ async function convertChecklistItemToCard(checklistId) {
 
     if (!createRes.ok) {
       const errorText = await createRes.text();
-      throw new Error(`Failed to create card: ${errorText}`);
+      showToast(`Failed to create card: ${errorText}`, "error");
+      return;
     }
 
     const newTask = await createRes.json();
@@ -512,6 +521,7 @@ async function convertChecklistItemToCard(checklistId) {
 
     if (!deleteRes.ok) {
       console.warn(" Failed to delete checklist item after conversion");
+      showToast("Card created but failed to remove checklist item", "error");
     }
 
     // 5. Xóa checklist item
@@ -561,10 +571,14 @@ async function convertChecklistItemToCard(checklistId) {
     } catch (err) {
       console.warn(" Could not add card to board, but card was created:", err);
     }
-
     console.log(" Checklist item đã được chuyển thành card mới trong column!");
   } catch (err) {
     console.error(" Error converting checklist item to card:", err);
+    showToast(
+      "Failed to convert checklist item to card: " +
+        (err.message || "Unknown error"),
+      "error"
+    );
   }
 }
 
@@ -718,7 +732,6 @@ function toggleChecklistItemMenu(checklistId, event) {
   const isHidden = menu.classList.contains("hidden");
   if (isHidden) {
     menu.classList.remove("hidden");
-    // Đặt vị trí menu dựa trên vị trí của button
     const button = event?.target?.closest(
       'button[onclick*="toggleChecklistItemMenu"]'
     );
@@ -732,7 +745,6 @@ function toggleChecklistItemMenu(checklistId, event) {
   }
 }
 
-// Close checklist item menu
 function closeChecklistItemMenu(checklistId) {
   const menu = document.getElementById(`checklist-item-menu-${checklistId}`);
   if (menu) menu.classList.add("hidden");

@@ -1,7 +1,6 @@
 package com.devcollab.controller.rest;
 
 import com.devcollab.domain.Project;
-import com.devcollab.domain.ProjectMember;
 import com.devcollab.domain.User;
 import com.devcollab.dto.MemberDTO;
 import com.devcollab.exception.BadRequestException;
@@ -46,11 +45,15 @@ public class InviteUserRestController {
             Authentication auth) {
         try {
             String pmEmail = extractEmail(auth);
-            authz.ensurePmOfProject(pmEmail, projectId);
+            // ✅ Phân quyền đã được kiểm tra trong service layer
             projectMemberService.addMemberToProject(projectId, pmEmail, email, role);
             return ResponseEntity.ok(Map.of("message", "Đã mời thành viên vào dự án"));
-        } catch (AccessDeniedException e) {
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -89,20 +92,32 @@ public class InviteUserRestController {
 
     @PostMapping("/project/{projectId}/share/enable")
     public ResponseEntity<?> enableShareLink(@PathVariable Long projectId, Authentication auth) {
-        String email = extractEmail(auth);
-        authz.ensurePmOfProject(email, projectId);
-        Project updated = projectService.enableShareLink(projectId, email);
-        return ResponseEntity.ok(Map.of("message", "Đã bật chia sẻ dự án!", "inviteLink",
-                updated.getInviteLink(), "allowLinkJoin", updated.isAllowLinkJoin()));
+        try {
+            String email = extractEmail(auth);
+            // ✅ Phân quyền đã được kiểm tra trong service layer
+            Project updated = projectService.enableShareLink(projectId, email);
+            return ResponseEntity.ok(Map.of("message", "Đã bật chia sẻ dự án!", "inviteLink",
+                    updated.getInviteLink(), "allowLinkJoin", updated.isAllowLinkJoin()));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @DeleteMapping("/project/{projectId}/share/disable")
     public ResponseEntity<?> disableShareLink(@PathVariable Long projectId, Authentication auth) {
-        String email = extractEmail(auth);
-        authz.ensurePmOfProject(email, projectId);
-        Project updated = projectService.disableShareLink(projectId, email);
-        return ResponseEntity.ok(Map.of("message", "Đã tắt chia sẻ dự án!", "allowLinkJoin",
-                updated.isAllowLinkJoin()));
+        try {
+            String email = extractEmail(auth);
+            // ✅ Phân quyền đã được kiểm tra trong service layer
+            Project updated = projectService.disableShareLink(projectId, email);
+            return ResponseEntity.ok(Map.of("message", "Đã tắt chia sẻ dự án!", "allowLinkJoin",
+                    updated.isAllowLinkJoin()));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/project/{projectId}/share/link")
@@ -119,28 +134,68 @@ public class InviteUserRestController {
                 project.getInviteLink()));
     }
 
+    @PostMapping("/project/{projectId}/share/copy")
+    public ResponseEntity<?> copyShareLink(@PathVariable Long projectId, Authentication auth) {
+        String email = extractEmail(auth);
+        if (!authz.isMemberOfProject(email, projectId)) {
+            throw new AccessDeniedException("Bạn không thuộc dự án này");
+        }
+
+        Project project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
+
+        if (!project.isAllowLinkJoin() || project.getInviteLink() == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Link sharing chưa được bật hoặc chưa có link!"));
+        }
+
+        // ✅ Lưu email người copy link để kiểm tra quyền khi join
+        // Nếu member copy → người join sẽ vào join request
+        // Nếu PM copy → người join sẽ vào trực tiếp
+        project.setInviteCreatedBy(email);
+        projectRepo.save(project);
+
+        // Kiểm tra role để thông báo cho UI
+        String userRole = authz.getRoleInProject(email, projectId);
+        boolean isPm = "PM".equalsIgnoreCase(userRole) || "ADMIN".equalsIgnoreCase(userRole);
+        String message = isPm ? "Link đã được copy. Người được mời sẽ tham gia trực tiếp."
+                : "Link đã được copy. Người được mời sẽ cần được PM duyệt.";
+
+        return ResponseEntity.ok(Map.of("inviteLink", project.getInviteLink(), "message", message,
+                "requiresApproval", !isPm));
+    }
+
     @PostMapping("/join/{inviteLink}")
     public ResponseEntity<?> joinByInviteLink(@PathVariable String inviteLink,
             Authentication auth) {
+
         String email = extractEmail(auth);
         var user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy user!"));
 
         try {
-            ProjectMember joined = projectService.joinProjectByLink(inviteLink, user.getUserId());
-            var project = joined.getProject();
-            return ResponseEntity.ok(Map.of("message", "joined_success", "projectId",
-                    project.getProjectId(), "projectName", project.getName()));
-        } catch (BadRequestException ex) {
-            if (ex.getMessage().contains("Yêu cầu tham gia")) {
-                return ResponseEntity
-                        .ok(Map.of("message", "join_request_sent", "detail", ex.getMessage()));
+            Map<String, Object> result =
+                    projectService.joinProjectByLink(inviteLink, user.getUserId());
+
+            String message = (String) result.get("message");
+
+            if ("joined_success".equals(message)) {
+                return ResponseEntity.ok(result);
             }
+
+            if ("join_request_sent".equals(message)) {
+                return ResponseEntity.ok(result);
+            }
+
+            return ResponseEntity.ok(result);
+
+        } catch (BadRequestException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
+
 
     @GetMapping("/project/{projectId}/join-requests")
     public ResponseEntity<?> getJoinRequests(@PathVariable Long projectId, Authentication auth) {
@@ -148,11 +203,21 @@ public class InviteUserRestController {
         authz.ensurePmOfProject(email, projectId);
         var requests = joinRequestService.getPendingRequests(projectId);
 
-        var dtoList = requests.stream()
-                .map(r -> Map.of("requestId", r.getId(), "userEmail", r.getUser().getEmail(),
-                        "userName", r.getUser().getName(), "createdAt", r.getCreatedAt(), "status",
-                        r.getStatus()))
-                .toList();
+        var dtoList = requests.stream().map(r -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("requestId", r.getId());
+            map.put("userEmail", r.getUser().getEmail());
+            map.put("userName", r.getUser().getName());
+            map.put("createdAt", r.getCreatedAt());
+            map.put("status", r.getStatus());
+            if (r.getReviewedBy() != null) {
+                map.put("reviewedBy", r.getReviewedBy());
+            }
+            if (r.getReviewedAt() != null) {
+                map.put("reviewedAt", r.getReviewedAt());
+            }
+            return map;
+        }).toList();
 
         return ResponseEntity.ok(dtoList);
     }
@@ -188,7 +253,7 @@ public class InviteUserRestController {
             String email = extractEmail(auth);
             authz.ensurePmOfProject(email, projectId);
             projectMemberService.updateMemberRole(projectId, userId, role);
-            return ResponseEntity.ok(Map.of("message", "✅ Vai trò đã được cập nhật!", "projectId",
+            return ResponseEntity.ok(Map.of("message", " Vai trò đã được cập nhật!", "projectId",
                     projectId, "userId", userId, "role", role));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));

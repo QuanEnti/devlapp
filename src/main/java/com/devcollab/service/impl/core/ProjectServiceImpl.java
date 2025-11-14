@@ -362,6 +362,8 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
 
+        authz.ensurePmOfProject(creatorEmail, projectId);
+
         project.setInviteCreatedBy(creatorEmail);
 
         boolean expired = project.getInviteExpiredAt() != null
@@ -405,7 +407,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public ProjectMember joinProjectByLink(String inviteLink, Long userId) {
+    public Map<String, Object> joinProjectByLink(String inviteLink, Long userId) {
         Project project = projectRepository.findByInviteLink(inviteLink)
                 .orElseThrow(() -> new BadRequestException("Liên kết mời không hợp lệ!"));
 
@@ -448,17 +450,26 @@ public class ProjectServiceImpl implements ProjectService {
         if (exists)
             throw new BadRequestException("Bạn đã là thành viên của dự án này!");
 
+        // ✅ Kiểm tra người copy link có phải PM/ADMIN không
+        // Nếu member copy link → tạo join request
+        // Nếu PM copy link → join trực tiếp
         String creatorEmail = project.getInviteCreatedBy();
-        boolean creatorIsPm =
-                projectMemberRepository.existsByProject_ProjectIdAndUser_EmailAndRoleInProjectIn(
-                        project.getProjectId(), creatorEmail, List.of("PM", "OWNER", "ADMIN"));
 
+        boolean creatorIsPm = false;
+        if (creatorEmail != null && !creatorEmail.trim().isEmpty()) {
+            creatorIsPm = projectMemberRepository
+                    .existsByProject_ProjectIdAndUser_EmailAndRoleInProjectIn(
+                            project.getProjectId(), creatorEmail, List.of("PM", "ADMIN", "OWNER"));
+        }
+
+        // Nếu người copy link không phải PM/ADMIN hoặc null → tạo join request
         if (!creatorIsPm) {
             joinRequestService.createJoinRequest(project, user);
             notificationService.notifyJoinRequestToPM(project, user);
-            throw new BadRequestException("Yêu cầu tham gia đã được gửi đến PM để phê duyệt.");
-        }
 
+            return Map.of("message", "join_request_sent", "projectId", project.getProjectId(),
+                    "projectName", project.getName());
+        }
         ProjectMember newMember = new ProjectMember();
         newMember.setProject(project);
         newMember.setUser(user);
@@ -474,8 +485,10 @@ public class ProjectServiceImpl implements ProjectService {
                 user.getEmail() + " đã tham gia dự án qua link mời");
         notificationService.notifyMemberAdded(project, user);
 
-        return newMember;
+        return Map.of("message", "joined_success", "projectId", project.getProjectId(),
+                "projectName", project.getName());
     }
+
 
 
     public List<Project> getProjectsByUsername(String username) {
@@ -557,7 +570,6 @@ public class ProjectServiceImpl implements ProjectService {
         if (name == null || createdById == null) {
             return false;
         }
-        // normalize name to avoid case-sensitive duplicates
         return projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserId(name.trim(),
                 createdById);
     }

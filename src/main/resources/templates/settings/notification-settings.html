@@ -1,154 +1,186 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8" />
-  <title>Cài đặt thông báo – DevCollab</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-  </style>
-</head>
-<body class="min-h-screen flex flex-col items-center py-10">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cài đặt thông báo – DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col items-center py-10">
+    <div class="bg-white shadow-md rounded-xl p-8 w-full max-w-3xl">
+      <h1 class="text-2xl font-bold text-gray-800 mb-6">
+        Cài đặt thông báo qua Email
+      </h1>
 
-  <div class="bg-white shadow-md rounded-xl p-8 w-full max-w-3xl">
-    <h1 class="text-2xl font-bold text-gray-800 mb-6">🔔 Cài đặt thông báo qua Email</h1>
-
-    <!-- 🔁 Form không cần action nữa vì xử lý bằng JS -->
-    <form id="notif-settings-form" class="space-y-6">
-      
-      <!-- Bật/tắt toàn bộ -->
-      <div class="flex items-center justify-between">
-        <label class="text-gray-700 font-medium">Nhận email thông báo</label>
-        <input type="checkbox" name="emailEnabled"
-               class="w-5 h-5 accent-blue-600"
-               th:checked="${settings.emailEnabled}" />
-      </div>
-
-      <!-- Gửi mail ngay cho thông báo quan trọng -->
-      <div class="flex items-center justify-between">
-        <label class="text-gray-700 font-medium">Gửi email ngay cho thông báo quan trọng</label>
-        <input type="checkbox" name="emailHighImmediate"
-               class="w-5 h-5 accent-blue-600"
-               th:checked="${settings.emailHighImmediate}" />
-      </div>
-
-      <!-- Nhận email tổng hợp -->
-      <div class="flex items-center justify-between">
-        <div>
-          <label class="text-gray-700 font-medium">Nhận email tổng hợp</label>
-          <p class="text-sm text-gray-500 mt-1">Nhận một email tổng hợp các thông báo mới theo tần suất bạn chọn.</p>
+      <form id="notif-settings-form" class="space-y-6">
+        <div class="flex items-center justify-between">
+          <label class="text-gray-700 font-medium">Nhận email thông báo</label>
+          <input
+            type="checkbox"
+            name="emailEnabled"
+            class="w-5 h-5 accent-blue-600"
+            th:checked="${settings.emailEnabled}"
+          />
         </div>
-        <input type="checkbox" name="emailDigestEnabled"
-               class="w-5 h-5 accent-blue-600"
-               th:checked="${settings.emailDigestEnabled}" />
-      </div>
 
-      <!-- Tần suất digest -->
-      <div>
-        <label class="block text-gray-700 font-medium mb-2">Tần suất nhận email tổng hợp</label>
-        <select name="emailDigestEveryHours"
-                class="border rounded-lg px-4 py-2 w-full focus:ring focus:ring-blue-200"
-                th:value="${settings.emailDigestEveryHours}">
-          <option value="2">2 giờ</option>
-          <option value="4">4 giờ</option>
-          <option value="6">6 giờ</option>
-        </select>
-      </div>
+        <div class="flex items-center justify-between">
+          <label class="text-gray-700 font-medium"
+            >Gửi email ngay cho thông báo quan trọng</label
+          >
+          <input
+            type="checkbox"
+            name="emailHighImmediate"
+            class="w-5 h-5 accent-blue-600"
+            th:checked="${settings.emailHighImmediate}"
+          />
+        </div>
 
-      <!-- Nút không nhận mail -->
-      <div class="pt-4 border-t">
-        <label class="inline-flex items-center">
-          <input type="checkbox" name="disableAll" value="true"
-                 class="w-5 h-5 accent-red-500"
-                 th:checked="${!settings.emailEnabled}" />
-          <span class="ml-2 text-red-600 font-medium">Không nhận thông báo qua email</span>
-        </label>
-      </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-gray-700 font-medium">Nhận email tổng hợp</label>
+            <p class="text-sm text-gray-500 mt-1">
+              Nhận một email tổng hợp các thông báo mới theo tần suất bạn chọn.
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            name="emailDigestEnabled"
+            class="w-5 h-5 accent-blue-600"
+            th:checked="${settings.emailDigestEnabled}"
+          />
+        </div>
 
-      <!-- Submit -->
-      <div class="pt-6 flex justify-end">
-        <button type="submit"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition">
-          Lưu thay đổi
-        </button>
-      </div>
+        <!-- Tần suất digest -->
+        <div>
+          <label class="block text-gray-700 font-medium mb-2"
+            >Tần suất nhận email tổng hợp</label
+          >
+          <select
+            name="emailDigestEveryHours"
+            class="border rounded-lg px-4 py-2 w-full focus:ring focus:ring-blue-200"
+            th:value="${settings.emailDigestEveryHours}"
+          >
+            <option value="2">2 giờ</option>
+            <option value="4">4 giờ</option>
+            <option value="6">6 giờ</option>
+          </select>
+        </div>
 
-      <!-- Thông báo lưu thành công -->
-      <p id="success-msg"
-         class="hidden text-green-600 text-center mt-4 font-medium">
-         ✅ Cài đặt đã được lưu thành công!
-      </p>
-    </form>
-  </div>
+        <!-- Nút không nhận mail -->
+        <div class="pt-4 border-t">
+          <label class="inline-flex items-center">
+            <input
+              type="checkbox"
+              name="disableAll"
+              value="true"
+              class="w-5 h-5 accent-red-500"
+              th:checked="${!settings.emailEnabled}"
+            />
+            <span class="ml-2 text-red-600 font-medium"
+              >Không nhận thông báo qua email</span
+            >
+          </label>
+        </div>
 
- <script>
-const form = document.getElementById("notif-settings-form");
-const successMsg = document.getElementById("success-msg");
+        <!-- Submit -->
+        <div class="pt-6 flex justify-end">
+          <button
+            type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition"
+          >
+            Lưu thay đổi
+          </button>
+        </div>
 
-async function ensureCurrentUser() {
-  try {
-    const res = await fetch("/api/auth/me", { credentials: "include" });
-    if (!res.ok) throw new Error("Unauthorized");
-    const data = await res.json();
-    console.log("✅ Current user:", data.email || data.user?.email);
-    return data.user || data;
-  } catch (err) {
-    console.warn("⚠️ Phiên đăng nhập không hợp lệ:", err);
-    return null;
-  }
-}
+        <!-- Thông báo lưu thành công -->
+        <p
+          id="success-msg"
+          class="hidden text-green-600 text-center mt-4 font-medium"
+        >
+          ✅ Cài đặt đã được lưu thành công!
+        </p>
+      </form>
+    </div>
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+    <script>
+      const form = document.getElementById("notif-settings-form");
+      const successMsg = document.getElementById("success-msg");
 
-  const user = await ensureCurrentUser();
-  if (!user) {
-    alert("⚠️ Phiên đăng nhập không hợp lệ. Hệ thống sẽ chuyển bạn đến trang đăng nhập.");
-    window.location.href = "/view/signin";
-    return;
-  }
+      async function ensureCurrentUser() {
+        try {
+          const res = await fetch("/api/auth/me", { credentials: "include" });
+          if (!res.ok) throw new Error("Unauthorized");
+          const data = await res.json();
+          console.log("✅ Current user:", data.email || data.user?.email);
+          return data.user || data;
+        } catch (err) {
+          console.warn("⚠️ Phiên đăng nhập không hợp lệ:", err);
+          return null;
+        }
+      }
 
-  const data = {
-    emailEnabled: e.target.emailEnabled.checked,
-    emailHighImmediate: e.target.emailHighImmediate.checked,
-    emailDigestEnabled: e.target.emailDigestEnabled.checked,
-    emailDigestEveryHours: parseInt(e.target.emailDigestEveryHours.value)
-  };
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-  try {
-    const res = await fetch("/api/settings/notifications/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(data)
-    });
+        const user = await ensureCurrentUser();
+        if (!user) {
+          alert(
+            "⚠️ Phiên đăng nhập không hợp lệ. Hệ thống sẽ chuyển bạn đến trang đăng nhập."
+          );
+          window.location.href = "/view/signin";
+          return;
+        }
 
-    if (res.ok) {
-      successMsg.classList.remove("hidden");
-      successMsg.textContent = "✅ Cài đặt đã được lưu thành công!";
-      setTimeout(() => successMsg.classList.add("hidden"), 3000);
-    } else {
-      const json = await res.json().catch(() => ({}));
-      alert("⚠️ Lưu thất bại: " + (json.message || "Không thể xác thực."));
-    }
-  } catch (err) {
-    console.error("❌ Lỗi khi gửi yêu cầu:", err);
-    alert("⚠️ Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
-  }
-});
+        const data = {
+          emailEnabled: e.target.emailEnabled.checked,
+          emailHighImmediate: e.target.emailHighImmediate.checked,
+          emailDigestEnabled: e.target.emailDigestEnabled.checked,
+          emailDigestEveryHours: parseInt(e.target.emailDigestEveryHours.value),
+        };
 
-// Khi trang load, tự xác thực bằng cookie
-window.addEventListener("DOMContentLoaded", async () => {
-  const user = await ensureCurrentUser();
-  if (!user) {
-    alert("⚠️ Phiên đăng nhập không hợp lệ. Hệ thống sẽ chuyển bạn đến trang đăng nhập.");
-    window.location.href = "/view/signin";
-  }
-});
-</script>
+        try {
+          const res = await fetch("/api/settings/notifications/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(data),
+          });
 
+          if (res.ok) {
+            successMsg.classList.remove("hidden");
+            successMsg.textContent = "✅ Cài đặt đã được lưu thành công!";
+            setTimeout(() => successMsg.classList.add("hidden"), 3000);
+          } else {
+            const json = await res.json().catch(() => ({}));
+            alert(
+              "⚠️ Lưu thất bại: " + (json.message || "Không thể xác thực.")
+            );
+          }
+        } catch (err) {
+          console.error("❌ Lỗi khi gửi yêu cầu:", err);
+          alert("⚠️ Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+        }
+      });
 
-
-</body>
-</html> 
+      // Khi trang load, tự xác thực bằng cookie
+      window.addEventListener("DOMContentLoaded", async () => {
+        const user = await ensureCurrentUser();
+        if (!user) {
+          alert(
+            "⚠️ Phiên đăng nhập không hợp lệ. Hệ thống sẽ chuyển bạn đến trang đăng nhập."
+          );
+          window.location.href = "/view/signin";
+        }
+      });
+    </script>
+  </body>
+</html>

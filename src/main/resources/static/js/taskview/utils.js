@@ -20,15 +20,27 @@ export function escapeHtml(str) {
 export function showToast(message, type = "info") {
   const toast = document.createElement("div");
   toast.textContent = message;
-  toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white z-[9999]
-      ${
-        type === "error" ? "bg-red-500" : "bg-green-600"
-      } shadow-lg animate-fadeIn`;
+
+  const bgClass =
+    type === "error"
+      ? "bg-red-600"
+      : type === "warning"
+      ? "bg-amber-500"
+      : "bg-emerald-600";
+
+  toast.className = `fixed bottom-4 right-4 px-4 py-2.5 rounded-lg text-white text-sm font-medium shadow-xl z-[9999]
+      pointer-events-none transition-all duration-200 ease-out translate-y-4 opacity-0 ${bgClass}`;
+
   document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove("translate-y-4", "opacity-0");
+  });
+
   setTimeout(() => {
-    toast.classList.add("opacity-0", "transition-opacity", "duration-300");
-    setTimeout(() => toast.remove(), 300);
-  }, 2500);
+    toast.classList.add("opacity-0", "translate-y-4");
+    setTimeout(() => toast.remove(), 250);
+  }, 2300);
 }
 
 // Relative time

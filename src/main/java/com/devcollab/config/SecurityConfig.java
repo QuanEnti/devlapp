@@ -48,7 +48,8 @@ public class SecurityConfig {
         @Order(2)
         public SecurityFilterChain viewSecurity(HttpSecurity http) throws Exception {
                 http.securityMatcher("/view/**", "/", "/oauth2/**", "/login/**", "/join/**",
-                                "/user/**", "/admin/**").csrf(csrf -> csrf.disable())
+                                "/user/**", "/admin/**", "/settings/**")
+                                .csrf(csrf -> csrf.disable())
                                 .sessionManagement(sess -> sess.sessionCreationPolicy(
                                                 SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth.requestMatchers("/",
@@ -61,6 +62,8 @@ public class SecurityConfig {
                                                 "/webjars/**", "/oauth2/**").permitAll()
                                                 .requestMatchers("/admin/**").hasRole("ADMIN")
                                                 .requestMatchers("/user/**").authenticated()
+                                                .requestMatchers("/settings/**").authenticated()
+
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth -> oauth.loginPage("/view/signin")
                                                 .successHandler(oAuth2SuccessHandler)
@@ -93,5 +96,4 @@ public class SecurityConfig {
 
                 return http.build();
         }
-
 }

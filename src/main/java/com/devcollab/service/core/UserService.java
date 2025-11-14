@@ -1,43 +1,46 @@
-    package com.devcollab.service.core;
+package com.devcollab.service.core;
 
-    import com.devcollab.domain.User;
-    import jakarta.transaction.Transactional;
-    import org.springframework.security.core.userdetails.UserDetails;
-    import java.util.List;
-    import java.util.Optional;
+import com.devcollab.domain.User;
+import jakarta.transaction.Transactional;
 
-    public interface UserService {
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import java.util.List;
+import java.util.Optional;
 
-        List<User> getAll();
+public interface UserService {
 
-        Optional<User> getById(Long id);
+    List<User> getAll();
 
-        Optional<User> getByEmail(String email);
+    Optional<User> getById(Long id);
 
-        User create(User user);
+    Optional<User> getByEmail(String email);
 
-        User update(Long id, User patch);
+    User create(User user);
 
-        User updateStatus(Long id, String status);
+    User update(Long id, User patch, Authentication auth);
 
-        void updateLastSeen(Long userId);
+    User updateStatus(Long id, String status);
 
-        void delete(Long id);
+    void updateLastSeen(Long userId);
 
-        @Transactional
-        void inactivate(Long id);
+    void delete(Long id);
 
-        boolean existsByEmail(String email);
+    @Transactional
+    void inactivate(Long id);
 
-        boolean checkPassword(String email, String rawPassword);
+    boolean existsByEmail(String email);
 
-        void markVerified(String email);
+    boolean checkPassword(String email, String rawPassword);
 
-        void updatePassword(String email, String newPassword);
+    void markVerified(String email);
 
+    void updatePassword(String email, String newPassword);
 
-        UserDetails loadUserByUsername(String username);
+    UserDetails loadUserByUsername(String username);
 
-        long countByStatus(String status);
+    long countByStatus(String status);
 
-    }
+    User saveAdminOverride(User user);
+
+}

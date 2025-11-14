@@ -1,6 +1,5 @@
 package com.devcollab.service.core;
 
-import com.devcollab.domain.ProjectMember;
 import com.devcollab.domain.Task;
 import com.devcollab.domain.User;
 import com.devcollab.dto.MemberPerformanceDTO;
@@ -44,6 +43,8 @@ public interface TaskService {
     Task reopenTask(Long taskId);
 
     TaskDTO markComplete(Long taskId, Long userId);
+
+    TaskDTO markIncomplete(Long taskId, Long userId, String email);
 
     TaskDTO moveTask(Long taskId, MoveTaskRequest req);
 

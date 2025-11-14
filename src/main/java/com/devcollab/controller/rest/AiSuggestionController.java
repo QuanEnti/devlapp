@@ -140,6 +140,7 @@ public class AiSuggestionController {
             return Map.of("intent", "error");
         }
     }
+
     @PostMapping("/suggest-business-rule")
     public Map<String, String> suggestBusinessRule(@RequestBody Map<String, String> payload) {
         String input = payload.get("input");
@@ -158,14 +159,14 @@ public class AiSuggestionController {
             RestTemplate restTemplate = new RestTemplate();
 
             String prompt = """
-                Viết một đoạn **Business Rule (quy tắc nghiệp vụ)** rõ ràng, súc tích cho dự án:
-                - Tên dự án: %s
-                - Mô tả: %s
-                - Gợi ý thêm dựa vào: %s
+                    Viết một đoạn **Business Rule (quy tắc nghiệp vụ)** rõ ràng, súc tích cho dự án:
+                    - Tên dự án: %s
+                    - Mô tả: %s
+                    - Gợi ý thêm dựa vào: %s
 
-                Trả về bằng tiếng Việt, dễ hiểu, có thể liệt kê theo gạch đầu dòng.
-                Không dùng markdown hoặc ký tự **.
-                """.formatted(projectName, description, input);
+                    Trả về bằng tiếng Việt, dễ hiểu, có thể liệt kê theo gạch đầu dòng.
+                    Không dùng markdown hoặc ký tự **.
+                    """.formatted(projectName, description, input);
 
             Map<String, Object> textPart = Map.of("text", prompt);
             Map<String, Object> content = Map.of("parts", List.of(textPart));
@@ -205,6 +206,5 @@ public class AiSuggestionController {
             return Map.of("suggestion", "⚠️ Lỗi khi gọi AI: " + e.getMessage());
         }
     }
-
 
 }

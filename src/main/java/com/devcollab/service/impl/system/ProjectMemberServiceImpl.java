@@ -45,9 +45,9 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     @Autowired
     private ApplicationContext context;
     @Autowired
-     private PendingInviteRepository pendingInviteRepo;
+    private PendingInviteRepository pendingInviteRepo;
     @Autowired
-     private MailService mailService;
+    private MailService mailService;
 
     private NotificationService getNotificationService() {
         return context.getBean(NotificationService.class);
@@ -59,8 +59,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     public List<MemberDTO> getMembersByProject(Long projectId, int limit) {
         if (projectId == null)
             return List.of();
-        return projectMemberRepo.findMembersByProject(projectId)
-                .stream().limit(limit).toList();
+        return projectMemberRepo.findMembersByProject(projectId).stream().limit(limit).toList();
     }
 
     @Transactional(readOnly = true)
@@ -70,9 +69,9 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
             return List.of();
         keyword = (keyword == null) ? "" : keyword.trim().toLowerCase();
 
-        List<MemberDTO> members = keyword.isEmpty()
-                ? projectMemberRepo.findMembersByProject(projectId)
-                : projectMemberRepo.searchMembersByProject(projectId, keyword);
+        List<MemberDTO> members =
+                keyword.isEmpty() ? projectMemberRepo.findMembersByProject(projectId)
+                        : projectMemberRepo.searchMembersByProject(projectId, keyword);
 
         return members.stream().limit(limit).toList();
     }
@@ -128,56 +127,60 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
         // ✅ Kiểm tra quyền
         boolean isOwner = project.getCreatedBy().getEmail().equalsIgnoreCase(requesterEmail);
-        boolean isManager = projectMemberRepo.hasManagerPermission(projectId, requesterEmail, List.of("PM", "ADMIN"));
+        boolean isManager = projectMemberRepo.hasManagerPermission(projectId, requesterEmail,
+                List.of("PM", "ADMIN"));
         if (!isOwner && !isManager) {
             throw new IllegalStateException("Bạn không có quyền xóa thành viên trong dự án này!");
         }
 
-        boolean exists = projectMemberRepo.existsByProject_ProjectIdAndUser_UserId(projectId, userId);
+        boolean exists =
+                projectMemberRepo.existsByProject_ProjectIdAndUser_UserId(projectId, userId);
         if (!exists)
             throw new NotFoundException("Thành viên không tồn tại trong dự án!");
 
         // ✅ Thực hiện xóa
         projectMemberRepo.deleteByProject_ProjectIdAndUser_UserId(projectId, userId);
-        log.info("🗑️ {} đã xóa {} khỏi project '{}' (ID={})",
-                requesterEmail, target.getEmail(), project.getName(), projectId);
+        log.info("🗑️ {} đã xóa {} khỏi project '{}' (ID={})", requesterEmail, target.getEmail(),
+                project.getName(), projectId);
 
-        
+
         return true;
     }
 
     @Transactional
     @Override
     public boolean addMemberToProject(Long projectId, String pmEmail, String email, String role) {
-        Project project = projectRepo.findById(projectId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án có ID: " + projectId));
+        Project project = projectRepo.findById(projectId).orElseThrow(
+                () -> new NotFoundException("Không tìm thấy dự án có ID: " + projectId));
 
         User pm = userRepo.findByEmail(pmEmail)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người mời!"));
 
-        if (!project.getCreatedBy().getEmail().equalsIgnoreCase(pmEmail)) {
-            throw new IllegalStateException("Chỉ người tạo dự án mới có quyền mời thành viên!");
+        // ✅ Kiểm tra quyền PM/ADMIN (không chỉ creator)
+        boolean isPm = projectMemberRepo.existsByProject_ProjectIdAndUser_EmailAndRoleInProjectIn(
+                projectId, pmEmail, List.of("PM", "ADMIN"));
+        if (!isPm) {
+            throw new IllegalStateException("Bạn không có quyền mời thành viên vào dự án này!");
         }
         var userOpt = userRepo.findByEmail(email);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
 
-            if (projectMemberRepo.existsByProject_ProjectIdAndUser_UserId(projectId, user.getUserId())) {
+            if (projectMemberRepo.existsByProject_ProjectIdAndUser_UserId(projectId,
+                    user.getUserId())) {
                 throw new IllegalStateException("Người dùng này đã có trong dự án!");
             }
 
             projectMemberRepo.addMember(projectId, user.getUserId(), role.toUpperCase());
-            log.info("✅ {} mời {} vào project '{}' với vai trò {}", pmEmail, email, project.getName(), role);
+            log.info("✅ {} mời {} vào project '{}' với vai trò {}", pmEmail, email,
+                    project.getName(), role);
 
 
             notificationService.notifyMemberAdded(project, user);
-            mailService.sendNotificationMail(
-                    user.getEmail(),
+            mailService.sendNotificationMail(user.getEmail(),
                     "Lời mời tham gia dự án " + project.getName(),
                     pm.getName() + " đã mời bạn tham gia dự án này trên DevCollab.",
-                    "/project/" + projectId,
-                    pm.getName()
-            );
+                    "/project/" + projectId, pm.getName());
             return true;
         }
 
@@ -202,7 +205,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         return true;
     }
 
-    
+
 
     @Transactional
     @Override
@@ -211,14 +214,14 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         Project project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("❌ Không tìm thấy dự án!"));
 
-        User target = userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("❌ Không tìm thấy người dùng cần đổi vai trò!"));
+        User target = userRepo.findById(userId).orElseThrow(
+                () -> new NotFoundException("❌ Không tìm thấy người dùng cần đổi vai trò!"));
 
         // 🧍‍♂️ Lấy actor hiện tại (ưu tiên SecurityContext)
         User actor = getCurrentActor();
         if (actor == null && actorEmail != null) {
-            actor = userRepo.findByEmail(actorEmail)
-                    .orElseThrow(() -> new NotFoundException("❌ Không tìm thấy người thực hiện hành động!"));
+            actor = userRepo.findByEmail(actorEmail).orElseThrow(
+                    () -> new NotFoundException("❌ Không tìm thấy người thực hiện hành động!"));
         }
         if (actor == null) {
             throw new IllegalStateException("🚫 Không xác định được người thực hiện hành động!");
@@ -231,21 +234,19 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
         // 🔐 Kiểm tra quyền: chỉ Owner hoặc PM/ADMIN được đổi vai trò
         boolean isOwner = project.getCreatedBy().getEmail().equalsIgnoreCase(actor.getEmail());
-        boolean isManager = projectMemberRepo.hasManagerPermission(projectId, actor.getEmail(), List.of("PM", "ADMIN"));
+        boolean isManager = projectMemberRepo.hasManagerPermission(projectId, actor.getEmail(),
+                List.of("PM", "ADMIN"));
         if (!isOwner && !isManager) {
             throw new IllegalStateException("⚠️ Bạn không có quyền đổi vai trò trong dự án này!");
         }
 
         // 📝 Cập nhật role
         projectMemberRepo.updateMemberRole(projectId, userId, newRole.toUpperCase());
-        log.info("🔄 {} đổi vai trò của {} trong project '{}' thành {}",
-                actor.getEmail(), target.getEmail(), project.getName(), newRole);
+        log.info("🔄 {} đổi vai trò của {} trong project '{}' thành {}", actor.getEmail(),
+                target.getEmail(), project.getName(), newRole);
 
         // 🪶 Ghi activity (ai đổi, đổi ai, đổi thành gì)
-        activityService.log(
-                "PROJECT",
-                projectId,
-                "UPDATE_MEMBER_ROLE",
+        activityService.log("PROJECT", projectId, "UPDATE_MEMBER_ROLE",
                 String.format("{\"actor\":\"%s\",\"target\":\"%s\",\"newRole\":\"%s\"}",
                         actor.getName(), target.getName(), newRole),
                 actor);
@@ -271,9 +272,11 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
             String email = null;
             if (auth.getPrincipal() instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidc)
                 email = oidc.getEmail();
-            else if (auth.getPrincipal() instanceof org.springframework.security.oauth2.core.user.OAuth2User ou)
+            else if (auth
+                    .getPrincipal() instanceof org.springframework.security.oauth2.core.user.OAuth2User ou)
                 email = String.valueOf(ou.getAttributes().get("email"));
-            else if (auth.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails ud)
+            else if (auth
+                    .getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails ud)
                 email = ud.getUsername();
             else if (auth.getPrincipal() instanceof String s)
                 email = s;
@@ -288,8 +291,8 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     @Transactional
     @Override
     public boolean removeUserFromAllProjectsOfPm(String pmEmail, Long userId) {
-        User pm = userRepo.findByEmail(pmEmail)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng đang đăng nhập!"));
+        User pm = userRepo.findByEmail(pmEmail).orElseThrow(
+                () -> new NotFoundException("Không tìm thấy người dùng đang đăng nhập!"));
 
         if (pm.getUserId().equals(userId)) {
             throw new IllegalStateException("Không thể xóa chính bạn khỏi các dự án bạn quản lý!");
@@ -313,8 +316,8 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         // 🔍 Lấy thông tin project & user
         Project project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("❌ Không tìm thấy dự án."));
-        User target = userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("❌ Không tìm thấy người dùng cần đổi vai trò."));
+        User target = userRepo.findById(userId).orElseThrow(
+                () -> new NotFoundException("❌ Không tìm thấy người dùng cần đổi vai trò."));
 
         // 🚫 Không cho đổi role của người tạo dự án
         if (target.getUserId().equals(project.getCreatedBy().getUserId())) {
@@ -329,7 +332,8 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         }
 
         // 🧩 Cập nhật role
-        List<ProjectMember> members = projectMemberRepo.findByProject_ProjectIdAndUser_UserId(projectId, userId);
+        List<ProjectMember> members =
+                projectMemberRepo.findByProject_ProjectIdAndUser_UserId(projectId, userId);
         if (members.isEmpty())
             throw new NotFoundException("❌ Thành viên không tồn tại trong dự án!");
 
@@ -337,8 +341,8 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         m.setRoleInProject(role.toUpperCase());
         projectMemberRepo.save(m);
 
-        log.info("🔄 {} đổi vai trò của {} trong dự án '{}' thành {}",
-                actor.getEmail(), target.getEmail(), project.getName(), role);
+        log.info("🔄 {} đổi vai trò của {} trong dự án '{}' thành {}", actor.getEmail(),
+                target.getEmail(), project.getName(), role);
 
         // 🔔 Gửi thông báo realtime
         try {

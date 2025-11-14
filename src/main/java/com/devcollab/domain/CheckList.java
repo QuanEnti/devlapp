@@ -15,9 +15,7 @@ public class CheckList {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
-    @JsonIgnore
     private Task task;
-
 
     @Column(nullable = false, length = 500)
     private String item;
@@ -30,9 +28,7 @@ public class CheckList {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
-    @JsonIgnoreProperties({"tasks", "projects", "followers"})
     private User createdBy;
-
 
     public CheckList() {}
 

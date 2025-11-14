@@ -16,6 +16,7 @@ import com.devcollab.service.system.AuthService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +32,8 @@ public class TaskRestController {
     private final TaskFollowerService taskFollowerService;
     private final ProjectService projectService;
 
-    // ============================ GET TASKS BY PROJECT ============================
+    // ============================ GET TASKS BY PROJECT
+    // ============================
     @GetMapping("/project/{projectId}")
     public ResponseEntity<List<TaskDTO>> getTasksByProject(@PathVariable Long projectId) {
         return ResponseEntity.ok(taskService.getTasksByProject(projectId));
@@ -57,7 +59,8 @@ public class TaskRestController {
         return ResponseEntity.status(201).body(TaskDTO.fromEntity(saved));
     }
 
-    // ============================ DELETE TASK (PM + CREATOR) ============================
+    // ============================ DELETE TASK (PM + CREATOR)
+    // ============================
     @DeleteMapping("/{taskId}")
     public ResponseEntity<?> deleteTask(@PathVariable Long taskId, Authentication auth) {
 
@@ -147,7 +150,7 @@ public class TaskRestController {
         actor.setEmail(current.getEmail());
 
         try {
-            boolean ok = taskService.archiveTask(taskId, actor);
+            taskService.archiveTask(taskId, actor);
             return ResponseEntity.ok(Map.of("message", "🗃️ Task archived"));
         } catch (Exception e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
@@ -166,7 +169,7 @@ public class TaskRestController {
         actor.setEmail(current.getEmail());
 
         try {
-            boolean ok = taskService.restoreTask(taskId, actor);
+            taskService.restoreTask(taskId, actor);
             return ResponseEntity.ok(Map.of("message", "♻️ Task restored"));
         } catch (Exception e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
@@ -185,6 +188,48 @@ public class TaskRestController {
             return ResponseEntity.status(403).body(Map.of("message", e.getMessage()));
         } catch (NotFoundException e) {
             return ResponseEntity.status(404).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{taskId}/incomplete")
+    public ResponseEntity<?> markIncomplete(
+            @PathVariable Long taskId,
+            Authentication auth) {
+
+        UserDTO current = authService.getCurrentUser(auth);
+        if (current == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "status", "error",
+                    "message", "Bạn chưa đăng nhập"));
+        }
+
+        try {
+            TaskDTO result = taskService.markIncomplete(
+                    taskId,
+                    current.getUserId(),
+                    current.getEmail());
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "task", result,
+                    "message", "Task đã được chuyển về trạng thái OPEN"));
+
+        } catch (AccessDeniedException ex) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "status", "forbidden",
+                    "message", ex.getMessage()));
+
+        } catch (NotFoundException ex) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "status", "not_found",
+                    "message", ex.getMessage()));
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", "error",
+                    "message", "Lỗi hệ thống",
+                    "detail", ex.getMessage()));
         }
     }
 
@@ -214,8 +259,7 @@ public class TaskRestController {
             return ResponseEntity.status(401).build();
         }
 
-        List<ProjectFilterDTO> projects =
-                projectService.getActiveProjectsForUser(current.getUserId());
+        List<ProjectFilterDTO> projects = projectService.getActiveProjectsForUser(current.getUserId());
 
         return ResponseEntity.ok(projects);
     }

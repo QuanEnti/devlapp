@@ -274,7 +274,10 @@ function renderAttachments(items) {
   // Render Links section
   if (links.length > 0) {
     html += `<div class="mb-4">
-      <h4 class="text-xs font-semibold text-gray-900 mb-2">Links</h4>
+      <h4 class="flex items-center gap-2 text-xs font-semibold text-gray-900 mb-2">
+        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500">🔗</span>
+        <span>Links</span>
+      </h4>
       <div class="space-y-2">`;
 
     links.forEach((a) => {
@@ -349,7 +352,10 @@ function renderAttachments(items) {
   // Render Files section
   if (files.length > 0) {
     html += `<div class="mt-5">
-      <h4 class="text-xs font-semibold text-gray-900 mb-2">Files</h4>
+      <h4 class="flex items-center gap-2 text-xs font-semibold text-gray-900 mb-2">
+        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500">📁</span>
+        <span>Files</span>
+      </h4>
       <div class="space-y-2">`;
     files.forEach((a) => {
       const canDelete = canCurrentUserDelete(a);
@@ -614,7 +620,6 @@ async function deleteAttachment(id) {
     );
     if (!res.ok) throw new Error("Delete failed");
     await loadAttachments(window.CURRENT_TASK_ID);
-    showToast("Attachment deleted", "success");
     return true;
   } catch (err) {
     console.error(" deleteAttachment error:", err);
@@ -801,23 +806,61 @@ async function loadRecentLinks() {
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
     if (!res.ok) throw new Error("Failed to fetch recent links");
-    const links = await res.json();
+    const items = await res.json();
 
-    if (!Array.isArray(links) || links.length === 0) {
+    if (!Array.isArray(items) || items.length === 0) {
+      container.innerHTML = `<p class="text-gray-400 italic text-sm">No recent links</p>`;
+      return;
+    }
+
+    // Filter only links (not folders or files)
+    const links = items.filter(
+      (item) =>
+        item.mimeType === "link/url" || /^https?:\/\//.test(item.fileUrl || "")
+    );
+
+    if (links.length === 0) {
       container.innerHTML = `<p class="text-gray-400 italic text-sm">No recent links</p>`;
       return;
     }
 
     container.innerHTML = "";
     links.slice(0, 5).forEach((link) => {
-      const p = document.createElement("p");
-      p.textContent = `📄 ${link.fileName || link.fileUrl}`;
-      p.className = "hover:underline cursor-pointer";
-      p.addEventListener("click", () => {
-        linkInput.value = link.fileUrl;
+      const fileUrl =
+        link.fileUrl?.startsWith("/") && !link.fileUrl.startsWith("/http")
+          ? `${window.location.origin}${link.fileUrl}`
+          : link.fileUrl;
+
+      // Get website icon
+      const websiteIcon = getWebsiteIcon(fileUrl);
+      const displayName = link.fileName || fileUrl || "Untitled Link";
+
+      const itemDiv = document.createElement("div");
+      itemDiv.className =
+        "flex items-center gap-2 border border-gray-200 rounded-md p-2 bg-white hover:bg-gray-50 transition cursor-pointer";
+      itemDiv.addEventListener("click", () => {
+        linkInput.value = fileUrl;
         displayTextInput.value = link.fileName || "";
       });
-      container.appendChild(p);
+
+      // Icon - simple icon without wrapper
+      let iconHtml = "";
+      if (websiteIcon) {
+        iconHtml = websiteIcon.content;
+      } else {
+        iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>`;
+      }
+
+      // Text content - blue link style
+      itemDiv.innerHTML = `
+        ${iconHtml}
+        <p class="text-sm font-normal text-blue-600 hover:underline truncate flex-1 min-w-0">
+          ${escapeHtml(displayName)}
+        </p>
+      `;
+      container.appendChild(itemDiv);
     });
   } catch (err) {
     container.innerHTML = `<p class="text-red-500 text-sm">Failed to load recent links</p>`;

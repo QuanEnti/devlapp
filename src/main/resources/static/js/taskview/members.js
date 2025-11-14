@@ -5,6 +5,7 @@ import {
   getInitials,
   escapeHtml,
 } from "./utils.js";
+import { updateCardMembers } from "./main.js";
 
 let debounceTimer;
 
@@ -358,7 +359,6 @@ export async function assignMember(userId, rowElement) {
       method: "PUT",
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
-<<<<<<< HEAD
 
     if (res.status === 403) {
       const message = await res.text();
@@ -367,18 +367,6 @@ export async function assignMember(userId, rowElement) {
         "You do not have permission to assign members.";
       showToast(text, "error");
       return;
-=======
-    if (!res.ok) throw new Error("Assign failed");
-    await loadMembers(document.getElementById("search-member-input").value); // Tải lại danh sách
-  } catch (err) {
-    console.error(" assignMember error:", err);
-    showToast(" Failed to assign member", "error");
-  } finally {
-    if (isButton) {
-      button.disabled = false;
-    } else {
-      button?.classList.remove("is-loading");
->>>>>>> origin/main
     }
 
     if (!res.ok) {
@@ -396,7 +384,21 @@ export async function assignMember(userId, rowElement) {
     moveMemberRow(row, "card", meta);
     addMemberAvatarChip(meta);
     updateFollowerIdsArray(meta.userId, true);
-    showToast("Member added to this card", "success");
+
+    // Cập nhật card bên ngoài
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      });
+      if (res.ok) {
+        const updatedTask = await res.json();
+        if (updatedTask && updatedTask.assignees) {
+          updateCardMembers(taskId, updatedTask.assignees);
+        }
+      }
+    } catch (err) {
+      console.error("Error reloading task for card update:", err);
+    }
   } catch (err) {
     console.error("assignMember error:", err);
     showToast("Failed to assign member", "error");
@@ -418,7 +420,6 @@ export async function unassignMember(userId, button) {
       method: "PUT",
       headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
-<<<<<<< HEAD
 
     if (res.status === 403) {
       const message = await res.text();
@@ -443,17 +444,22 @@ export async function unassignMember(userId, button) {
     moveMemberRow(row, "board", meta);
     removeMemberAvatarChip(meta.userId);
     updateFollowerIdsArray(meta.userId, false);
-    showToast("Member removed from this card", "success");
+
+    // Cập nhật card bên ngoài
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      });
+      if (res.ok) {
+        const updatedTask = await res.json();
+        updateCardMembers(taskId, updatedTask.assignees || []);
+      }
+    } catch (err) {
+      console.error("Error reloading task for card update:", err);
+    }
   } catch (err) {
     console.error("unassignMember error:", err);
     showToast("Failed to unassign member", "error");
-=======
-    if (!res.ok) throw new Error("Unassign failed");
-    await loadMembers(document.getElementById("search-member-input").value); // Tải lại danh sách
-  } catch (err) {
-    console.error(" unassignMember error:", err);
-    showToast(" Failed to unassign member", "error");
->>>>>>> origin/main
   } finally {
     button.disabled = false;
   }

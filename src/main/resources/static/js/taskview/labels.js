@@ -2,6 +2,7 @@
 // 🏷️ LABELS MODULE – Manage Project Labels for Tasks
 // ============================================================
 import { showToast, safeStop, escapeHtml as escapeHtmlUtil } from "./utils.js"; // ✅ thêm safeStop
+import { updateCardLabels } from "./main.js";
 
 const DEFAULT_COLOR = "#94A3B8";
 const COLOR_PALETTE = [
@@ -585,6 +586,22 @@ export async function assignLabel(taskId, labelId) {
     }
     const meta = getLabelMetadata(labelId);
     addInlineLabelChip(meta);
+
+    // Cập nhật card bên ngoài
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        const updatedTask = await res.json();
+        if (updatedTask && updatedTask.labels) {
+          updateCardLabels(taskId, updatedTask.labels);
+        }
+      }
+    } catch (err) {
+      console.error("Error reloading task for card update:", err);
+    }
+
     return true;
   } catch (err) {
     console.error(" assignLabel error:", err);
@@ -608,6 +625,20 @@ export async function unassignLabel(taskId, labelId) {
     });
     if (res.ok || res.status === 204) {
       removeInlineLabelChip(labelId);
+
+      // Cập nhật card bên ngoài
+      try {
+        const reloadRes = await fetch(`/api/tasks/${taskId}`, {
+          headers: getAuthHeaders(),
+        });
+        if (reloadRes.ok) {
+          const updatedTask = await reloadRes.json();
+          updateCardLabels(taskId, updatedTask.labels || []);
+        }
+      } catch (err) {
+        console.error("Error reloading task for card update:", err);
+      }
+
       return true;
     }
     if (res.status === 403) {

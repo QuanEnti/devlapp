@@ -50,7 +50,7 @@ public interface ProjectService {
 
     Project disableShareLink(Long projectId, String pmEmail);
 
-    ProjectMember joinProjectByLink(String inviteLink, Long userId);
+    Map<String, Object> joinProjectByLink(String inviteLink, Long userId);
 
     List<Project> getProjectsByUsername(String username);
 
@@ -67,8 +67,12 @@ public interface ProjectService {
     Map<String, Object> getProgress(Long projectId);
 
     Map<String, Object> getMetrics(Long projectId);
+
     Page<ProjectMember> getProjectsByUserSorted(User user, String role, Pageable pageable);
+
     Page<ProjectSummaryDTO> getProjectsByUserPaginated(String email, int page, int size);
+
     long countAll();
+
     long countByStatus(String status);
 }

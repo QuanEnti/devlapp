@@ -5,6 +5,8 @@ import {
   formatTime,
   formatRelativeTime,
   renderAvatar,
+  getInitials,
+  getColorForId,
   safeStop,
 } from "./utils.js";
 
@@ -143,8 +145,47 @@ async function renderDashboard(projectId) {
   }
 }
 
+const TASK_CHECKBOX_BASE_CLASS =
+  "task-checkbox-btn flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200";
+const TASK_CHECKBOX_COMPLETED_CLASS =
+  "bg-green-600 border-green-600 hover:bg-green-700 opacity-100 pointer-events-auto";
+const TASK_CHECKBOX_INCOMPLETE_CLASS =
+  "bg-transparent border-transparent opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-hover:border-gray-300 group-hover:bg-white";
+
+function getColumnElementById(columnId) {
+  if (!columnId && columnId !== 0) return null;
+  return document.getElementById(`col-${columnId}`);
+}
+
 function renderCard(t) {
   const taskId = t.id || t.taskId;
+
+  // Map từ assigneeName/assigneeAvatar/assigneeId sang assignees array nếu chưa có
+  if (!t.assignees && t.assigneeName && t.assigneeName !== "Unassigned") {
+    t.assignees = [
+      {
+        name: t.assigneeName,
+        assigneeName: t.assigneeName,
+        avatarUrl: t.assigneeAvatar || "",
+        userId: t.assigneeId,
+        id: t.assigneeId,
+        color:
+          t.assigneeColor ||
+          getColorForId(String(t.assigneeId || t.assigneeName)),
+      },
+    ];
+  }
+
+  // Debug: Kiểm tra dữ liệu assignees
+  console.log(`Task ${taskId} data:`, {
+    assignees: t.assignees,
+    assigneeName: t.assigneeName,
+    assigneeAvatar: t.assigneeAvatar,
+    assigneeId: t.assigneeId,
+    hasAssignees:
+      t.assignees && Array.isArray(t.assignees) && t.assignees.length > 0,
+    hasAssigneeName: t.assigneeName && t.assigneeName !== "Unassigned",
+  });
 
   // 🔹 Render labels (colored tags với tên) - như ảnh 2
   const labelHtml =
@@ -165,7 +206,9 @@ function renderCard(t) {
 
   // 🔹 Metadata icons (due date, comments, attachments, subtasks) - như ảnh 2
   const hasDeadline = t.deadline && t.deadline.trim() !== "";
-  const hasAssignee = t.assigneeName && t.assigneeName !== "Unassigned";
+  const hasAssignee =
+    (t.assignees && Array.isArray(t.assignees) && t.assignees.length > 0) ||
+    (t.assigneeName && t.assigneeName !== "Unassigned");
   const commentCount = t.commentCount || 0;
   const attachmentCount = t.attachmentCount || 0;
   const subtaskCount = t.subtaskCount || 0;
@@ -268,35 +311,79 @@ function renderCard(t) {
       
       ${
         hasAssignee
-          ? `
+          ? (() => {
+              console.log(
+                `Rendering members for task ${taskId}, hasAssignee:`,
+                hasAssignee
+              );
+              const hasAssigneesArray =
+                t.assignees &&
+                Array.isArray(t.assignees) &&
+                t.assignees.length > 0;
+              console.log(
+                `hasAssigneesArray:`,
+                hasAssigneesArray,
+                `assignees:`,
+                t.assignees
+              );
+
+              return `
         <div class="flex items-center ml-auto gap-1">
           ${
-            t.assignees && Array.isArray(t.assignees) && t.assignees.length > 0
+            hasAssigneesArray
               ? t.assignees
                   .slice(0, 2)
-                  .map(
-                    (assignee) => `
-                <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm"
-                     style="background-color: ${assignee.color || "#94a3b8"}"
-                     title="${escapeHtml(
-                       assignee.name || assignee.assigneeName || ""
-                     )}">
-                  ${(assignee.name || assignee.assigneeName || "?")
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
-              `
-                  )
+                  .map((assignee) => {
+                    const assigneeData = {
+                      name: assignee.name || assignee.assigneeName || "",
+                      avatarUrl: assignee.avatarUrl || "",
+                      userId: assignee.userId || assignee.id,
+                      color:
+                        assignee.color ||
+                        getColorForId(
+                          String(
+                            assignee.userId || assignee.id || assignee.name
+                          )
+                        ),
+                    };
+                    console.log(`Rendering assignee:`, assigneeData);
+                    // Hiển thị avatar như Trello - ưu tiên avatar, fallback về chữ cái đầu
+                    if (assigneeData.avatarUrl) {
+                      return `
+                          <div class="relative w-6 h-6">
+                            <img src="${assigneeData.avatarUrl}" 
+                                 alt="${escapeHtml(assigneeData.name)}"
+                                 class="w-6 h-6 rounded-full border border-white shadow-sm object-cover"
+                                 title="${escapeHtml(assigneeData.name)}"
+                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm absolute inset-0 hidden"
+                                 style="background-color: ${assigneeData.color}"
+                                 title="${escapeHtml(assigneeData.name)}">
+                              ${getInitials(assigneeData.name)}
+                            </div>
+                          </div>
+                        `;
+                    } else {
+                      return `
+                          <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm"
+                               style="background-color: ${assigneeData.color}"
+                               title="${escapeHtml(assigneeData.name)}">
+                            ${getInitials(assigneeData.name)}
+                          </div>
+                        `;
+                    }
+                  })
                   .join("")
               : `
           <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm bg-teal-500"
                title="${escapeHtml(t.assigneeName || "")}">
-            ${(t.assigneeName || "?").charAt(0).toUpperCase()}
+            ${getInitials(t.assigneeName || "?")}
           </div>
         `
           }
         </div>
-      `
+      `;
+            })()
           : ""
       }
     </div>
@@ -314,13 +401,41 @@ function renderCard(t) {
   `
       : "";
 
+  // 🔹 Checkbox tròn - như ảnh mẫu
+  const isCompleted =
+    t.status === "DONE" || t.completed === true || t.completed === "true";
+  const checkboxClasses = `${TASK_CHECKBOX_BASE_CLASS} ${
+    isCompleted ? TASK_CHECKBOX_COMPLETED_CLASS : TASK_CHECKBOX_INCOMPLETE_CLASS
+  }`;
+
+  const checkboxHtml = `
+    <div class="flex items-center gap-2 mb-1">
+      <button 
+        class="${checkboxClasses}"
+        data-task-id="${taskId}"
+        data-completed="${isCompleted}"
+        onclick="event.stopPropagation(); handleTaskCheckboxClick(this, '${taskId}');"
+        title="${isCompleted ? "Đánh dấu chưa hoàn tất" : "Đánh dấu hoàn tất"}"
+      >
+        ${
+          isCompleted
+            ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-[0.65rem] w-[0.65rem] text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>`
+            : ""
+        }
+      </button>
+      <p class="task-title-text font-medium text-sm leading-5 mb-0 flex-1 ${
+        isCompleted ? "text-gray-500" : "text-gray-800"
+      }">${escapeHtml(t.title)}</p>
+    </div>
+  `;
+
   return `
-    <div data-open-task="${taskId}"
-         class="kanban-card bg-white border-0 rounded-lg p-2.5 shadow-sm hover:shadow-md hover:bg-gray-50/50 transition-all duration-150 cursor-pointer">
+    <div data-open-task="${taskId}" data-column-id="${t.columnId || ""}"
+         class="kanban-card group bg-white border-0 rounded-lg p-2.5 shadow-sm hover:shadow-md hover:bg-gray-50/50 transition-all duration-150 cursor-pointer">
       ${labelHtml}
-      <p class="font-medium text-gray-800 text-sm leading-5 mb-0">${escapeHtml(
-        t.title
-      )}</p>
+      ${checkboxHtml}
       ${
         hasDeadline ||
         commentCount > 0 ||
@@ -333,6 +448,59 @@ function renderCard(t) {
       ${commentsButtonHtml}
     </div>
   `;
+}
+
+function handleCardDragStart(e) {
+  const card = e.currentTarget;
+  e.dataTransfer.effectAllowed = "move";
+  const taskId = card.getAttribute("data-open-task");
+  if (taskId) {
+    e.dataTransfer.setData("taskId", taskId);
+  }
+  card.classList.add("opacity-50");
+
+  const columnEl = card.closest("[id^='col-']");
+  const columnId = columnEl ? columnEl.id.replace("col-", "") : "";
+  if (columnId) {
+    card.dataset.columnId = columnId;
+    card.dataset.originalColumnId = columnId;
+    card.setAttribute("data-column-id", columnId);
+  }
+  const nextSibling = card.nextElementSibling;
+  card.dataset.originalNextTaskId = nextSibling
+    ? nextSibling.getAttribute("data-open-task") || ""
+    : "";
+}
+
+function handleCardDragEnd(e) {
+  const card = e.currentTarget;
+  card.classList.remove("opacity-50");
+  delete card.dataset.originalColumnId;
+  delete card.dataset.originalNextTaskId;
+}
+
+function attachCardDragHandlers(card) {
+  if (!card) return;
+  card.setAttribute("draggable", "true");
+  card.addEventListener("dragstart", handleCardDragStart);
+  card.addEventListener("dragend", handleCardDragEnd);
+}
+
+function insertTaskCardIntoColumn(columnId, task) {
+  const columnEl = document.getElementById(`col-${columnId}`);
+  if (!columnEl) return null;
+  const tempWrapper = document.createElement("div");
+  tempWrapper.innerHTML = renderCard({
+    ...task,
+    columnId,
+  }).trim();
+  const newCard = tempWrapper.firstElementChild;
+  if (!newCard) return null;
+  columnEl.appendChild(newCard);
+  newCard.dataset.columnId = columnId;
+  newCard.setAttribute("data-column-id", columnId);
+  attachCardDragHandlers(newCard);
+  return newCard;
 }
 
 // ================== LIST MENU (⋯) ==================
@@ -435,10 +603,16 @@ async function addCard(columnId) {
     });
 
     if (!res.ok) throw new Error("Không thể tạo task");
-    await renderDashboard(PROJECT_ID);
+    const createdTask = await res.json().catch(() => null);
+    if (createdTask) {
+      insertTaskCardIntoColumn(columnId, createdTask);
+      textarea.value = "";
+    } else {
+      await renderDashboard(PROJECT_ID);
+    }
   } catch (err) {
     console.error("❌ Lỗi tạo task:", err);
-    alert("Không thể tạo task!");
+    showToast("Không thể tạo task!", "error");
   } finally {
     document.getElementById(tempId)?.remove();
     textarea.disabled = false;
@@ -890,18 +1064,15 @@ async function saveDescription() {
       body: JSON.stringify({ description_md: newDescription }),
     });
 
-    // Nếu server trả lỗi 500 nhưng là lỗi lazy load → vẫn coi là thành công
     if (!res.ok) {
       const msg = await res.text();
-      console.warn("⚠️ Server response:", res.status, msg);
+      console.warn("Server response:", res.status, msg);
 
       if (
         msg.includes("could not initialize proxy") ||
         msg.includes("no Session")
       ) {
-        console.log(
-          "✅ Saved successfully (proxy serialization error ignored)."
-        );
+        console.log(" Saved successfully (proxy serialization error ignored).");
         // Store updated description
         currentTaskDescription = newDescription;
         // Update both content elements
@@ -912,7 +1083,8 @@ async function saveDescription() {
         return;
       }
 
-      throw new Error(msg);
+      showToast("Không thể lưu mô tả (vui lòng thử lại).", "error");
+      return;
     }
 
     // ✅ Trường hợp response OK
@@ -927,7 +1099,7 @@ async function saveDescription() {
     hideDescriptionEditor();
   } catch (err) {
     console.error("❌ Save description error:", err);
-    alert("Không thể lưu mô tả (vui lòng thử lại).");
+    showToast("Không thể lưu mô tả (vui lòng thử lại).", "error");
   }
 }
 
@@ -992,17 +1164,7 @@ function enableDragDrop() {
   const columns = document.querySelectorAll("[id^='col-']");
 
   // 🔹 set draggable + pack task id
-  cards.forEach((card) => {
-    card.setAttribute("draggable", "true");
-    card.addEventListener("dragstart", (e) => {
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("taskId", card.getAttribute("data-open-task"));
-      card.classList.add("opacity-50");
-    });
-    card.addEventListener("dragend", () => {
-      card.classList.remove("opacity-50");
-    });
-  });
+  cards.forEach((card) => attachCardDragHandlers(card));
 
   // 🔹 hỗ trợ tính vị trí chèn theo chuột
   const getDragAfterElement = (container, y) => {
@@ -1050,13 +1212,17 @@ function enableDragDrop() {
         return;
       }
 
-      // ➕ tính newIndex sau khi đã chèn tạm thời
-      const ordered = [...col.querySelectorAll("[data-open-task]")];
-      const newIndex = ordered.indexOf(dragged);
+      const originalColumnId =
+        dragged.dataset.originalColumnId || dragged.dataset.columnId || "";
+      const originalColumnEl = getColumnElementById(originalColumnId);
+      const originalNextTaskId = dragged.dataset.originalNextTaskId;
 
-      // 🔒 optimistic UI + rollback khi fail
-      const prevParent = dragged.parentElement;
-      const prevNext = dragged.nextElementSibling;
+      let ordered = [...col.querySelectorAll("[data-open-task]")];
+      let newIndex = ordered.indexOf(dragged);
+      if (newIndex === -1) {
+        ordered.push(dragged);
+        newIndex = ordered.length - 1;
+      }
 
       try {
         const res = await fetch(`/api/tasks/${taskId}/move`, {
@@ -1073,16 +1239,27 @@ function enableDragDrop() {
 
         if (!res.ok) throw new Error(`Move failed: ${res.status}`);
         await res.json();
-
-        // ✨ render lại để đồng bộ (hoặc bạn có thể cập nhật nhẹ UI tại chỗ)
         await renderDashboard(PROJECT_ID);
+        dragged.dataset.columnId = String(colId);
+        dragged.setAttribute("data-column-id", String(colId));
       } catch (err) {
         console.error("⚠️ Move failed:", err);
-        // ⤴️ rollback
-        if (prevNext) prevParent.insertBefore(dragged, prevNext);
-        else prevParent.appendChild(dragged);
-        alert("❌ Không thể di chuyển thẻ. Vui lòng thử lại.");
+        if (originalColumnEl) {
+          const referenceNode =
+            originalNextTaskId &&
+            originalColumnEl.querySelector(
+              `[data-open-task='${originalNextTaskId}']`
+            );
+          if (referenceNode) {
+            originalColumnEl.insertBefore(dragged, referenceNode);
+          } else {
+            originalColumnEl.appendChild(dragged);
+          }
+        }
+        showToast("❌ Không thể di chuyển thẻ. Vui lòng thử lại.", "error");
       } finally {
+        delete dragged.dataset.originalColumnId;
+        delete dragged.dataset.originalNextTaskId;
         isMoving = false;
       }
     };
@@ -1615,9 +1792,19 @@ function renderComments(taskId, comments) {
 }
 
 // ========== 💬 RENDER REPLIES ==========
-function renderReplies(taskId, replies) {
+function renderReplies(taskId, replies, depth = 0) {
   const currentUserId = Number(localStorage.getItem("currentUserId"));
   const currentUserEmail = localStorage.getItem("currentUserEmail");
+
+  // Giới hạn độ sâu tối đa để tránh quá sâu
+  const maxDepth = 5;
+  if (depth > maxDepth) {
+    console.warn("⚠️ Reply depth exceeded maximum, stopping recursion");
+    return "";
+  }
+
+  // Tính margin-left dựa trên depth (mỗi cấp thêm 2rem = 32px)
+  const marginLeft = 8 + depth * 8; // ml-8 cho cấp 0, ml-16 cho cấp 1, ml-24 cho cấp 2, etc.
 
   return replies
     .map((r) => {
@@ -1634,13 +1821,15 @@ function renderReplies(taskId, replies) {
       const rawAttr = encodeURIComponent(r.content || "");
 
       return `
-        <div class="flex items-start gap-3 mt-4 ml-8 reply-item" data-reply-id="${replyId}" data-task-id="${taskId}" data-reply-owner="${
+        <div class="flex items-start gap-3 mt-4 reply-item" style="margin-left: ${
+          marginLeft * 0.25
+        }rem;" data-reply-id="${replyId}" data-task-id="${taskId}" data-reply-owner="${
         isOwner ? "1" : "0"
-      }">
+      }" data-reply-depth="${depth}">
           <img src="${
             r.userAvatar || "https://i.pravatar.cc/28"
           }" class="w-7 h-7 rounded-full flex-shrink-0">
-          <div class="flex-1">
+          <div class="flex-1 min-w-0">
             <div class="flex items-baseline gap-2 text-[11px]">
               <span class="font-semibold text-gray-900">${r.userName}</span>
               <a href="#" class="font-medium text-blue-600 hover:underline">${formatTime(
@@ -1656,14 +1845,30 @@ function renderReplies(taskId, replies) {
                 ${highlightMentions(r.content, r.mentionsJson)}
               </div>
             </div>
-            ${
-              isOwner
-                ? `
-                  <div class="mt-1 flex gap-3 text-[11px] font-medium text-blue-600 reply-action-bar">
+            <div class="mt-1 flex gap-3 text-[11px] font-medium text-blue-600 reply-action-bar">
+              ${
+                isOwner
+                  ? `
                     <button onclick="editReply(${taskId}, ${replyId})" class="hover:underline">Edit</button>
                     <button onclick="deleteReply(${taskId}, ${replyId})" class="hover:underline">Delete</button>
-                  </div>
-                `
+                  `
+                  : `<button onclick="toggleReplyBox(${replyId})" class="hover:underline">Reply</button>`
+              }
+            </div>
+            <div id="reply-box-${replyId}" class="hidden mt-3 space-y-2">
+              <textarea id="reply-input-${replyId}"
+                class="w-full border border-gray-300 rounded-md p-2 text-xs h-16 focus:ring-2 focus:ring-blue-400"
+                placeholder="Write a reply..."></textarea>
+              <div class="flex gap-2">
+                <button onclick="postReply(${taskId}, ${replyId})"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs font-medium">Reply</button>
+                <button onclick="toggleReplyBox(${replyId})"
+                  class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-xs font-medium">Cancel</button>
+              </div>
+            </div>
+            ${
+              r.replies && r.replies.length > 0
+                ? renderReplies(taskId, r.replies, depth + 1)
                 : ""
             }
           </div>
@@ -1924,7 +2129,7 @@ async function openMentionProfile(email) {
     document.body.appendChild(popup);
   } catch (err) {
     console.error("⚠️ openMentionProfile failed:", err);
-    alert("Không thể tải thông tin người dùng này!");
+    showToast("Không thể tải thông tin người dùng này!", "error");
   }
 }
 
@@ -2311,11 +2516,14 @@ function renderActivities(activities) {
     .join("");
 }
 
-// ========== 🔁 REPLY TO COMMENT ==========
+// ========== 🔁 REPLY TO COMMENT OR REPLY ==========
 async function postReply(taskId, parentId) {
   const input = document.getElementById(`reply-input-${parentId}`);
   const content = input.value.trim();
-  if (!content) return alert("Please enter a reply");
+  if (!content) {
+    showToast("Please enter a reply", "error");
+    return;
+  }
 
   try {
     const res = await fetch(`/api/tasks/${taskId}/comments/${parentId}/reply`, {
@@ -2330,20 +2538,37 @@ async function postReply(taskId, parentId) {
     if (!res.ok) throw new Error("Reply failed");
 
     const newReply = await res.json();
-    // Thêm reply mới vào DOM
+
+    // Kiểm tra xem parentId là commentId hay replyId
     const commentContainer = document.querySelector(
       `[data-comment-id="${parentId}"]`
     );
-    if (commentContainer) {
-      // Tìm reply-box để thêm reply sau nó
-      const replyBox = commentContainer.querySelector(`#reply-box-${parentId}`);
-      const replyHtml = renderReplies(taskId, [newReply]);
+    const replyContainer = document.querySelector(
+      `[data-reply-id="${parentId}"]`
+    );
 
+    const replyHtml = renderReplies(taskId, [newReply]);
+
+    if (replyContainer) {
+      // Reply cho reply - thêm sau reply container
+      const replyBox = replyContainer.querySelector(`#reply-box-${parentId}`);
       if (replyBox) {
-        // Thêm reply sau reply-box
         replyBox.insertAdjacentHTML("afterend", replyHtml);
       } else {
-        // Nếu không có reply-box, thêm sau action bar hoặc comment bubble
+        // Thêm sau reply action bar
+        const actionBar = replyContainer.querySelector(".reply-action-bar");
+        if (actionBar) {
+          actionBar.insertAdjacentHTML("afterend", replyHtml);
+        } else {
+          replyContainer.insertAdjacentHTML("afterend", replyHtml);
+        }
+      }
+    } else if (commentContainer) {
+      // Reply cho comment - thêm sau comment container
+      const replyBox = commentContainer.querySelector(`#reply-box-${parentId}`);
+      if (replyBox) {
+        replyBox.insertAdjacentHTML("afterend", replyHtml);
+      } else {
         const actionBar = commentContainer.querySelector(".comment-action-bar");
         if (actionBar) {
           actionBar.insertAdjacentHTML("afterend", replyHtml);
@@ -2356,12 +2581,12 @@ async function postReply(taskId, parentId) {
           }
         }
       }
+    }
 
-      // Đảm bảo event handlers được attach
-      const commentsList = commentContainer.closest("#comments-list");
-      if (commentsList) {
-        ensureCommentInteractionHandlers(commentsList);
-      }
+    // Đảm bảo event handlers được attach
+    const commentsList = document.getElementById("comments-list");
+    if (commentsList) {
+      ensureCommentInteractionHandlers(commentsList);
     }
 
     // Clear input và đóng reply box
@@ -2369,7 +2594,7 @@ async function postReply(taskId, parentId) {
     toggleReplyBox(parentId);
   } catch (err) {
     console.error(err);
-    alert("❌ Failed to send reply");
+    showToast("Failed to send reply", "error");
   }
 }
 // Chỉ tạo CARD cho allowlist; còn lại trả về null để giữ link xanh
@@ -2478,7 +2703,7 @@ async function postComment(taskId, content) {
   taskId = taskId || window.CURRENT_TASK_ID;
   if (!taskId || taskId === "undefined") {
     console.error("❌ taskId is undefined when posting comment");
-    alert("Không xác định được thẻ hiện tại (taskId undefined)");
+    showToast("Không xác định được thẻ hiện tại (taskId undefined)", "error");
     return;
   }
 
@@ -2495,7 +2720,6 @@ async function postComment(taskId, content) {
     if (!res.ok) throw new Error("Comment failed");
 
     const newComment = await res.json();
-    // Thêm comment mới vào DOM
     const commentsList = document.getElementById("comments-list");
     if (commentsList) {
       const commentHtml = renderSingleComment(taskId, newComment);
@@ -2503,18 +2727,15 @@ async function postComment(taskId, content) {
       ensureCommentInteractionHandlers(commentsList);
     }
 
-    // Clear input
     const commentInput = document.getElementById("comment-input");
     if (commentInput) commentInput.value = "";
   } catch (err) {
     console.error(err);
-    alert("❌ Failed to post comment");
+    showToast("Failed to post comment", "error");
   }
 }
 
-// ========== 🗑️ DELETE COMMENT ==========
 async function deleteComment(taskId, commentId) {
-  if (!confirm("🗑️ Delete this comment?")) return;
   try {
     const res = await fetch(`/api/tasks/${taskId}/comments/${commentId}`, {
       method: "DELETE",
@@ -2523,7 +2744,6 @@ async function deleteComment(taskId, commentId) {
 
     if (!res.ok) throw new Error("Delete failed");
 
-    // Xóa comment khỏi DOM
     const commentContainer = document.querySelector(
       `[data-comment-id="${commentId}"]`
     );
@@ -2532,7 +2752,7 @@ async function deleteComment(taskId, commentId) {
     }
   } catch (err) {
     console.error(err);
-    alert("❌ Failed to delete comment");
+    showToast("Failed to delete comment", "error");
   }
 }
 
@@ -2611,7 +2831,6 @@ function toggleReplyBox(id) {
 
 // ========== 🗑️ DELETE REPLY ==========
 async function deleteReply(taskId, replyId) {
-  if (!confirm("🗑️ Delete this reply?")) return;
   try {
     // Reply là comment con, nên dùng API comment
     const res = await fetch(`/api/tasks/${taskId}/comments/${replyId}`, {
@@ -2630,7 +2849,7 @@ async function deleteReply(taskId, replyId) {
     }
   } catch (err) {
     console.error(err);
-    alert("❌ Failed to delete reply");
+    showToast("Failed to delete reply", "error");
   }
 }
 
@@ -2641,7 +2860,7 @@ function editReply(taskId, replyId) {
   // Validate replyId
   if (!replyId || replyId === "undefined" || replyId === "null") {
     console.error("❌ editReply: Invalid replyId:", replyId);
-    alert("❌ Failed to edit reply: Invalid reply ID");
+    showToast("❌ Failed to edit reply: Invalid reply ID", "error");
     return;
   }
 
@@ -2651,7 +2870,7 @@ function editReply(taskId, replyId) {
     ) || document.querySelector(`[data-reply-id='${replyId}']`);
   if (!container) {
     console.error(
-      "❌ editReply: Container not found for replyId:",
+      " editReply: Container not found for replyId:",
       replyId,
       "taskId:",
       taskId
@@ -2699,7 +2918,7 @@ function editReply(taskId, replyId) {
       const btnReplyId = e.currentTarget.getAttribute("data-reply-save");
       if (!btnReplyId) {
         console.error("❌ Reply ID not found in button data attribute");
-        alert("❌ Failed to update reply: Reply ID not found");
+        showToast("❌ Failed to update reply: Reply ID not found", "error");
         return;
       }
       saveReplyEdit(taskId, btnReplyId);
@@ -2730,27 +2949,27 @@ async function saveReplyEdit(taskId, replyId) {
 
   if (!replyId) {
     console.error("❌ Reply ID not found");
-    alert("❌ Failed to update reply: Reply ID not found");
+    showToast("❌ Failed to update reply: Reply ID not found", "error");
     return;
   }
 
   const textarea = document.querySelector(`#edit-reply-input-${replyId}`);
   if (!textarea) {
     console.error("❌ Textarea not found for reply ID:", replyId);
-    alert("❌ Failed to update reply: Textarea not found");
+    showToast("❌ Failed to update reply: Textarea not found", "error");
     return;
   }
 
   const content = textarea.value.trim();
   if (!content) {
-    alert("⚠️ Reply cannot be empty");
+    showToast("⚠️ Reply cannot be empty", "warning");
     return;
   }
 
   taskId = taskId || window.CURRENT_TASK_ID;
   if (!taskId) {
     console.error("❌ Task ID not found");
-    alert("❌ Failed to update reply: Task ID not found");
+    showToast("❌ Failed to update reply: Task ID not found", "error");
     return;
   }
 
@@ -2797,7 +3016,7 @@ async function saveReplyEdit(taskId, replyId) {
       "taskId:",
       taskId
     );
-    alert("❌ Failed to update reply");
+    showToast("❌ Failed to update reply", "error");
   }
 }
 
@@ -2855,10 +3074,70 @@ async function syncShareUI(projectId) {
   }
 }
 
-function openSharePopup() {
+async function openSharePopup() {
   sharePopup.classList.remove("hidden");
-  loadBoardMembers(PROJECT_ID);
+  await loadBoardMembers(PROJECT_ID);
   syncShareUI(PROJECT_ID); // ✅ gọi ngay khi mở
+
+  // ✅ Kiểm tra quyền PM và ẩn tab Join requests nếu không phải PM
+  await checkAndHideJoinRequestsTab(PROJECT_ID);
+
+  // Mặc định hiển thị tab Board members
+  switchTab("members");
+}
+
+// ========== KIỂM TRA QUYỀN PM VÀ ẨN TAB JOIN REQUESTS ==========
+async function checkAndHideJoinRequestsTab(projectId) {
+  const tabRequests = document.getElementById("tab-requests");
+  if (!tabRequests) return;
+
+  try {
+    // Thử load join requests để kiểm tra quyền
+    const res = await fetch(
+      `/api/pm/invite/project/${projectId}/join-requests`,
+      {
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      }
+    );
+
+    // Nếu không phải PM (403) hoặc lỗi → ẩn tab
+    if (!res.ok) {
+      if (res.status === 403) {
+        tabRequests.classList.add("hidden");
+        return;
+      }
+    }
+
+    // Nếu là PM → hiển thị tab và load count
+    tabRequests.classList.remove("hidden");
+    if (res.ok) {
+      const requests = await res.json();
+      updateJoinRequestsBadge(Array.isArray(requests) ? requests.length : 0);
+    }
+  } catch (err) {
+    // Lỗi → ẩn tab
+    console.error("❌ checkAndHideJoinRequestsTab error:", err);
+    tabRequests.classList.add("hidden");
+  }
+}
+
+// ========== LOAD JOIN REQUESTS COUNT (for badge) ==========
+async function loadJoinRequestsCount(projectId) {
+  try {
+    const res = await fetch(
+      `/api/pm/invite/project/${projectId}/join-requests`,
+      {
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      }
+    );
+
+    if (res.ok) {
+      const requests = await res.json();
+      updateJoinRequestsBadge(Array.isArray(requests) ? requests.length : 0);
+    }
+  } catch (err) {
+    console.error("❌ loadJoinRequestsCount error:", err);
+  }
 }
 
 function closeShareBoard() {
@@ -2867,26 +3146,90 @@ function closeShareBoard() {
 
 closeSharePopup.addEventListener("click", closeShareBoard);
 
+// ✅ Đóng modal khi click ra ngoài (vào overlay background)
+if (sharePopup) {
+  sharePopup.addEventListener("click", (e) => {
+    // Nếu click vào chính overlay (không phải vào nội dung modal bên trong) → đóng
+    if (e.target === sharePopup) {
+      closeShareBoard();
+    }
+  });
+
+  // Ngăn event bubbling từ nội dung modal để không đóng khi click vào bên trong
+  const modalContent = sharePopup.querySelector(".bg-white");
+  if (modalContent) {
+    modalContent.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+}
+
 copyLinkBtn.addEventListener("click", async (e) => {
   e.preventDefault();
   try {
-    const res = await fetch(
-      `/api/pm/invite/project/${PROJECT_ID}/share/enable`,
+    // Kiểm tra xem đã có link chưa
+    const checkRes = await fetch(
+      `/api/pm/invite/project/${PROJECT_ID}/share/link`,
       {
-        method: "POST",
         headers: { Authorization: "Bearer " + localStorage.getItem("token") },
       }
     );
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    const fullLink = `${window.location.origin}/join/${data.inviteLink}`;
-    await navigator.clipboard.writeText(fullLink);
-    showToast("Link copied");
 
-    await syncShareUI(PROJECT_ID);
+    if (!checkRes.ok) throw new Error("Cannot check link status");
+
+    const checkData = await checkRes.json();
+
+    let fullLink = "";
+
+    if (!checkData.allowLinkJoin || !checkData.inviteLink) {
+      const enableRes = await fetch(
+        `/api/pm/invite/project/${PROJECT_ID}/share/enable`,
+        {
+          method: "POST",
+          headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        }
+      );
+      if (!enableRes.ok) throw new Error("Cannot enable share link");
+      const enableData = await enableRes.json();
+      fullLink = `${window.location.origin}/join/${enableData.inviteLink}`;
+      await syncShareUI(PROJECT_ID);
+      showToast(
+        "Link đã tạo! Người được mời sẽ tham gia trực tiếp.",
+        "success"
+      );
+    } else {
+      const copyRes = await fetch(
+        `/api/pm/invite/project/${PROJECT_ID}/share/copy`,
+        {
+          method: "POST",
+          headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        }
+      );
+
+      if (!copyRes.ok) {
+        const error = await copyRes.json();
+        throw new Error(error.error || "Cannot copy link");
+      }
+
+      const copyData = await copyRes.json();
+      fullLink = `${window.location.origin}/join/${copyData.inviteLink}`;
+
+      // ✅ Hiển thị thông báo dựa trên requiresApproval
+      if (copyData.requiresApproval) {
+        showToast("Link đã copy! Người được mời sẽ cần được PM duyệt.", "info");
+      } else {
+        showToast(
+          "Link đã copy! Người được mời sẽ tham gia trực tiếp.",
+          "success"
+        );
+      }
+    }
+
+    await navigator.clipboard.writeText(fullLink);
     copyLinkBtn.textContent = "Copy link";
-  } catch {
-    showToast("Không thể bật chia sẻ qua link", "error");
+  } catch (err) {
+    console.error("❌ Copy link error:", err);
+    showToast(err.message || "Không thể copy link", "error");
   }
 });
 
@@ -3011,21 +3354,256 @@ async function updateMemberRole(projectId, userId, newRole) {
 
     // ✅ Reload lại danh sách thật sau khi DB cập nhật
     await loadBoardMembers(projectId);
-
-    // ✅ Thông báo nhẹ (hoặc toast)
-    console.log("✅ Vai trò đã cập nhật:", data);
   } catch (err) {
     console.error("❌ Update role failed:", err);
-    alert("❌ Không thể cập nhật vai trò!");
+    showToast("❌ Không thể cập nhật vai trò!", "error");
   } finally {
     if (event?.target) event.target.disabled = false;
   }
 }
 
+// ========== UPDATE JOIN REQUESTS BADGE ==========
+function updateJoinRequestsBadge(count) {
+  const requestsTab = document.getElementById("tab-requests");
+  if (!requestsTab) return;
+
+  // Tìm hoặc tạo badge
+  let badge = requestsTab.querySelector(".join-requests-badge");
+  if (count > 0) {
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className =
+        "join-requests-badge ml-2 bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full";
+      requestsTab.appendChild(badge);
+    }
+    badge.textContent = count;
+    badge.classList.remove("hidden");
+  } else {
+    if (badge) {
+      badge.classList.add("hidden");
+    }
+  }
+}
+
+// ========== TAB SWITCHING ==========
+function switchTab(tabName) {
+  const membersTab = document.getElementById("tab-members");
+  const requestsTab = document.getElementById("tab-requests");
+  const membersList = document.getElementById("members-list");
+  const requestsList = document.getElementById("join-requests-list");
+
+  // ✅ Nếu tab requests bị ẩn (không phải PM) → chỉ cho phép tab members
+  if (
+    tabName === "requests" &&
+    requestsTab &&
+    requestsTab.classList.contains("hidden")
+  ) {
+    return; // Không cho switch sang tab requests
+  }
+
+  if (tabName === "members") {
+    membersTab.classList.add(
+      "text-blue-600",
+      "border-b-2",
+      "border-blue-600",
+      "font-semibold"
+    );
+    membersTab.classList.remove("text-gray-500", "font-medium");
+    // ✅ Chỉ update requestsTab nếu nó không bị ẩn
+    if (requestsTab && !requestsTab.classList.contains("hidden")) {
+      requestsTab.classList.remove(
+        "text-blue-600",
+        "border-b-2",
+        "border-blue-600",
+        "font-semibold"
+      );
+      requestsTab.classList.add("text-gray-500", "font-medium");
+    }
+    membersList.classList.remove("hidden");
+    if (requestsList) requestsList.classList.add("hidden");
+  } else if (tabName === "requests") {
+    requestsTab.classList.add(
+      "text-blue-600",
+      "border-b-2",
+      "border-blue-600",
+      "font-semibold"
+    );
+    requestsTab.classList.remove("text-gray-500", "font-medium");
+    membersTab.classList.remove(
+      "text-blue-600",
+      "border-b-2",
+      "border-blue-600",
+      "font-semibold"
+    );
+    membersTab.classList.add("text-gray-500", "font-medium");
+    membersList.classList.add("hidden");
+    requestsList.classList.remove("hidden");
+    loadJoinRequests(PROJECT_ID);
+  }
+}
+
+// Event listeners for tabs
+const tabMembers = document.getElementById("tab-members");
+const tabRequests = document.getElementById("tab-requests");
+if (tabMembers) {
+  tabMembers.addEventListener("click", () => switchTab("members"));
+}
+if (tabRequests) {
+  tabRequests.addEventListener("click", () => switchTab("requests"));
+}
+
+// ========== LOAD JOIN REQUESTS ==========
+async function loadJoinRequests(projectId) {
+  const requestsList = document.getElementById("join-requests-list");
+  const tabRequests = document.getElementById("tab-requests");
+
+  if (!requestsList) return;
+
+  // ✅ Ẩn tab nếu không phải PM
+  if (tabRequests && tabRequests.classList.contains("hidden")) {
+    return;
+  }
+
+  requestsList.innerHTML = `<p class="text-gray-400 text-sm italic">Loading...</p>`;
+
+  try {
+    const res = await fetch(
+      `/api/pm/invite/project/${projectId}/join-requests`,
+      {
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      }
+    );
+
+    // ✅ Nếu không phải PM (403) → ẩn tab và return
+    if (res.status === 403) {
+      if (tabRequests) tabRequests.classList.add("hidden");
+      requestsList.innerHTML = "";
+      return;
+    }
+
+    if (!res.ok) throw new Error(`Cannot load join requests: ${res.status}`);
+
+    const requests = await res.json();
+
+    // Cập nhật badge số lượng requests
+    updateJoinRequestsBadge(Array.isArray(requests) ? requests.length : 0);
+
+    if (!Array.isArray(requests) || requests.length === 0) {
+      requestsList.innerHTML = `<p class="text-gray-500 text-sm italic text-center py-4">No pending join requests</p>`;
+      return;
+    }
+
+    requestsList.innerHTML = requests
+      .map(
+        (r) => `
+          <div class="flex justify-between items-center p-3 hover:bg-gray-50 rounded-md border border-gray-200">
+            <div class="flex items-center gap-3 flex-1">
+              <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-semibold">
+                ${(r.userName || r.userEmail || "U")[0].toUpperCase()}
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-medium text-gray-800">${escapeHtml(
+                  r.userName || "Unnamed"
+                )}</p>
+                <p class="text-xs text-gray-500">${escapeHtml(
+                  r.userEmail || ""
+                )}</p>
+                <p class="text-xs text-gray-400 mt-1">${formatTime(
+                  r.createdAt
+                )}</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button
+                onclick="approveJoinRequest(${r.requestId}, ${projectId})"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors"
+              >
+                Approve
+              </button>
+              <button
+                onclick="rejectJoinRequest(${r.requestId}, ${projectId})"
+                class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-semibold rounded-md transition-colors"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        `
+      )
+      .join("");
+  } catch (err) {
+    console.error("❌ loadJoinRequests error:", err);
+    requestsList.innerHTML = `<p class="text-red-500 text-sm">Failed to load join requests</p>`;
+  }
+}
+
+// ========== APPROVE JOIN REQUEST ==========
+async function approveJoinRequest(requestId, projectId) {
+  try {
+    const res = await fetch(
+      `/api/pm/invite/join-requests/${requestId}/approve`,
+      {
+        method: "POST",
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to approve request");
+    }
+
+    await loadJoinRequests(projectId);
+    await loadBoardMembers(projectId); // Reload members list
+    // Cập nhật badge sau khi approve
+    const requests = await fetch(
+      `/api/pm/invite/project/${projectId}/join-requests`,
+      {
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      }
+    ).then((r) => (r.ok ? r.json() : []));
+    updateJoinRequestsBadge(Array.isArray(requests) ? requests.length : 0);
+  } catch (err) {
+    console.error("❌ approveJoinRequest error:", err);
+    showToast(err.message || "Failed to approve request", "error");
+  }
+}
+
+// ========== REJECT JOIN REQUEST ==========
+async function rejectJoinRequest(requestId, projectId) {
+  try {
+    const res = await fetch(
+      `/api/pm/invite/join-requests/${requestId}/reject`,
+      {
+        method: "POST",
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to reject request");
+    }
+
+    await loadJoinRequests(projectId);
+    // Badge sẽ được cập nhật trong loadJoinRequests
+  } catch (err) {
+    console.error("❌ rejectJoinRequest error:", err);
+    showToast(err.message || "Failed to reject request", "error");
+  }
+}
+
+// Make functions available globally
+window.approveJoinRequest = approveJoinRequest;
+window.rejectJoinRequest = rejectJoinRequest;
+
 inviteBtn.addEventListener("click", async () => {
   const email = inviteEmail.value.trim();
   const role = inviteRole.value || "Member";
-  if (!email) return alert("❌ Vui lòng nhập email!");
+  if (!email) {
+    showToast("Please enter an email", "error");
+    return;
+  }
 
   try {
     const resInvite = await fetch(
@@ -3039,14 +3617,16 @@ inviteBtn.addEventListener("click", async () => {
         },
       }
     );
-    if (!resInvite.ok) throw new Error("Invite failed");
+    if (!resInvite.ok) {
+      const error = await resInvite.json();
+      throw new Error(error.error || "Invite failed");
+    }
     const data = await resInvite.json();
-    alert(data.message || "✅ Đã mời thành viên thành công!");
     inviteEmail.value = "";
     await loadBoardMembers(PROJECT_ID);
   } catch (err) {
     console.error("❌ Error inviting:", err);
-    alert("❌ Không thể mời thành viên!");
+    showToast(err.message || "Failed to invite member", "error");
   }
 });
 // ================= INIT DASHBOARD OR JOIN PROJECT =================
@@ -3076,8 +3656,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     await renderDashboard(PROJECT_ID);
   } catch (err) {
     console.error("🚨 Init failed:", err);
-    alert(
-      "❌ Cannot initialize dashboard: " + (err.message || "Unknown error")
+    showToast(
+      " Cannot initialize dashboard: " + (err.message || "Unknown error"),
+      "error"
     );
   }
 });
@@ -3089,7 +3670,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function handleJoinByLink(path) {
   const inviteLink = path.split("/join/")[1];
   if (!inviteLink) {
-    alert("⚠️ Invalid invite link!");
+    showToast("Invalid invite link!", "warning");
     return;
   }
 
@@ -3102,24 +3683,43 @@ async function handleJoinByLink(path) {
       },
     });
 
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) {
+      const errorData = await res
+        .json()
+        .catch(async () => ({ error: await res.text() }));
+      throw new Error(errorData.error || "Không thể tham gia dự án");
+    }
+
     const data = await res.json();
-
-    alert(`✅ ${data.message}\n➡️ Dự án: ${data.projectName}`);
-
-    // ✅ Chuyển hướng về dashboard dự án vừa tham gia
-    if (data.projectId) {
-      window.location.href = `/dashboard.html?projectId=${data.projectId}`;
+    if (data.message === "join_request_sent") {
+      showToast(
+        ` Yêu cầu tham gia đã được gửi!\n Dự án: ${data.projectName}\n⏳ Vui lòng đợi PM duyệt yêu cầu của bạn.`,
+        "info"
+      );
+      window.location.href = `/view/pm/dashboard`;
+    } else if (data.message === "joined_success") {
+      showToast(
+        ` Tham gia dự án thành công!\n Dự án: ${data.projectName}`,
+        "success"
+      );
+      if (data.projectId) {
+        window.location.href = `/dashboard.html?projectId=${data.projectId}`;
+      }
+    } else {
+      showToast(` ${data.message}\n Dự án: ${data.projectName}`, "info");
+      if (data.projectId) {
+        window.location.href = `/dashboard.html?projectId=${data.projectId}`;
+      }
     }
   } catch (err) {
     console.error("❌ Join project failed:", err);
-    alert("❌ Không thể tham gia dự án qua link mời!\n" + (err.message || ""));
+    showToast(
+      " Không thể tham gia dự án qua link mời!\n" + (err.message || ""),
+      "error"
+    );
   }
 }
 
-// ===============================
-// 🔹 AUTOCOMPLETE INVITE USER
-// ===============================
 const inviteInput = document.getElementById("invite-email");
 const suggestionBox = document.getElementById("invite-suggestions");
 
@@ -3137,12 +3737,10 @@ async function loadInviteSuggestions(keyword) {
   try {
     const token = localStorage.getItem("token");
 
-    // 🔹 Chuẩn hóa header (JWT hoặc fallback)
     const headers = token
       ? { Authorization: "Bearer " + token, "Content-Type": "application/json" }
       : { "Content-Type": "application/json" };
 
-    // 🔹 Nếu không có token, vẫn cho phép cookie xác thực (OAuth2 fallback)
     const useCredentials = !token;
 
     const res = await fetch(
@@ -3150,7 +3748,7 @@ async function loadInviteSuggestions(keyword) {
       {
         method: "GET",
         headers,
-        ...(useCredentials ? { credentials: "include" } : {}), // chỉ thêm khi cần
+        ...(useCredentials ? { credentials: "include" } : {}),
       }
     );
 
@@ -3164,7 +3762,6 @@ async function loadInviteSuggestions(keyword) {
       return;
     }
 
-    // ✅ Render danh sách user gợi ý
     suggestionBox.innerHTML = users
       .map(
         (u) => `
@@ -3184,10 +3781,10 @@ async function loadInviteSuggestions(keyword) {
       .join("");
     suggestionBox.classList.remove("hidden");
   } catch (err) {
-    console.error("❌ loadInviteSuggestions error:", err);
+    console.error(" loadInviteSuggestions error:", err);
     suggestionBox.innerHTML = `
         <p class="p-2 text-sm text-red-500 italic">
-          ⚠️ Cannot load suggestions.
+           Cannot load suggestions.
         </p>`;
     suggestionBox.classList.remove("hidden");
   }
@@ -3203,7 +3800,10 @@ async function saveEdit(taskId, commentId) {
   if (!textarea) return;
 
   const newText = textarea.value.trim();
-  if (!newText) return alert("Content cannot be empty");
+  if (!newText) {
+    showToast("Content cannot be empty", "warning");
+    return;
+  }
 
   try {
     const res = await fetch(`/api/tasks/${taskId}/comments/${commentId}`, {
@@ -3242,7 +3842,7 @@ async function saveEdit(taskId, commentId) {
     }
   } catch (err) {
     console.error(err);
-    alert("❌ Failed to update comment");
+    showToast("❌ Failed to update comment", "error");
   }
 }
 
@@ -3352,46 +3952,51 @@ contextMenu.addEventListener("click", async (e) => {
       case "mark-complete":
         try {
           await markTaskComplete(taskId);
-          alert("✅ Task marked as completed!");
-          await renderDashboard(PROJECT_ID);
+          const checkboxBtn = cardElement.querySelector(".task-checkbox-btn");
+          if (checkboxBtn) {
+            updateTaskCheckboxUI(checkboxBtn, true);
+          }
         } catch (err) {
-          console.error("❌ Mark complete failed:", err);
-          alert("❌ Failed to mark task as complete");
+          console.error(" Mark complete failed:", err);
+          const errorMsg = err.message || "Không thể đánh dấu hoàn tất task";
+          showToast(" " + errorMsg, "error");
         }
         break;
 
-      case "copy-link":
-        const link = `${window.location.origin}${window.location.pathname}?taskId=${taskId}`;
-        await navigator.clipboard.writeText(link);
-        alert("✅ Link copied to clipboard!");
-        break;
-
       case "archive":
-        if (!confirm("🗃️ Archive this task?")) return;
+        const archiveConfirmed = await showConfirmModal("Archive this task?", {
+          icon: "🗃️",
+        });
+        if (!archiveConfirmed) return;
         await archiveTask(taskId);
-        alert("✅ Task archived successfully!");
-        await renderDashboard(PROJECT_ID);
+        cardElement.remove();
         break;
 
       case "delete":
         if (window.CURRENT_ROLE !== "ROLE_PM") {
-          alert("❌ Only Project Managers can delete tasks!");
+          showToast(" Only Project Managers can delete tasks!", "error");
           return;
         }
 
-        if (!confirm("⚠️ Permanently delete this task? This cannot be undone!"))
-          return;
+        const deleteConfirmed = await showConfirmModal(
+          "Permanently delete this task? This cannot be undone!",
+          {
+            icon: "⚠️",
+            okText: "Delete",
+            okButtonClass: "bg-red-600 hover:bg-red-700 text-white",
+          }
+        );
+        if (!deleteConfirmed) return;
         await deleteTask(taskId);
-        alert("🗑️ Task deleted permanently!");
-        await renderDashboard(PROJECT_ID);
+        cardElement.remove();
         break;
 
       default:
-        console.warn(`⚠️ Unhandled context menu action: ${action}`);
+        console.warn(` Unhandled context menu action: ${action}`);
     }
   } catch (err) {
     console.error("❌ Context menu action error:", err);
-    alert("❌ Operation failed: " + err.message);
+    showToast(" Operation failed: " + err.message, "error");
   } finally {
     contextMenu.classList.add("hidden");
   }
@@ -3407,6 +4012,59 @@ async function archiveTask(taskId) {
   });
   if (!res.ok) throw new Error("Archive failed");
 }
+
+// ✅ Hàm xử lý click vào checkbox
+window.handleTaskCheckboxClick = async function (buttonEl, taskId) {
+  try {
+    const wasCompleted = buttonEl.dataset.completed === "true";
+    buttonEl.disabled = true;
+
+    if (wasCompleted) {
+      await markTaskIncomplete(taskId);
+    } else {
+      await markTaskComplete(taskId);
+    }
+
+    updateTaskCheckboxUI(buttonEl, !wasCompleted);
+  } catch (err) {
+    console.error("❌ Mark complete/incomplete failed:", err);
+    // Hiển thị message lỗi từ server hoặc message mặc định
+    const errorMsg = err.message || "Không thể cập nhật trạng thái task";
+    showToast(errorMsg, "error");
+    // Không cập nhật UI nếu có lỗi
+  } finally {
+    buttonEl.disabled = false;
+  }
+};
+
+function updateTaskCheckboxUI(buttonEl, isCompleted) {
+  buttonEl.dataset.completed = isCompleted ? "true" : "false";
+  buttonEl.title = isCompleted ? "Đánh dấu chưa hoàn tất" : "Đánh dấu hoàn tất";
+
+  if (isCompleted) {
+    buttonEl.className = `${TASK_CHECKBOX_BASE_CLASS} ${TASK_CHECKBOX_COMPLETED_CLASS}`;
+  } else {
+    buttonEl.className = `${TASK_CHECKBOX_BASE_CLASS} ${TASK_CHECKBOX_INCOMPLETE_CLASS}`;
+  }
+
+  buttonEl.innerHTML = isCompleted
+    ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-[0.65rem] w-[0.65rem] text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>`
+    : "";
+
+  const titleEl = buttonEl.parentElement.querySelector(".task-title-text");
+  if (titleEl) {
+    titleEl.classList.toggle("text-gray-500", isCompleted);
+    titleEl.classList.toggle("text-gray-800", !isCompleted);
+  }
+
+  const card = buttonEl.closest(".kanban-card");
+  if (card) {
+    card.dataset.taskStatus = isCompleted ? "DONE" : "OPEN";
+  }
+}
+
 async function markTaskComplete(taskId) {
   const res = await fetch(`/api/tasks/${taskId}/complete`, {
     method: "PUT",
@@ -3416,28 +4074,389 @@ async function markTaskComplete(taskId) {
   });
 
   if (!res.ok) {
-    if (res.status === 403) {
-      const msg = await res.text();
-      throw new Error(msg || "Bạn không có quyền đánh dấu hoàn thành task này");
+    try {
+      const errorData = await res.json();
+      if (res.status === 403) {
+        throw new Error(
+          errorData.message || "Bạn không có quyền đánh dấu hoàn thành task này"
+        );
+      } else if (res.status === 404) {
+        throw new Error(errorData.message || "Không tìm thấy task");
+      } else {
+        throw new Error(errorData.message || "Lỗi hệ thống");
+      }
+    } catch (parseError) {
+      // Nếu không parse được JSON, dùng message mặc định
+      if (res.status === 403) {
+        throw new Error("Bạn không có quyền đánh dấu hoàn thành task này");
+      }
+      throw new Error("Request failed: " + res.status);
     }
-    throw new Error("Request failed: " + res.status);
   }
 
   const updated = await res.json();
+  return updated;
+}
 
-  // 💡 Cập nhật giao diện trực tiếp (mờ card + đổi badge)
+// ================== UPDATE CARD UI FUNCTIONS ==================
+// Cập nhật labels trong card bên ngoài
+export function updateCardLabels(taskId, labels) {
   const card = document.querySelector(`[data-open-task="${taskId}"]`);
-  if (card) {
-    card.style.opacity = "0.6";
-    const badge = card.querySelector(".due-date-badge");
-    if (badge) {
-      badge.textContent = "Completed";
-      badge.className =
-        "due-date-badge bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md";
+  if (!card) return;
+
+  // Tìm container labels hoặc tạo mới
+  let labelContainer = card.querySelector(".flex.flex-wrap.gap-1.mb-2");
+
+  if (labels && Array.isArray(labels) && labels.length > 0) {
+    const labelHtml = `<div class="flex flex-wrap gap-1 mb-2">
+      ${labels
+        .map(
+          (l) => `
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold text-white"
+                  style="background-color: ${l.color || "#94a3b8"}">
+              ${escapeHtml(l.name || "")}
+            </span>
+          `
+        )
+        .join("")}
+    </div>`;
+
+    if (labelContainer) {
+      labelContainer.outerHTML = labelHtml;
+    } else {
+      // Chèn vào đầu card (trước checkbox)
+      const checkboxDiv = card.querySelector(".flex.items-center.gap-2.mb-1");
+      if (checkboxDiv) {
+        checkboxDiv.insertAdjacentHTML("beforebegin", labelHtml);
+      } else {
+        card.insertAdjacentHTML("afterbegin", labelHtml);
+      }
+    }
+  } else {
+    // Xóa labels nếu không có
+    if (labelContainer) {
+      labelContainer.remove();
+    }
+  }
+}
+
+// Cập nhật members trong card bên ngoài
+export function updateCardMembers(taskId, assignees) {
+  const card = document.querySelector(`[data-open-task="${taskId}"]`);
+  if (!card) return;
+
+  let metadataDiv = card.querySelector(
+    ".flex.items-center.gap-2.mt-2.flex-wrap"
+  );
+
+  // Tạo metadata div nếu chưa có
+  if (!metadataDiv) {
+    metadataDiv = document.createElement("div");
+    metadataDiv.className = "flex items-center gap-2 mt-2 flex-wrap";
+    // Chèn sau checkbox div
+    const checkboxDiv = card.querySelector(".flex.items-center.gap-2.mb-1");
+    if (checkboxDiv) {
+      checkboxDiv.insertAdjacentElement("afterend", metadataDiv);
+    } else {
+      card.appendChild(metadataDiv);
     }
   }
 
-  return updated;
+  // Tìm hoặc tạo container members
+  let membersContainer = metadataDiv.querySelector(
+    ".flex.items-center.ml-auto.gap-1"
+  );
+
+  if (assignees && Array.isArray(assignees) && assignees.length > 0) {
+    const membersHtml = `
+      <div class="flex items-center ml-auto gap-1">
+        ${assignees
+          .slice(0, 2)
+          .map((assignee) => {
+            const assigneeData = {
+              name: assignee.name || assignee.assigneeName || "",
+              avatarUrl: assignee.avatarUrl || "",
+              userId: assignee.userId || assignee.id,
+              color:
+                assignee.color ||
+                getColorForId(
+                  String(assignee.userId || assignee.id || assignee.name)
+                ),
+            };
+            // Hiển thị avatar như Trello - ưu tiên avatar, fallback về chữ cái đầu
+            if (assigneeData.avatarUrl) {
+              return `
+                  <div class="relative w-6 h-6">
+                    <img src="${assigneeData.avatarUrl}" 
+                         alt="${escapeHtml(assigneeData.name)}"
+                         class="w-6 h-6 rounded-full border border-white shadow-sm object-cover"
+                         title="${escapeHtml(assigneeData.name)}"
+                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm absolute inset-0 hidden"
+                         style="background-color: ${assigneeData.color}"
+                         title="${escapeHtml(assigneeData.name)}">
+                      ${getInitials(assigneeData.name)}
+                    </div>
+                  </div>
+                `;
+            } else {
+              return `
+                  <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm"
+                       style="background-color: ${assigneeData.color}"
+                       title="${escapeHtml(assigneeData.name)}">
+                    ${getInitials(assigneeData.name)}
+                  </div>
+                `;
+            }
+          })
+          .join("")}
+      </div>
+    `;
+
+    if (membersContainer) {
+      membersContainer.outerHTML = membersHtml;
+    } else {
+      metadataDiv.insertAdjacentHTML("beforeend", membersHtml);
+    }
+  } else {
+    // Xóa members nếu không có
+    if (membersContainer) {
+      membersContainer.remove();
+    }
+  }
+}
+
+// Cập nhật date trong card bên ngoài
+export function updateCardDate(taskId, deadline) {
+  const card = document.querySelector(`[data-open-task="${taskId}"]`);
+  if (!card) {
+    console.warn(`Card not found for taskId: ${taskId}`);
+    return;
+  }
+
+  const metadataDiv = card.querySelector(
+    ".flex.items-center.gap-2.mt-2.flex-wrap"
+  );
+  if (!metadataDiv) {
+    console.warn(`Metadata div not found for taskId: ${taskId}`);
+    return;
+  }
+
+  // Tìm date container hiện tại - tìm phần tử có SVG calendar (path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z")
+  let dateContainer = null;
+  const allContainers = metadataDiv.querySelectorAll(
+    ".flex.items-center.gap-1"
+  );
+  for (const container of allContainers) {
+    const svg = container.querySelector("svg");
+    if (svg) {
+      const path = svg.querySelector('path[d*="M8 7V3m8 4V3"]');
+      if (path) {
+        dateContainer = container;
+        break;
+      }
+    }
+  }
+
+  if (deadline && deadline.trim() !== "") {
+    try {
+      const deadlineDate = new Date(deadline);
+      const now = new Date();
+      const isOverdue = deadlineDate < now;
+      const daysDiff = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+
+      let dateText = "";
+      let dateClass = "text-gray-600";
+      let bgClass = "bg-gray-100";
+
+      if (isOverdue) {
+        dateText = "Overdue";
+        dateClass = "text-red-700";
+        bgClass = "bg-red-100";
+      } else if (daysDiff === 0) {
+        dateText = "Today";
+        dateClass = "text-orange-700";
+        bgClass = "bg-orange-100";
+      } else if (daysDiff === 1) {
+        dateText = "Tomorrow";
+        dateClass = "text-orange-600";
+        bgClass = "bg-orange-50";
+      } else if (daysDiff <= 7) {
+        dateText = `${daysDiff}d`;
+        dateClass = "text-gray-600";
+        bgClass = "bg-gray-100";
+      } else {
+        dateText = deadlineDate.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+        dateClass = "text-gray-600";
+        bgClass = "bg-gray-100";
+      }
+
+      const dateHtml = `
+        <div class="flex items-center gap-1 ${bgClass} ${dateClass} px-1.5 py-0.5 rounded text-[10px] font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span>${dateText}</span>
+        </div>
+      `;
+
+      if (dateContainer) {
+        // Thay thế date container hiện tại
+        dateContainer.outerHTML = dateHtml;
+      } else {
+        // Chèn vào đầu metadata div
+        metadataDiv.insertAdjacentHTML("afterbegin", dateHtml);
+      }
+    } catch (e) {
+      console.error("Error updating card date:", e);
+    }
+  } else {
+    // Xóa date nếu không có
+    if (dateContainer) {
+      dateContainer.remove();
+    }
+  }
+}
+
+// Hàm reload card từ server để đồng bộ
+async function reloadCardFromServer(taskId) {
+  try {
+    const res = await fetch(`/api/tasks/${taskId}`, {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token"),
+      },
+    });
+    if (!res.ok) return null;
+    const task = await res.json();
+    return task;
+  } catch (err) {
+    console.error("Error reloading card:", err);
+    return null;
+  }
+}
+
+async function markTaskIncomplete(taskId) {
+  const res = await fetch(`/api/tasks/${taskId}/incomplete`, {
+    method: "PUT",
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token"),
+    },
+  });
+
+  if (!res.ok) {
+    try {
+      const errorData = await res.json();
+      if (res.status === 403) {
+        throw new Error(
+          errorData.message ||
+            "Bạn không có quyền chuyển task về trạng thái chưa hoàn tất"
+        );
+      } else if (res.status === 404) {
+        throw new Error(errorData.message || "Không tìm thấy task");
+      } else {
+        throw new Error(
+          errorData.message || errorData.detail || "Lỗi hệ thống"
+        );
+      }
+    } catch (parseError) {
+      // Nếu không parse được JSON, dùng message mặc định
+      if (res.status === 403) {
+        throw new Error(
+          "Bạn không có quyền chuyển task về trạng thái chưa hoàn tất"
+        );
+      }
+      throw new Error("Request failed: " + res.status);
+    }
+  }
+
+  const response = await res.json();
+  // Response format: {status: "success", task: result, message: "..."}
+  if (response.status === "success" && response.task) {
+    return response.task;
+  }
+  return response;
+}
+
+function showConfirmModal(message, options = {}) {
+  const {
+    icon = "",
+    okText = "OK",
+    cancelText = "Hủy",
+    okButtonClass = "bg-blue-600 hover:bg-blue-700 text-white",
+    cancelButtonClass = "bg-gray-100 hover:bg-gray-200 text-gray-700",
+  } = options;
+
+  return new Promise((resolve) => {
+    const existing = document.getElementById("confirm-modal-overlay");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = "confirm-modal-overlay";
+    overlay.className =
+      "fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center px-4";
+
+    const modal = document.createElement("div");
+    modal.className =
+      "bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4 text-center";
+
+    if (icon) {
+      const iconEl = document.createElement("div");
+      iconEl.textContent = icon;
+      iconEl.className = "text-3xl";
+      modal.appendChild(iconEl);
+    }
+
+    const messageEl = document.createElement("p");
+    messageEl.textContent = message;
+    messageEl.className = "text-gray-700 text-base leading-relaxed";
+    modal.appendChild(messageEl);
+
+    const buttons = document.createElement("div");
+    buttons.className = "flex gap-3 pt-2";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.textContent = cancelText;
+    cancelBtn.className = `flex-1 py-2 rounded-xl font-medium transition ${cancelButtonClass}`;
+    buttons.appendChild(cancelBtn);
+
+    const okBtn = document.createElement("button");
+    okBtn.type = "button";
+    okBtn.textContent = okText;
+    okBtn.className = `flex-1 py-2 rounded-xl font-semibold transition ${okButtonClass}`;
+    buttons.appendChild(okBtn);
+
+    modal.appendChild(buttons);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const cleanup = () => {
+      overlay.remove();
+      document.removeEventListener("keydown", onKeyDown);
+    };
+
+    const handleResolve = (value) => {
+      cleanup();
+      resolve(value);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") handleResolve(false);
+      if (e.key === "Enter") handleResolve(true);
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) handleResolve(false);
+    });
+
+    cancelBtn.addEventListener("click", () => handleResolve(false));
+    okBtn.addEventListener("click", () => handleResolve(true));
+  });
 }
 
 async function deleteTask(taskId) {

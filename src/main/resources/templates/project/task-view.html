@@ -32,22 +32,8 @@
             <div class="flex items-center gap-3">
               <button
                 id="share-board-btn"
-                class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-md shadow-sm transition-all duration-200 hover:shadow-md text-sm"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1.5 rounded-md shadow-sm transition-all duration-200 hover:shadow-md text-sm"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
                 Share
               </button>
             </div>
@@ -682,7 +668,7 @@
           <div class="bg-white rounded-lg shadow-2xl w-[460px] p-5">
             <!-- Header -->
             <div class="flex justify-between items-center mb-4">
-              <h2 class="text-lg font-semibold text-gray-800">Share board</h2>
+              <h2 class="text-lg font-semibold text-gray-600">Share board</h2>
               <button
                 id="close-share-popup"
                 class="text-gray-500 hover:text-gray-700 text-xl"
@@ -715,7 +701,7 @@
               </select>
               <button
                 id="invite-btn"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-semibold"
               >
                 Share
               </button>
@@ -748,14 +734,6 @@
                   class="text-xs text-gray-500 mt-1 ml-5 italic"
                 ></p>
               </div>
-              <select
-                id="link-permission"
-                class="text-xs border border-gray-300 rounded-md px-2 py-1 text-gray-700"
-              >
-                <option>Can view</option>
-                <option>Can edit</option>
-                <option>Admin</option>
-              </select>
             </div>
 
             <!-- Tabs -->
@@ -781,6 +759,14 @@
             >
               <!-- Render member rows here -->
             </div>
+
+            <!-- Join requests list -->
+            <div
+              id="join-requests-list"
+              class="hidden space-y-2 max-h-[280px] overflow-y-auto mt-2"
+            >
+              <!-- Render join request rows here -->
+            </div>
           </div>
         </div>
         <!-- 📛 Confirm Delete Popup -->
@@ -793,7 +779,7 @@
           </p>
           <button
             id="confirm-delete-link"
-            class="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-2 rounded-md font-medium"
+            class="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-2 rounded-md font-semibold"
           >
             Xóa liên kết chia sẻ
           </button>
@@ -1001,7 +987,7 @@
               <p class="text-sm font-medium text-gray-700 mb-2">
                 Recently Viewed
               </p>
-              <div id="recent-links" class="space-y-1 text-sm text-blue-600">
+              <div id="recent-links" class="space-y-1.5">
                 <p class="text-gray-400 italic text-sm">
                   Loading recent links...
                 </p>
@@ -1071,15 +1057,15 @@
         </div>
         <div
           id="card-context-menu"
-          class="hidden fixed z-[70] bg-white border border-gray-300 rounded-lg shadow-lg w-64 p-2 space-y-1"
+          class="hidden fixed z-[70] bg-white border border-gray-200 rounded-xl shadow-2xl w-56 py-2"
         >
           <button
             data-action="open"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-all duration-150"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
+              class="h-5 w-5 text-gray-500"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -1090,15 +1076,16 @@
                 clip-rule="evenodd"
               />
             </svg>
-            Open card
+            <span>Open card</span>
           </button>
+          
           <button
             data-action="labels"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-all duration-150"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
+              class="h-5 w-5 text-gray-500"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -1108,15 +1095,16 @@
                 clip-rule="evenodd"
               />
             </svg>
-            Edit labels
+            <span>Edit card</span>
           </button>
+          
           <button
             data-action="members"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-all duration-150"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
+              class="h-5 w-5 text-gray-500"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -1126,35 +1114,16 @@
                 clip-rule="evenodd"
               />
             </svg>
-            Change members
-          </button>
-
-          <button
-            data-action="cover"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            Change cover
+            <span>Change members</span>
           </button>
 
           <button
             data-action="dates"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
+            class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-all duration-150"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
+              class="h-5 w-5 text-gray-500"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -1164,52 +1133,18 @@
                 clip-rule="evenodd"
               />
             </svg>
-            Edit dates
+            <span>Edit dates</span>
           </button>
 
-          <button
-            data-action="move"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            Move
-          </button>
+          <div class="border-t border-gray-200 my-1"></div>
 
-          <button
-            data-action="copy"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"
-              />
-              <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h6a2 2 0 00-2-2H5z" />
-            </svg>
-            Copy card
-          </button>
           <button
             data-action="mark-complete"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-green-700 hover:bg-green-500 hover:text-white rounded"
+            class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-50 hover:text-green-800 transition-all duration-150"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
+              class="h-5 w-5 text-green-600"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -1219,54 +1154,18 @@
                 clip-rule="evenodd"
               />
             </svg>
-            Mark as Complete
+            <span>Mark as Complete</span>
           </button>
 
-          <button
-            data-action="copy-link"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            Copy link
-          </button>
-
-          <button
-            data-action="mirror"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M12 1.586l-4 4V4a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h2a2 2 0 002-2v-1.586l4 4a1 1 0 001.707-.707V2.293a1 1 0 00-1.707-.707zM6 12H4V4h2v8zm8 0V4l-3 3 3 3z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            Mirror
-          </button>
+          <div class="border-t border-gray-200 my-1"></div>
 
           <button
             data-action="archive"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-red-600 hover:bg-red-500 hover:text-white rounded"
+            class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-orange-700 hover:bg-orange-50 hover:text-orange-800 transition-all duration-150"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
+              class="h-5 w-5 text-orange-600"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -1277,17 +1176,17 @@
               />
               <path d="M8 8a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
             </svg>
-            Archive
+            <span>Archive</span>
           </button>
 
           <button
             id="delete-card-btn"
             data-action="delete"
-            class="w-full text-left flex items-center gap-2 px-2 py-1.5 text-sm text-white bg-red-600 hover:bg-red-700 rounded hidden"
+            class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-b-xl transition-all duration-150 hidden"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
+              class="h-5 w-5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -1297,7 +1196,7 @@
                 clip-rule="evenodd"
               />
             </svg>
-            Delete permanently
+            <span>Delete permanently</span>
           </button>
         </div>
 

@@ -1,5 +1,6 @@
 // ================== IMPORT UTILS ==================
 import { showToast, safeStop } from "./utils.js";
+import { updateCardDate } from "./main.js";
 
 // ================== STATE ==================
 const datePopup = document.getElementById("date-popup");
@@ -370,13 +371,17 @@ removeDateBtn?.addEventListener("click", async () => {
         const task = await taskRes.json();
         // Cập nhật UI với dữ liệu mới nhất từ server (deadline sẽ là null)
         updateDateSectionUI(task.deadline);
+        // Cập nhật card bên ngoài
+        updateCardDate(taskId, task.deadline);
       } else {
         // Nếu reload thất bại, set deadline thành null
         updateDateSectionUI(null);
+        updateCardDate(taskId, null);
       }
     } catch (reloadErr) {
       console.warn(" Could not reload task data:", reloadErr);
       updateDateSectionUI(null);
+      updateCardDate(taskId, null);
     }
   } catch (err) {
     console.error(" Error removing deadline:", err);
@@ -394,6 +399,8 @@ function composeDateTime(dateVal, timeVal) {
 
 saveDateBtn?.addEventListener("click", async () => {
   const taskId = window.CURRENT_TASK_ID;
+  if (!taskId) return;
+
   const startDateIso = startCheck.checked ? readDateValue(startDateInput) : "";
   const startTimeVal = startCheck.checked ? readTimeValue(startTimeInput) : "";
   const dueDateIso = dueCheck.checked ? readDateValue(dueDateInput) : "";
@@ -419,16 +426,42 @@ saveDateBtn?.addEventListener("click", async () => {
       }),
     });
 
-    if (!res.ok) throw new Error();
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to save date");
+    }
+
     const updated = await res.json();
 
-    // Cập nhật UI bên ngoài với dữ liệu từ server
-    updateDateSectionUI(updated.deadline);
+    // Reload task data từ server để đảm bảo đồng bộ với database
+    try {
+      const taskRes = await fetch(`/api/tasks/${taskId}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+      });
+      if (taskRes.ok) {
+        const task = await taskRes.json();
+        // Cập nhật UI modal với dữ liệu mới nhất từ server
+        updateDateSectionUI(task.deadline);
+        // Cập nhật card bên ngoài column
+        updateCardDate(taskId, task.deadline);
+      } else {
+        // Nếu reload thất bại, dùng dữ liệu từ response ban đầu
+        updateDateSectionUI(updated.deadline);
+        updateCardDate(taskId, updated.deadline);
+      }
+    } catch (reloadErr) {
+      console.warn(" Could not reload task data:", reloadErr);
+      // Fallback: dùng dữ liệu từ response ban đầu
+      updateDateSectionUI(updated.deadline);
+      updateCardDate(taskId, updated.deadline);
+    }
 
     closeDatePopup();
   } catch (err) {
     console.error(" saveDate error:", err);
-    showToast(" Failed to save date", "error");
+    showToast(err.message || "Failed to save date", "error");
   }
 });
 // Mini calendar rendering

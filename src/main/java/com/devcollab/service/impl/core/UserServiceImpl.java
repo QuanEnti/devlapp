@@ -1,15 +1,19 @@
 package com.devcollab.service.impl.core;
 
 import com.devcollab.domain.User;
+import com.devcollab.dto.UserDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.UserRepository;
 import com.devcollab.service.core.UserService;
 import com.devcollab.service.event.AppEventService;
 // import com.devcollab.service.system.NotificationService;
+import com.devcollab.service.system.AuthService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,6 +32,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
     private final AppEventService appEventService;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
     // private final NotificationService notificationService;
 
     @Override
@@ -92,7 +97,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public User update(Long id, User patch) {
+    public User update(Long id, User patch, Authentication auth) {
+
+        // Lấy user đang đăng nhập từ auth (Google hoặc Local đều OK)
+        UserDTO current = authService.getCurrentUser(auth);
+
+        // ❗ Chỉ cho phép update hồ sơ của chính mình
+        if (!current.getUserId().equals(id)) {
+            throw new SecurityException("Bạn không thể chỉnh sửa hồ sơ của người khác.");
+        }
+
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy user với ID: " + id));
 
@@ -113,8 +127,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         existing.setUpdatedAt(LocalDateTime.now());
         User saved = userRepository.save(existing);
         appEventService.publishUserStatusChanged(saved);
-        // notificationService.notifyChangeProfile(saved); Khi sửa hồ sơ thì không cần thông báo
+        // notificationService.notifyChangeProfile(saved); Khi sửa hồ sơ thì không cần
+        // thông báo
         return saved;
+    }
+
+    @Override
+    public User saveAdminOverride(User user) {
+        return userRepository.save(user);
     }
 
     @Override
@@ -195,7 +215,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         });
     }
 
-
     @Override
     public void updatePassword(String email, String newPassword) {
         userRepository.findByEmail(email).ifPresent(user -> {
@@ -206,7 +225,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 user.setProvider("local");
             }
             userRepository.save(user);
-            // notificationService.notifyChangePassword(user); Khi đổi mật khẩu thì không cần thông báo
+            // notificationService.notifyChangePassword(user); Khi đổi mật khẩu thì không
+            // cần thông báo
         });
     }
 
@@ -246,9 +266,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public String encodePassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
     }
+
     @Override
-    public long countByStatus(String status){
-        return   userRepository.countByStatus(status);
+    public long countByStatus(String status) {
+        return userRepository.countByStatus(status);
     }
 
 }

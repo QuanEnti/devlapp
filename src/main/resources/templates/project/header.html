@@ -9,9 +9,9 @@
       alt="DevCollab Logo"
       class="w-9 h-9 rounded-lg shadow-sm"
     />
-    <span class="text-2xl font-extrabold text-blue-700 tracking-wider"
-      >DevCollab</span
-    >
+    <span class="text-2xl font-extrabold text-blue-700 tracking-wider">
+      DevCollab
+    </span>
   </div>
 
   <!-- 🔹 Search -->
@@ -58,6 +58,7 @@
 
   <!-- 🔹 Right side -->
   <div class="flex items-center space-x-6 flex-shrink-0">
+    <!-- 🔔 Notification button -->
     <div class="relative">
       <button
         id="open-notif-btn"
@@ -74,6 +75,8 @@
         ></span>
       </button>
     </div>
+
+    <!-- 🔔 Notification panel -->
     <div
       id="notif-panel"
       class="hidden absolute right-6 top-16 w-[420px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-[150]"
@@ -113,7 +116,7 @@
             <!-- Dropdown menu -->
             <div
               id="notif-options-menu"
-              class="hidden absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-[999] animate-[fadeIn_0.15s_ease-out]"
+              class="hidden absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-[999]"
             >
               <ul class="divide-y divide-gray-100">
                 <!-- 📧 Toggle Email Notification -->
@@ -125,9 +128,9 @@
                   >
                     <div class="flex items-center gap-2 text-gray-700">
                       <span class="text-[16px]">📧</span>
-                      <span id="email-toggle-text" class="font-medium"
-                        >Tắt thông báo qua Gmail</span
-                      >
+                      <span id="email-toggle-text" class="font-medium">
+                        Tắt thông báo qua Gmail
+                      </span>
                     </div>
                     <!-- 🔘 Switch -->
                     <div
@@ -156,6 +159,7 @@
           </div>
         </div>
       </div>
+
       <!-- Empty State -->
       <div
         id="notif-empty"
@@ -177,6 +181,7 @@
         <!-- JS sẽ render nội dung vào đây -->
       </div>
     </div>
+
     <!-- 👤 User info -->
     <div class="relative">
       <div
@@ -188,8 +193,9 @@
             <span
               class="block text-sm font-semibold text-gray-800"
               th:text="${user != null ? user.name : 'User'}"
-              >User</span
             >
+              User
+            </span>
 
             <!-- 🏆 Premium -->
             <span
@@ -206,12 +212,12 @@
                 <path
                   fill-rule="evenodd"
                   d="M10 2a1 1 0 01.894.553l1.382 2.802
-                                         3.09.45a1 1 0 01.554 1.707l-2.236
-                                         2.18.528 3.078a1 1 0 01-1.45
-                                         1.054L10 12.347l-2.762
-                                         1.457a1 1 0 01-1.45-1.054l.528-3.078-2.236-2.18a1
-                                         1 0 01.554-1.707l3.09-.45L9.106
-                                         2.553A1 1 0 0110 2z"
+                     3.09.45a1 1 0 01.554 1.707l-2.236
+                     2.18.528 3.078a1 1 0 01-1.45
+                     1.054L10 12.347l-2.762
+                     1.457a1 1 0 01-1.45-1.054l.528-3.078-2.236-2.18a1
+                     1 0 01.554-1.707l3.09-.45L9.106
+                     2.553A1 1 0 0110 2z"
                   clip-rule="evenodd"
                 />
               </svg>
@@ -223,21 +229,23 @@
               th:if="${user != null && !user.isPremium}"
               class="bg-gray-200 text-gray-600 text-[11px] font-medium px-2 py-0.5 rounded-full shadow-sm"
               title="Tài khoản miễn phí"
-              >Free</span
             >
+              Free
+            </span>
           </div>
 
           <span
             class="block text-xs text-gray-500"
             th:text="${user != null ? user.email : ''}"
-            >user@email.com</span
           >
+            user@email.com
+          </span>
         </div>
 
         <!-- Avatar -->
         <img
           th:src="${user != null && user.avatarUrl != null && !#strings.isEmpty(user.avatarUrl)
-                              ? user.avatarUrl : '/photo/default-avatar.png'}"
+                   ? user.avatarUrl : '/photo/default-avatar.png'}"
           class="rounded-full w-10 h-10 border-2 border-white shadow-lg object-cover"
           alt="User Avatar"
         />
@@ -265,90 +273,254 @@
     </div>
   </div>
 
+  <!-- WebSocket libs -->
   <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/stompjs@2/dist/stomp.min.js"></script>
 
+  <!-- HEADER SCRIPT (PERFORMANCE VERSION) -->
   <script th:inline="javascript">
     document.addEventListener("DOMContentLoaded", function () {
-      // ================== 🔔 NOTIFICATIONS PANEL ==================
-      const notifBtn = document.getElementById("open-notif-btn");
-      const notifPanel = document.getElementById("notif-panel");
-      const notifList = document.getElementById("notif-list");
-      const notifEmpty = document.getElementById("notif-empty");
-      const toggleUnread = document.getElementById("toggle-unread");
-      const notifDot = document.getElementById("notif-dot");
-      const markAllBtn = document.getElementById("mark-all-read");
-      const closeNotifPanel = document.getElementById("close-notif-panel");
-      const notifCountBadge = document.getElementById("notif-count-badge");
+      (function (window, document) {
+        // ================== 🧠 STATE ==================
+        const state = {
+          user: null,
+          notifications: [],
+          notifLoadedAt: 0,
+          notifLoading: false,
+          wsClient: null,
+          wsConnected: false,
+          wsRetry: 0,
+          wsMaxRetry: 8,
+          wsBaseDelay: 1000,
+          wsMaxDelay: 30000,
+          notifPanelOpen: false,
+          notifFilterUnread: false,
+          searchAbortController: null,
+        };
 
-      function updateUnreadBadge(count) {
-        if (!notifCountBadge) return;
-        const c = Number(count) || 0;
-        if (c <= 0) {
-          notifCountBadge.classList.add("hidden");
-          notifCountBadge.textContent = "";
-          notifDot?.classList.add("hidden");
-        } else {
-          notifCountBadge.classList.remove("hidden");
-          notifCountBadge.textContent = c > 99 ? "99+" : String(c);
-          notifDot?.classList.remove("hidden");
+        // ================== 🔗 DOM ==================
+        const dom = {
+          notifBtn: document.getElementById("open-notif-btn"),
+          notifPanel: document.getElementById("notif-panel"),
+          notifList: document.getElementById("notif-list"),
+          notifEmpty: document.getElementById("notif-empty"),
+          toggleUnread: document.getElementById("toggle-unread"),
+          notifDot: document.getElementById("notif-dot"),
+          notifCountBadge: document.getElementById("notif-count-badge"),
+          markAllBtn: document.getElementById("mark-all-read"),
+          notifMenuBtn: document.getElementById("notif-options-btn"),
+          notifMenu: document.getElementById("notif-options-menu"),
+          toggleEmailBtn: document.getElementById("toggle-email-btn"),
+          emailToggleText: document.getElementById("email-toggle-text"),
+          openSettingsLink: document.getElementById("open-settings-link"),
+          userBtn: document.getElementById("userMenuButton"),
+          userDropdown: document.getElementById("userDropdown"),
+          logoutBtn: document.getElementById("logoutBtn"),
+          searchInput: document.getElementById("searchInput"),
+          searchDropdown: document.getElementById("searchDropdown"),
+          searchResults: document.getElementById("searchResults"),
+        };
+
+        // user header elements
+        const userHeaderDom = {
+          nameEl: document.querySelector("#userMenuButton span[th\\:text]"),
+          emailEl: document.querySelector("#userMenuButton .text-xs"),
+          freeBadge: document.querySelector("#userMenuButton .bg-gray-200"),
+          premiumBadge: document.querySelector(
+            "#userMenuButton .bg-yellow-400"
+          ),
+          avatarImg: document.querySelector(
+            '#userMenuButton img[alt="User Avatar"]'
+          ),
+        };
+
+        // ================== 🔧 HELPERS ==================
+        function getLocalToken() {
+          return (
+            localStorage.getItem("token") ||
+            localStorage.getItem("AUTH_TOKEN") ||
+            ""
+          );
         }
-      }
 
-      // Tăng 1 khi nhận realtime (nếu panel đang đóng)
-      function incrementUnreadBadge() {
-        if (!notifCountBadge) return;
-        const isOpen = !document
-          .getElementById("notif-panel")
-          .classList.contains("hidden");
-        if (isOpen) return; // panel mở thì sẽ reload list và tính lại
+        function getAuthHeaders() {
+          const token = getLocalToken();
+          return token
+            ? {
+                Authorization: "Bearer " + token,
+              }
+            : {};
+        }
 
-        const cur = parseInt(notifCountBadge.textContent) || 0;
-        updateUnreadBadge(cur + 1);
-      }
+        function escapeHtml(unsafe) {
+          if (typeof unsafe !== "string") return "";
+          return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
 
-      // ================== 📥 Load Notifications (Tre llo-style) ==================
-      async function loadNotifications(onlyUnread = false) {
-        const token = localStorage.getItem("token");
-        notifList.innerHTML = `<p class="text-gray-400 text-sm italic text-center py-4">Loading...</p>`;
-        notifEmpty.classList.add("hidden");
+        function formatRelativeTime(isoString) {
+          if (!isoString) return "";
+          const now = new Date();
+          const date = new Date(isoString);
+          const diffMin = Math.floor((now - date) / 60000);
+          if (diffMin < 1) return "just now";
+          if (diffMin < 60) return diffMin + " mins ago";
+          const hrs = Math.floor(diffMin / 60);
+          if (hrs < 24) return hrs + " hours ago";
+          const days = Math.floor(hrs / 24);
+          return days + " days ago";
+        }
 
-        try {
-          const res = await fetch(`/api/notifications`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (!res.ok)
-            throw new Error(`Failed to fetch notifications (${res.status})`);
+        function updateUnreadBadge(count) {
+          if (!dom.notifCountBadge) return;
+          const c = Number(count) || 0;
+          if (c <= 0) {
+            dom.notifCountBadge.classList.add("hidden");
+            dom.notifCountBadge.textContent = "";
+            dom.notifDot && dom.notifDot.classList.add("hidden");
+          } else {
+            dom.notifCountBadge.classList.remove("hidden");
+            dom.notifCountBadge.textContent = c > 99 ? "99+" : String(c);
+            dom.notifDot && dom.notifDot.classList.remove("hidden");
+          }
+        }
 
-          const data = await res.json();
-          const list = Array.isArray(data)
-            ? data
-            : data?.content || data?.notifications || data?.data || [];
+        function incrementUnreadBadge() {
+          if (!dom.notifCountBadge) return;
+          if (state.notifPanelOpen) return; // đang mở thì sẽ reload list
+          const cur = parseInt(dom.notifCountBadge.textContent) || 0;
+          updateUnreadBadge(cur + 1);
+        }
 
-          const totalUnread = list.filter(
-            (n) => n.status && n.status.toLowerCase() !== "read"
-          ).length;
-          updateUnreadBadge(totalUnread);
+        function backoffDelay(attempt) {
+          const expo = Math.min(
+            state.wsMaxDelay,
+            state.wsBaseDelay * Math.pow(2, attempt)
+          );
+          return Math.floor(expo * (0.7 + Math.random() * 0.6));
+        }
+
+        function safeShowToast(msg) {
+          if (typeof window.showToast === "function") {
+            window.showToast(msg);
+          } else {
+            console.log("TOAST:", msg);
+          }
+        }
+
+        function safeShowToastNotification(title, message, avatar, senderName) {
+          if (typeof window.showToastNotification === "function") {
+            window.showToastNotification(title, message, avatar, senderName);
+          } else {
+            console.log("NOTIF:", title, message);
+          }
+        }
+
+        // ================== 👤 USER HEADER ==================
+        async function fetchCurrentUser() {
+          if (state.user) return state.user;
+          try {
+            const res = await fetch("/api/auth/me", {
+              headers: getAuthHeaders(),
+              credentials: "include",
+            });
+            if (!res.ok) throw new Error("Unauthorized");
+            const data = await res.json();
+            const u = data.user || data;
+            state.user = {
+              name: u.name || u.fullName || "User",
+              email: u.email || "",
+              avatarUrl:
+                u.avatarUrl && u.avatarUrl.trim() !== "" ? u.avatarUrl : "",
+              isPremium:
+                !!u.isPremium ||
+                (Array.isArray(u.roles) && u.roles.includes("ROLE_PREMIUM")),
+            };
+            return state.user;
+          } catch (err) {
+            console.warn("⚠️ fetchCurrentUser failed:", err);
+            return null;
+          }
+        }
+
+        async function initUserHeader() {
+          const { nameEl, emailEl, freeBadge, premiumBadge, avatarImg } =
+            userHeaderDom;
+
+          // Nếu Thymeleaf đã render đầy đủ thì không fetch nữa
+          if (
+            nameEl &&
+            nameEl.textContent.trim() !== "User" &&
+            emailEl &&
+            emailEl.textContent.trim() !== ""
+          ) {
+            return;
+          }
+
+          const user = await fetchCurrentUser();
+          if (!user) return;
+
+          if (nameEl) nameEl.textContent = user.name;
+          if (emailEl) emailEl.textContent = user.email;
+
+          if (user.isPremium) {
+            freeBadge && freeBadge.classList.add("hidden");
+            premiumBadge && premiumBadge.classList.remove("hidden");
+          } else {
+            premiumBadge && premiumBadge.classList.add("hidden");
+            freeBadge && freeBadge.classList.remove("hidden");
+          }
+
+          if (avatarImg) {
+            if (user.avatarUrl) {
+              avatarImg.src = user.avatarUrl;
+            } else {
+              // Tạo avatar chữ cái đầu (canvas)
+              const canvas = document.createElement("canvas");
+              canvas.width = 100;
+              canvas.height = 100;
+              const ctx = canvas.getContext("2d");
+              ctx.fillStyle = "#2563eb";
+              ctx.beginPath();
+              ctx.arc(50, 50, 50, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = "#fff";
+              ctx.font = "bold 50px Inter, sans-serif";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.fillText(user.name.charAt(0).toUpperCase(), 50, 55);
+              avatarImg.src = canvas.toDataURL();
+            }
+          }
+        }
+
+        // ================== 🔔 NOTIFICATIONS ==================
+        function renderNotifications() {
+          const list = state.notifications || [];
+          const onlyUnread = state.notifFilterUnread;
 
           const filtered = onlyUnread
             ? list.filter((n) => n.status && n.status.toLowerCase() !== "read")
             : list;
 
+          if (!dom.notifList || !dom.notifEmpty) return;
+
           if (filtered.length === 0) {
-            notifEmpty.classList.remove("hidden");
-            notifList.innerHTML = "";
-            markAllBtn?.classList.add("hidden");
-            notifDot.classList.add("hidden");
+            dom.notifEmpty.classList.remove("hidden");
+            dom.notifList.innerHTML = "";
+            dom.markAllBtn && dom.markAllBtn.classList.add("hidden");
+            dom.notifDot && dom.notifDot.classList.add("hidden");
             return;
           }
 
-          const hasUnread = list.some(
-            (n) => n.status && n.status.toLowerCase() !== "read"
-          );
-          notifDot.classList.toggle("hidden", !hasUnread);
-          markAllBtn?.classList.remove("hidden");
+          dom.notifEmpty.classList.add("hidden");
+          dom.markAllBtn && dom.markAllBtn.classList.remove("hidden");
 
-          notifList.innerHTML = filtered
+          const html = filtered
             .map((n) => {
               const id = n.notificationId || n.id;
               const link = n.link || "#";
@@ -362,672 +534,598 @@
                   : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
               return `
-            <div onclick="handleNotificationClick(${id}, '${link}')"
-                class="bg-white px-4 py-3 hover:bg-gray-50 transition cursor-pointer relative border-b border-gray-100 ${
-                  isRead ? "opacity-60" : ""
-                }">
-              <div class="flex items-start gap-3">
-                <img src="${senderAvatar}" 
-                    class="w-9 h-9 rounded-full border object-cover" 
-                    alt="avatar">
-                <div class="flex-1 text-sm">
-                  <p class="text-gray-800 font-medium">${senderName}</p>
-                  <p class="text-gray-700 leading-snug">${msg}</p>
-                  <p class="text-xs text-gray-400 mt-1">${formatRelativeTime(
-                    createdAt
-                  )}</p>
+                <div 
+                  class="bg-white px-4 py-3 hover:bg-gray-50 transition cursor-pointer relative border-b border-gray-100 ${
+                    isRead ? "opacity-60" : ""
+                  }"
+                  data-notif-id="${id}"
+                  data-notif-link="${encodeURIComponent(link)}"
+                >
+                  <div class="flex items-start gap-3">
+                    <img 
+                      src="${senderAvatar}" 
+                      class="w-9 h-9 rounded-full border object-cover" 
+                      alt="avatar"
+                    />
+                    <div class="flex-1 text-sm">
+                      <p class="text-gray-800 font-medium">${escapeHtml(
+                        senderName
+                      )}</p>
+                      <p class="text-gray-700 leading-snug">${escapeHtml(
+                        msg
+                      )}</p>
+                      <p class="text-xs text-gray-400 mt-1">${formatRelativeTime(
+                        createdAt
+                      )}</p>
+                    </div>
+                    ${
+                      !isRead
+                        ? `<span class="absolute right-3 top-3 w-2.5 h-2.5 bg-blue-500 rounded-full"></span>`
+                        : ""
+                    }
+                  </div>
                 </div>
-                ${
-                  !isRead
-                    ? `<span class="absolute right-3 top-3 w-2.5 h-2.5 bg-blue-500 rounded-full"></span>`
-                    : ""
-                }
-              </div>
-            </div>`;
+              `;
             })
             .join("");
-        } catch (err) {
-          console.error("❌ loadNotifications:", err);
-          notifList.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Failed to load notifications</p>`;
-        }
-      }
 
-      // ================== ✅ Mark Read ==================
-      async function markNotificationRead(id) {
-        if (!id) return;
-        const token = localStorage.getItem("token");
-        try {
-          const res = await fetch(`/api/notifications/${id}/read`, {
-            method: "PUT",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (!res.ok) console.warn("⚠️ Failed to mark read:", res.status);
-        } catch (err) {
-          console.error("❌ markNotificationRead:", err);
-        }
-      }
-
-      // ================== ✅ Mark All as Read ==================
-      async function markAllNotificationsRead() {
-        const token = localStorage.getItem("token");
-        try {
-          const res = await fetch(`/api/notifications/read-all`, {
-            method: "PUT",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (!res.ok) throw new Error("Failed to mark all as read");
-          await loadNotifications(toggleUnread.checked);
-          updateUnreadBadge(0);
-        } catch (err) {
-          console.error("❌ markAllNotificationsRead:", err);
-        }
-      }
-      if (markAllBtn)
-        markAllBtn.addEventListener("click", markAllNotificationsRead);
-
-      // ================== 🔗 Handle Click Notification ==================
-      async function handleNotificationClick(id, link) {
-        console.log("🟣 CLICK:", id, link);
-        await markNotificationRead(id);
-        // Giảm 1 local (UI) – server sẽ sync lại khi reload panel
-        const cur =
-          parseInt(document.getElementById("notif-count-badge")?.textContent) ||
-          0;
-        if (cur > 0) updateUnreadBadge(cur - 1);
-
-        if (!link || link === "#" || link === "null") {
-          console.log("ℹ️ No link to redirect.");
-          return;
+          dom.notifList.innerHTML = html;
         }
 
-        // 🧩 Trường hợp task notification
-        if (link.includes("/tasks/")) {
-          const taskId = link.split("taskId=")[1] || link.split("/tasks/")[1];
-          if (taskId) {
-            await openTaskDetailFromApi(taskId);
+        async function loadNotifications(force = false) {
+          if (!dom.notifList || !dom.notifEmpty) return;
+          if (state.notifLoading) return;
+
+          const now = Date.now();
+          // cache 10s khi panel đang mở, tránh spam server
+          if (
+            !force &&
+            now - state.notifLoadedAt < 10000 &&
+            state.notifications.length > 0
+          ) {
+            renderNotifications();
             return;
           }
-        }
 
-        // 🧭 Nếu là link dự án thì mở nội bộ (cùng tab)
-        if (link.startsWith("/view/pm/project/")) {
-          window.location.href = link; // 👉 Chuyển nội bộ thay vì mở tab mới
-          return;
-        }
+          state.notifLoading = true;
+          dom.notifList.innerHTML =
+            '<p class="text-gray-400 text-sm italic text-center py-4">Loading...</p>';
+          dom.notifEmpty.classList.add("hidden");
 
-        // 🌐 Mặc định mở tab mới
-        window.open(link, "_blank");
-      }
-      window.handleNotificationClick = handleNotificationClick;
-
-      async function openTaskDetailFromApi(taskId) {
-        try {
-          const res = await fetch(`/api/tasks/${taskId}`, {
-            headers: {
-              Authorization: "Bearer " + localStorage.getItem("token"),
-            },
-          });
-          if (!res.ok) throw new Error("Failed to load task");
-          const task = await res.json();
-          openTaskModal(task);
-        } catch (err) {
-          console.error("❌ openTaskDetailFromApi:", err);
-          alert("Không thể tải thông tin công việc.");
-        }
-      }
-
-      // ================== 🪟 Render Task Detail into Modal ==================
-      function openTaskModal(task) {
-        const modal = document.getElementById("task-detail-modal");
-        if (!modal) {
-          console.error("❌ Modal task-detail-modal not found in DOM");
-          return;
-        }
-
-        const titleEl = modal.querySelector("h2.text-2xl");
-        if (titleEl) titleEl.textContent = task.title || "(Untitled Task)";
-
-        const descContent = modal.querySelector("#description-content");
-        const descPlaceholder = modal.querySelector("#description-placeholder");
-        if (descContent && descPlaceholder) {
-          if (task.descriptionMd && task.descriptionMd.trim() !== "") {
-            descContent.textContent = task.descriptionMd;
-            descPlaceholder.classList.add("hidden");
-          } else {
-            descContent.textContent = "";
-            descPlaceholder.classList.remove("hidden");
-          }
-        }
-
-        const dueText = modal.querySelector("#due-date-text");
-        const dueStatus = modal.querySelector("#due-date-status");
-        if (dueText && dueStatus) {
-          if (task.deadline) {
-            const date = new Date(task.deadline);
-            dueText.textContent = date.toLocaleString();
-            dueStatus.textContent = "Due";
-            dueStatus.className =
-              "ml-2 text-xs font-medium rounded px-2 py-0.5 bg-yellow-100 text-yellow-700";
-          } else {
-            dueText.textContent = "No due date";
-            dueStatus.textContent = "None";
-            dueStatus.className =
-              "ml-2 text-xs font-medium rounded px-2 py-0.5 bg-gray-200 text-gray-600";
-          }
-        }
-
-        const attachList = modal.querySelector("#attachments-list");
-        if (attachList) {
-          if (task.attachments && task.attachments.length > 0) {
-            attachList.innerHTML = task.attachments
-              .map(
-                (a) => `
-          <div class="flex items-center justify-between border rounded px-3 py-2">
-            <a href="${
-              a.fileUrl
-            }" target="_blank" class="text-blue-600 hover:underline truncate">${
-                  a.fileName
-                }</a>
-            <span class="text-xs text-gray-400">${new Date(
-              a.uploadedAt
-            ).toLocaleDateString()}</span>
-          </div>`
-              )
-              .join("");
-          } else {
-            attachList.innerHTML = `<p class="text-gray-400 italic">No attachments yet.</p>`;
-          }
-        }
-
-        if (typeof loadActivityFeed === "function") {
-          loadActivityFeed(task.taskId);
-        }
-
-        modal.classList.remove("hidden");
-      }
-
-      // ================== 📡 WebSocket Realtime Notifications ==================
-      let stompClient = null;
-      let wsConnected = false;
-      let wsRetry = 0;
-      const WS_MAX_RETRY = 8; // tối đa 8 lần (≈ ~30s backoff)
-      const WS_BASE_DELAY = 1000; // 1s
-      const WS_MAX_DELAY = 30000; // 30s
-      let wsSubscription = null;
-
-      function backoffDelay(attempt) {
-        // exponential backoff + jitter
-        const expo = Math.min(
-          WS_MAX_DELAY,
-          WS_BASE_DELAY * Math.pow(2, attempt)
-        );
-        return Math.floor(expo * (0.7 + Math.random() * 0.6)); // 70%–130% jitter
-      }
-
-      async function connectWebSocketNotifications() {
-        let token = localStorage.getItem("token");
-
-        if (!token) {
           try {
-            const res = await fetch("/api/auth/me", { credentials: "include" });
-            if (res.ok) {
-              const data = await res.json();
-              console.log(
-                "✅ Fallback via cookie:",
-                data.email || data.user?.email
-              );
+            const res = await fetch("/api/notifications", {
+              headers: getAuthHeaders(),
+              credentials: "include",
+            });
+            if (!res.ok)
+              throw new Error("Failed to fetch notifications: " + res.status);
+
+            const data = await res.json();
+            const list = Array.isArray(data)
+              ? data
+              : data.content || data.notifications || data.data || [];
+
+            state.notifications = list;
+            state.notifLoadedAt = Date.now();
+
+            const totalUnread = list.filter(
+              (n) => n.status && n.status.toLowerCase() !== "read"
+            ).length;
+            updateUnreadBadge(totalUnread);
+
+            const hasUnread = totalUnread > 0;
+            dom.notifDot && dom.notifDot.classList.toggle("hidden", !hasUnread);
+
+            renderNotifications();
+          } catch (err) {
+            console.error("❌ loadNotifications:", err);
+            dom.notifList.innerHTML =
+              '<p class="text-red-500 text-sm text-center py-4">Failed to load notifications</p>';
+          } finally {
+            state.notifLoading = false;
+          }
+        }
+
+        async function markNotificationRead(id) {
+          if (!id) return;
+          try {
+            await fetch(`/api/notifications/${id}/read`, {
+              method: "PUT",
+              headers: getAuthHeaders(),
+              credentials: "include",
+            });
+            // cập nhật local state
+            state.notifications = state.notifications.map((n) =>
+              (n.notificationId || n.id) === id ? { ...n, status: "READ" } : n
+            );
+          } catch (err) {
+            console.error("❌ markNotificationRead:", err);
+          }
+        }
+
+        async function markAllNotificationsRead() {
+          try {
+            const res = await fetch("/api/notifications/read-all", {
+              method: "PUT",
+              headers: getAuthHeaders(),
+              credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to mark all as read");
+
+            // update local
+            state.notifications = state.notifications.map((n) => ({
+              ...n,
+              status: "READ",
+            }));
+            updateUnreadBadge(0);
+            dom.notifDot && dom.notifDot.classList.add("hidden");
+            renderNotifications();
+          } catch (err) {
+            console.error("❌ markAllNotificationsRead:", err);
+          }
+        }
+
+        async function openTaskDetailFromApi(taskId) {
+          try {
+            const res = await fetch(`/api/tasks/${taskId}`, {
+              headers: getAuthHeaders(),
+              credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to load task");
+            const task = await res.json();
+            if (typeof window.openTaskModal === "function") {
+              window.openTaskModal(task);
             } else {
-              console.warn("⚠️ Không thể xác thực cookie, WS sẽ không kết nối");
-              return;
+              // fallback: đơn giản redirect
+              window.location.href = `/view/pm/task?taskId=${taskId}`;
             }
           } catch (err) {
-            console.error("❌ Lỗi khi xác thực cookie:", err);
-            return;
+            console.error("❌ openTaskDetailFromApi:", err);
+            alert("Không thể tải thông tin công việc.");
           }
         }
 
-        // 3️⃣ Tiếp tục kết nối (có hoặc không có token)
-        if (stompClient && wsConnected) return;
+        async function handleNotificationItemClick(target) {
+          const wrapper = target.closest("[data-notif-id]");
+          if (!wrapper) return;
 
-        const socket = new SockJS("/ws");
-        stompClient = Stomp.over(socket);
-        stompClient.heartbeat.outgoing = 15000;
-        stompClient.heartbeat.incoming = 15000;
+          const id = Number(wrapper.getAttribute("data-notif-id"));
+          const link = decodeURIComponent(
+            wrapper.getAttribute("data-notif-link") || "#"
+          );
 
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        stompClient.connect(
-          headers,
-          (frame) => {
-            console.log("✅ WS connected:", frame);
-            wsConnected = true;
-            wsRetry = 0;
+          await markNotificationRead(id);
 
-            // hủy sub cũ
-            if (
-              wsSubscription &&
-              typeof wsSubscription.unsubscribe === "function"
-            ) {
-              try {
-                wsSubscription.unsubscribe();
-              } catch {}
+          // Giảm local badge
+          const cur = parseInt(dom.notifCountBadge?.textContent) || 0;
+          if (cur > 0) updateUnreadBadge(cur - 1);
+
+          if (!link || link === "#" || link === "null") {
+            return;
+          }
+
+          if (link.includes("/tasks/") || link.includes("taskId=")) {
+            const taskId =
+              link.split("taskId=")[1] ||
+              link.split("/tasks/")[1] ||
+              link.split("/").pop();
+            if (taskId) {
+              await openTaskDetailFromApi(taskId);
+              return;
             }
+          }
 
-            wsSubscription = stompClient.subscribe(
-              "/user/queue/notifications",
-              (message) => {
+          if (link.startsWith("/view/pm/project/")) {
+            window.location.href = link;
+            return;
+          }
+
+          // mặc định mở tab mới
+          window.open(link, "_blank");
+        }
+
+        // ================== 📡 WEBSOCKET ==================
+        function scheduleWsReconnect() {
+          if (state.wsConnected) return;
+          if (state.wsRetry >= state.wsMaxRetry) {
+            console.error("🚫 WS max retries reached — stop reconnecting");
+            return;
+          }
+          const delay = backoffDelay(state.wsRetry);
+          console.log(
+            `⏳ WS reconnect in ${Math.round(delay / 1000)}s (attempt ${
+              state.wsRetry + 1
+            }/${state.wsMaxRetry})`
+          );
+          setTimeout(() => {
+            state.wsRetry++;
+            connectWebSocketNotifications();
+          }, delay);
+        }
+
+        function connectWebSocketNotifications() {
+          if (state.wsClient && state.wsConnected) return;
+
+          const socket = new SockJS("/ws");
+          const client = Stomp.over(socket);
+          client.heartbeat.outgoing = 15000;
+          client.heartbeat.incoming = 15000;
+
+          const headers = getAuthHeaders();
+
+          client.connect(
+            headers,
+            (frame) => {
+              console.log("✅ WS connected:", frame);
+              state.wsClient = client;
+              state.wsConnected = true;
+              state.wsRetry = 0;
+
+              client.subscribe("/user/queue/notifications", (message) => {
                 try {
                   const notif = JSON.parse(message.body);
-                  console.log("🔔 Realtime:", notif);
+                  console.log("🔔 Realtime notif:", notif);
                   incrementUnreadBadge();
+                  safeShowToastNotification(
+                    notif.title || "Notification",
+                    notif.message || "",
+                    notif.senderAvatar,
+                    notif.senderName || "System"
+                  );
 
-                  if (
-                    !document
-                      .getElementById("notif-panel")
-                      .classList.contains("hidden")
-                  ) {
-                    loadNotifications(
-                      document.getElementById("toggle-unread").checked
-                    );
-                  } else {
-                    showToastNotification(
-                      notif.title,
-                      notif.message,
-                      notif.senderAvatar,
-                      notif.senderName
-                    );
+                  // cập nhật state local
+                  if (notif) {
+                    state.notifications.unshift(notif);
+                    if (state.notifications.length > 200) {
+                      state.notifications.pop();
+                    }
+                    if (state.notifPanelOpen) {
+                      renderNotifications();
+                    }
                   }
                 } catch (e) {
                   console.error("❌ WS message parse:", e);
                 }
-              }
-            );
-          },
-          (error) => {
-            console.warn("⚠️ WS connect ERROR:", error);
-            scheduleWsReconnect();
-          }
-        );
-
-        socket.onclose = () => {
-          console.warn("⚠️ WS closed");
-          wsConnected = false;
-          scheduleWsReconnect();
-        };
-      }
-
-      function scheduleWsReconnect() {
-        if (wsConnected) return; // đã kết nối lại
-        if (wsRetry >= WS_MAX_RETRY) {
-          console.error("🚫 WS max retries reached — stop reconnecting");
-          return;
-        }
-        const delay = backoffDelay(wsRetry);
-        console.log(
-          `⏳ WS reconnect in ${Math.round(delay / 1000)}s (attempt ${
-            wsRetry + 1
-          }/${WS_MAX_RETRY})`
-        );
-        setTimeout(() => {
-          wsRetry++;
-          connectWebSocketNotifications();
-        }, delay);
-      }
-
-      // ================== 🎯 Event bindings ==================
-      toggleUnread.addEventListener("change", (e) =>
-        loadNotifications(e.target.checked)
-      );
-
-      notifBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        notifPanel.classList.toggle("hidden");
-        if (!notifPanel.classList.contains("hidden"))
-          loadNotifications(toggleUnread.checked);
-      });
-
-      closeNotifPanel?.addEventListener("click", () =>
-        notifPanel.classList.add("hidden")
-      );
-
-      document.addEventListener("click", (e) => {
-        if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
-          notifPanel.classList.add("hidden");
-        }
-      });
-
-      // 🔁 Auto refresh mỗi 30s
-      setInterval(() => {
-        if (!notifPanel.classList.contains("hidden"))
-          loadNotifications(toggleUnread.checked);
-      }, 30000);
-
-      // ====== ⋯ NOTIFICATION SETTINGS MENU ======
-      const notifMenuBtn = document.getElementById("notif-options-btn");
-      const notifMenu = document.getElementById("notif-options-menu");
-      const toggleEmailBtn = document.getElementById("toggle-email-btn");
-      const emailToggleText = document.getElementById("email-toggle-text");
-
-      let emailEnabled = true;
-
-      notifMenuBtn?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        notifMenu.classList.toggle("hidden");
-      });
-
-      // Đóng khi click ra ngoài
-      document.addEventListener("click", (e) => {
-        if (!notifMenu.contains(e.target) && !notifMenuBtn.contains(e.target)) {
-          notifMenu.classList.add("hidden");
-        }
-      });
-
-      // Gọi API bật/tắt Gmail notification
-      toggleEmailBtn?.addEventListener("click", async (e) => {
-        e.preventDefault(); // 🛑 Ngăn hành vi mặc định
-        e.stopPropagation(); // 🛑 Không lan sang <a> bên dưới
-
-        emailEnabled = !emailEnabled;
-
-        try {
-          const token = localStorage.getItem("token");
-
-          const res = await fetch("/api/settings/notifications/email-toggle", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+              });
             },
-            body: JSON.stringify({ enabled: emailEnabled }),
-          });
+            (error) => {
+              console.warn("⚠️ WS connect ERROR:", error);
+              state.wsConnected = false;
+              scheduleWsReconnect();
+            }
+          );
 
-          if (res.ok) {
-            emailToggleText.textContent = emailEnabled
-              ? "Tắt thông báo qua Gmail"
-              : "Bật lại thông báo qua Gmail";
-            showToast(
-              emailEnabled
-                ? "✅ Đã bật lại thông báo Gmail"
-                : "🚫 Đã tắt thông báo Gmail"
-            );
-          } else {
-            showToast("⚠️ Không thể cập nhật cài đặt.");
-          }
-        } catch (err) {
-          console.error("❌ toggleEmailBtn error:", err);
-          showToast("⚠️ Lỗi kết nối server.");
+          socket.onclose = () => {
+            console.warn("⚠️ WS closed");
+            state.wsConnected = false;
+            scheduleWsReconnect();
+          };
         }
 
-        notifMenu.classList.add("hidden");
-      });
-      // ================== SETTINGS LINK ==================
-      window.addEventListener("DOMContentLoaded", () => {
-        const openSettingsLink = document.getElementById("open-settings-link");
-        if (!openSettingsLink) return;
-
-        openSettingsLink.addEventListener("click", async (e) => {
-          e.preventDefault();
-
-          try {
-            // 1️⃣ Kiểm tra trạng thái đăng nhập qua API
-            const meRes = await fetch("/api/auth/me", {
-              credentials: "include",
-            });
-
-            if (!meRes.ok) {
-              alert("⚠️ Bạn chưa đăng nhập! Vui lòng đăng nhập để tiếp tục.");
-              window.location.href = "/view/signin";
-              return;
-            }
-
-            const userData = await meRes.json();
-
-            // 2️⃣ Lưu lại email (tuỳ chọn, nếu cần)
-            if (userData.email) {
-              localStorage.setItem("currentUserEmail", userData.email);
-            }
-
-            // 3️⃣ Kiểm tra quyền truy cập cài đặt (dùng cùng cookie)
-            const res = await fetch("/api/settings/notifications/me", {
-              credentials: "include", //
-            });
-
-            if (!res.ok) {
-              alert(
-                "❌ Không thể truy cập trang cài đặt. Vui lòng đăng nhập lại!"
-              );
-              window.location.href = "/view/signin";
-              return;
-            }
-
-            // ✅ Thành công → điều hướng
-            window.location.href = "/settings/notifications";
-          } catch (err) {
-            console.error("⚠️ openSettingsLink error:", err);
-            alert("❌ Lỗi kết nối. Vui lòng thử lại sau.");
+        // ================== 🔎 SEARCH ==================
+        function clearSearchDropdownIfNeeded(e) {
+          if (
+            dom.searchDropdown &&
+            !dom.searchDropdown.contains(e.target) &&
+            e.target !== dom.searchInput
+          ) {
+            dom.searchDropdown.classList.add("hidden");
           }
-        });
-      });
-
-      // ================== WEBSOCKET ==================
-      window.addEventListener("load", () => {
-        try {
-          connectWebSocketNotifications();
-        } catch (err) {
-          console.warn("⚠️ Không thể khởi tạo WebSocket:", err);
         }
-      });
 
-      // --- User Dropdown ---
-      const userBtn = document.getElementById("userMenuButton");
-      const userDropdown = document.getElementById("userDropdown");
-      if (userBtn && userDropdown) {
-        userBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          userDropdown.classList.toggle("hidden");
-        });
-        document.addEventListener("click", (e) => {
-          if (!userDropdown.contains(e.target) && !userBtn.contains(e.target)) {
-            userDropdown.classList.add("hidden");
-          }
-        });
-      }
-      function formatRelativeTime(isoString) {
-        const now = new Date();
-        const date = new Date(isoString);
-        const diff = Math.floor((now - date) / 60000);
-        if (diff < 1) return "just now";
-        if (diff < 60) return `${diff} min${diff > 1 ? "s" : ""} ago`;
-        const hrs = Math.floor(diff / 60);
-        if (hrs < 24) return `${hrs} hour${hrs > 1 ? "s" : ""} ago`;
-        const days = Math.floor(hrs / 24);
-        return `${days} day${days > 1 ? "s" : ""} ago`;
-      }
-      // --- Search ---
-      const searchInput = document.getElementById("searchInput");
-      const searchDropdown = document.getElementById("searchDropdown");
-      const searchResults = document.getElementById("searchResults");
-
-      if (searchInput && searchDropdown && searchResults) {
-        searchInput.addEventListener("focus", () => {
-          searchDropdown.classList.remove("hidden");
-          searchResults.innerHTML =
-            "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
-        });
-
-        document.addEventListener("click", (e) => {
-          if (!searchDropdown.contains(e.target) && e.target !== searchInput) {
-            searchDropdown.classList.add("hidden");
-          }
-        });
-
-        let searchTimeout;
-        searchInput.addEventListener("input", () => {
-          clearTimeout(searchTimeout);
-          const query = searchInput.value.trim();
-
-          if (query.length < 2) {
-            searchResults.innerHTML =
-              "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
+        function initSearch() {
+          if (!dom.searchInput || !dom.searchDropdown || !dom.searchResults) {
             return;
           }
 
-          searchTimeout = setTimeout(() => {
-            fetch(`/api/search?query=${encodeURIComponent(query)}`)
-              .then((res) => res.json())
-              .then((data) => {
+          dom.searchInput.addEventListener("focus", () => {
+            dom.searchDropdown.classList.remove("hidden");
+            dom.searchResults.innerHTML =
+              "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
+          });
+
+          document.addEventListener("click", clearSearchDropdownIfNeeded);
+
+          let timeoutId = null;
+
+          dom.searchInput.addEventListener("input", () => {
+            const query = dom.searchInput.value.trim();
+            if (state.searchAbortController) {
+              state.searchAbortController.abort();
+            }
+
+            clearTimeout(timeoutId);
+
+            if (query.length < 2) {
+              dom.searchResults.innerHTML =
+                "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
+              return;
+            }
+
+            timeoutId = setTimeout(async () => {
+              try {
+                state.searchAbortController = new AbortController();
+                const res = await fetch(
+                  `/api/search?query=${encodeURIComponent(query)}`,
+                  { signal: state.searchAbortController.signal }
+                );
+                if (!res.ok) throw new Error("Search error");
+                const data = await res.json();
                 if (!data || data.length === 0) {
-                  searchResults.innerHTML =
+                  dom.searchResults.innerHTML =
                     "<p class='p-4 text-gray-500 text-sm text-center'>Không có kết quả</p>";
                   return;
                 }
 
-                searchResults.innerHTML = data
+                dom.searchResults.innerHTML = data
                   .map(
                     (item) => `
-                                    <div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition"
-                                         onclick="window.location.href='/view/project/${
-                                           item.projectId
-                                         }'">
-                                        <p class="text-sm font-medium text-gray-800">${this.escapeHtml(
-                                          item.name
-                                        )}</p>
-                                        <p class="text-xs text-gray-500">${
-                                          item.description
-                                            ? this.escapeHtml(item.description)
-                                            : ""
-                                        }</p>
-                                    </div>
-                                `
+                      <div 
+                        class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition"
+                        data-project-id="${item.projectId}"
+                      >
+                        <p class="text-sm font-medium text-gray-800">
+                          ${escapeHtml(item.name || "")}
+                        </p>
+                        <p class="text-xs text-gray-500">
+                          ${
+                            item.description ? escapeHtml(item.description) : ""
+                          }
+                        </p>
+                      </div>
+                    `
                   )
                   .join("");
-              })
-              .catch(() => {
-                searchResults.innerHTML =
+              } catch (err) {
+                if (err.name === "AbortError") return;
+                console.error("❌ search error:", err);
+                dom.searchResults.innerHTML =
                   "<p class='p-4 text-gray-500 text-sm text-center'>Không thể tải kết quả</p>";
+              }
+            }, 300);
+          });
+
+          dom.searchResults.addEventListener("click", (e) => {
+            const row = e.target.closest("[data-project-id]");
+            if (!row) return;
+            const pid = row.getAttribute("data-project-id");
+            if (pid) {
+              window.location.href = `/view/project/${pid}`;
+            }
+          });
+        }
+
+        // ================== ⚙️ SETTINGS LINK ==================
+        function initSettingsLink() {
+          if (!dom.openSettingsLink) return;
+
+          dom.openSettingsLink.addEventListener("click", async (e) => {
+            e.preventDefault();
+
+            try {
+              const meRes = await fetch("/api/auth/me", {
+                headers: getAuthHeaders(),
+                credentials: "include",
               });
-          }, 300);
-        });
-      }
 
-      // Utility function to escape HTML
-      function escapeHtml(unsafe) {
-        return unsafe
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-      }
+              if (!meRes.ok) {
+                // session / token hết hạn → clear local và về signin
+                localStorage.removeItem("token");
+                localStorage.removeItem("AUTH_TOKEN");
+                localStorage.removeItem("REFRESH_TOKEN");
+                alert("⚠️ Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
+                window.location.href = "/view/signin";
+                return;
+              }
 
-      // --- Logout ---
-      const logoutBtn = document.getElementById("logoutBtn");
-      if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          fetch("/api/auth/logout", { method: "POST", credentials: "include" })
-            .then(() => {
-              // Clear cookies
-              document.cookie =
-                "AUTH_TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-              document.cookie =
-                "REFRESH_TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+              const userData = await meRes.json();
+              if (userData.email) {
+                localStorage.setItem("currentUserEmail", userData.email);
+              }
 
-              // Clear localStorage
-              localStorage.removeItem("AUTH_TOKEN");
-              localStorage.removeItem("REFRESH_TOKEN");
+              const res = await fetch("/api/settings/notifications/me", {
+                headers: getAuthHeaders(),
+                credentials: "include",
+              });
 
-              // Redirect to login page
-              window.location.href = "/view/signin";
+              if (!res.ok) {
+                alert(
+                  "❌ Không thể truy cập trang cài đặt. Vui lòng đăng nhập lại!"
+                );
+                window.location.href = "/view/signin";
+                return;
+              }
+
+              // ok
+              window.location.href = "/settings/notifications";
+            } catch (err) {
+              console.error("⚠️ openSettingsLink error:", err);
+              alert("❌ Lỗi kết nối. Vui lòng thử lại sau.");
+            }
+          });
+        }
+
+        // ================== 👤 USER DROPDOWN & LOGOUT ==================
+        function initUserDropdown() {
+          if (!dom.userBtn || !dom.userDropdown) return;
+
+          dom.userBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            dom.userDropdown.classList.toggle("hidden");
+          });
+
+          document.addEventListener("click", (e) => {
+            if (
+              !dom.userDropdown.contains(e.target) &&
+              !dom.userBtn.contains(e.target)
+            ) {
+              dom.userDropdown.classList.add("hidden");
+            }
+          });
+        }
+
+        function initLogout() {
+          if (!dom.logoutBtn) return;
+          dom.logoutBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            fetch("/api/auth/logout", {
+              method: "POST",
+              credentials: "include",
             })
-            .catch((err) => console.error("Logout error:", err));
-        });
-      }
-    });
-  </script>
-  <script>
-    (async () => {
-      try {
-        // 👤 Lấy các phần tử trong header
-        const nameEl = document.querySelector(
-          "#userMenuButton span[th\\:text]"
-        );
-        const emailEl = document.querySelector("#userMenuButton .text-xs");
-        const freeBadge = document.querySelector(
-          "#userMenuButton .bg-gray-200"
-        );
-        const premiumBadge = document.querySelector(
-          "#userMenuButton .bg-yellow-400"
-        );
-        const avatarImg = document.querySelector(
-          '#userMenuButton img[alt="User Avatar"]'
-        );
+              .then(() => {
+                // clear local
+                localStorage.removeItem("token");
+                localStorage.removeItem("AUTH_TOKEN");
+                localStorage.removeItem("REFRESH_TOKEN");
 
-        // Nếu đã có dữ liệu Thymeleaf thì không cần fetch
-        if (
-          nameEl &&
-          nameEl.textContent.trim() !== "User" &&
-          emailEl &&
-          emailEl.textContent.trim() !== ""
-        ) {
-          return;
+                // clear cookies (FE side)
+                document.cookie =
+                  "AUTH_TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                document.cookie =
+                  "REFRESH_TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+                window.location.href = "/view/signin";
+              })
+              .catch((err) => console.error("Logout error:", err));
+          });
         }
 
-        const token = localStorage.getItem("token");
-        const res = await fetch("/api/auth/me", {
-          headers: token ? { Authorization: "Bearer " + token } : {},
-          credentials: "include",
-        });
+        // ================== 🔔 NOTIF UI BINDINGS ==================
+        function initNotificationUI() {
+          if (!dom.notifBtn || !dom.notifPanel) return;
 
-        if (!res.ok) throw new Error("Unauthorized");
-        const data = await res.json();
-        const u = data.user || data;
+          dom.notifBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const willOpen = dom.notifPanel.classList.contains("hidden");
+            dom.notifPanel.classList.toggle("hidden");
+            state.notifPanelOpen = willOpen;
+            if (willOpen) {
+              loadNotifications(false);
+            }
+          });
 
-        const user = {
-          name: u.name || u.fullName || "User",
-          email: u.email || "",
-          avatarUrl:
-            u.avatarUrl && u.avatarUrl.trim() !== "" ? u.avatarUrl : "",
-          isPremium: !!u.isPremium || (u.roles || []).includes("ROLE_PREMIUM"),
-        };
+          document.addEventListener("click", (e) => {
+            if (
+              dom.notifPanel &&
+              !dom.notifPanel.contains(e.target) &&
+              !dom.notifBtn.contains(e.target)
+            ) {
+              dom.notifPanel.classList.add("hidden");
+              state.notifPanelOpen = false;
+            }
+          });
 
-        // 🟩 Ghi đè thông tin
-        if (nameEl) nameEl.textContent = user.name;
-        if (emailEl) emailEl.textContent = user.email;
-
-        // 🏆 Cập nhật badge Free / Premium
-        if (user.isPremium) {
-          freeBadge?.classList.add("hidden");
-          premiumBadge?.classList.remove("hidden");
-        } else {
-          premiumBadge?.classList.add("hidden");
-          freeBadge?.classList.remove("hidden");
-        }
-
-        // 🟦 Cập nhật avatar
-        if (avatarImg) {
-          if (user.avatarUrl) {
-            avatarImg.src = user.avatarUrl;
-          } else {
-            // Tạo avatar chữ cái đầu
-            const canvas = document.createElement("canvas");
-            canvas.width = 100;
-            canvas.height = 100;
-            const ctx = canvas.getContext("2d");
-            ctx.fillStyle = "#2563eb"; // xanh dương
-            ctx.beginPath();
-            ctx.arc(50, 50, 50, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 50px Inter, sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(user.name.charAt(0).toUpperCase(), 50, 55);
-            avatarImg.src = canvas.toDataURL();
+          if (dom.toggleUnread) {
+            dom.toggleUnread.addEventListener("change", (e) => {
+              state.notifFilterUnread = e.target.checked;
+              renderNotifications();
+            });
           }
+
+          if (dom.markAllBtn) {
+            dom.markAllBtn.addEventListener("click", () => {
+              markAllNotificationsRead();
+            });
+          }
+
+          // menu ⋯
+          if (dom.notifMenuBtn && dom.notifMenu) {
+            dom.notifMenuBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              dom.notifMenu.classList.toggle("hidden");
+            });
+
+            document.addEventListener("click", (e) => {
+              if (
+                dom.notifMenu &&
+                !dom.notifMenu.contains(e.target) &&
+                !dom.notifMenuBtn.contains(e.target)
+              ) {
+                dom.notifMenu.classList.add("hidden");
+              }
+            });
+          }
+
+          if (dom.toggleEmailBtn && dom.emailToggleText) {
+            let emailEnabled = true;
+            dom.toggleEmailBtn.addEventListener("click", async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              emailEnabled = !emailEnabled;
+              try {
+                const res = await fetch(
+                  "/api/settings/notifications/email-toggle",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      ...getAuthHeaders(),
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({ enabled: emailEnabled }),
+                  }
+                );
+                if (res.ok) {
+                  dom.emailToggleText.textContent = emailEnabled
+                    ? "Tắt thông báo qua Gmail"
+                    : "Bật lại thông báo qua Gmail";
+                  safeShowToast(
+                    emailEnabled
+                      ? "✅ Đã bật lại thông báo Gmail"
+                      : "🚫 Đã tắt thông báo Gmail"
+                  );
+                } else {
+                  safeShowToast("⚠️ Không thể cập nhật cài đặt.");
+                }
+              } catch (err) {
+                console.error("❌ toggleEmailBtn error:", err);
+                safeShowToast("⚠️ Lỗi kết nối server.");
+              } finally {
+                dom.notifMenu && dom.notifMenu.classList.add("hidden");
+              }
+            });
+          }
+
+          // delegate click notification item
+          if (dom.notifList) {
+            dom.notifList.addEventListener("click", (e) => {
+              handleNotificationItemClick(e.target);
+            });
+          }
+
+          // Auto refresh mỗi 30s khi panel mở
+          setInterval(() => {
+            if (
+              state.notifPanelOpen &&
+              document.visibilityState === "visible"
+            ) {
+              loadNotifications(false);
+            }
+          }, 30000);
         }
-      } catch (err) {
-        console.warn("⚠️ Auto-load user header failed:", err);
-      }
-    })();
+
+        // ================== INIT ==================
+        function init() {
+          initUserHeader();
+          initNotificationUI();
+          initSearch();
+          initSettingsLink();
+          initUserDropdown();
+          initLogout();
+
+          // WebSocket
+          window.addEventListener("load", () => {
+            try {
+              connectWebSocketNotifications();
+            } catch (err) {
+              console.warn("⚠️ Không thể khởi tạo WebSocket:", err);
+            }
+          });
+        }
+
+        init();
+      })(window, document);
+    });
   </script>
 </header>
