@@ -76,153 +76,324 @@
       <div th:replace="fragments/sidebar :: sidebar"></div>
 
       <!-- ✅ Main content -->
-        <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
-            <div class="grid grid-cols-12 gap-8">
-                <!-- ✅ Left Profile Card -->
-                <div class="col-span-4 bg-white rounded-2xl shadow p-6 text-center">
-                    <img
-                            th:src="${user.avatarUrl != null ? user.avatarUrl : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}"
-                            alt="Avatar"
-                            class="w-36 h-36 mx-auto rounded-full object-cover border-4 border-blue-500"
-                    />
-                    <h2 class="text-lg font-semibold mt-4" th:text="${user.name}">User Name</h2>
-                    <p class="text-gray-500" th:text="${user.timezone != null ? user.timezone : 'Không có múi giờ'}">Asia/Ho_Chi_Minh</p>
-                    <div class="mt-3 px-4">
-                        <p class="text-sm text-gray-600 italic" th:text="${user.bio != null ? user.bio : 'Chưa có mô tả cá nhân'}">
-                            Chưa có mô tả cá nhân
-                        </p>
-                    </div>
-
-                    <div class="mt-6 space-y-2 text-sm text-gray-700">
-                        <div><span class="font-semibold text-gray-600">Skill:</span>
-                            <span th:text="${user.skills != null ? user.skills : 'Chưa cập nhật kỹ năng'}">Java</span>
-                        </div>
-                        <div><span class="font-semibold text-gray-600">Email:</span>
-                            <span th:text="${user.email}">example@email.com</span>
-                        </div>
-                        <div><span class="font-semibold text-gray-600">Language:</span>
-                            <span th:text="${user.preferredLanguage != null ? user.preferredLanguage : 'Chưa chọn ngôn ngữ'}">English</span>
-                        </div>
-                        <div><span class="font-semibold text-gray-600">User Verified:</span>
-                            <span th:text="${user.status}" th:classappend="${user.status == 'active'} ? 'text-green-600 font-medium' : 'text-red-500 font-medium'">
-            active
-          </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ✅ Right Profile Form (fills more width) -->
-                <div class="col-span-8 bg-white rounded-2xl shadow p-8">
-                    <h2 class="text-2xl font-semibold mb-6 border-b pb-3">👤 Thông tin cá nhân</h2>
-
-                    <form th:action="@{/user/update}" th:object="${user}" method="post" id="profileForm" th:data-user-id="${user.userId}" class="space-y-5">
-                        <!-- Avatar Upload -->
-                        <div class="flex items-center space-x-6">
-                            <img th:src="${user.avatarUrl != null ? user.avatarUrl : '/images/default-avatar.png'}"
-                                 alt="Avatar" class="w-24 h-24 rounded-full border object-cover" id="avatarPreview" />
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-1">Ảnh đại diện</label>
-                                <button type="button" id="changeAvatarBtn"
-                                        class="px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300"
-                                        onclick="document.getElementById('avatarInput').click()" disabled>
-                                    Thay ảnh
-                                </button>
-                                <input type="file" name="avatarFile" id="avatarInput" accept="image/*" class="hidden" onchange="previewAvatar(event)" disabled />
-                            </div>
-                        </div>
-
-                        <!-- Info Inputs -->
-                        <div class="grid grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-1">Họ và tên</label>
-                                <input type="text" th:field="*{name}" class="form-input bg-gray-100" disabled />
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-1">Kỹ năng</label>
-                                <input type="text" th:field="*{skills}" class="form-input bg-gray-100" disabled />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-1">Giới thiệu bản thân</label>
-                            <textarea th:field="*{bio}" rows="3" class="form-input bg-gray-100" disabled></textarea>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-1">Múi giờ</label>
-                                <input type="text" th:field="*{timezone}" class="form-input bg-gray-100" disabled />
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-1">Ngôn ngữ ưu tiên</label>
-                                <input type="text" th:field="*{preferredLanguage}" class="form-input bg-gray-100" disabled />
-                            </div>
-                        </div>
-
-                        <!-- Buttons -->
-                        <div class="pt-4 flex flex-wrap gap-3">
-                            <button type="button" id="editBtn" class="bg-blue-500 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-600 transition">
-                                ✏️ Chỉnh sửa hồ sơ
-                            </button>
-                            <button type="submit" id="saveBtn" class="bg-green-500 text-white px-5 py-2 rounded-lg shadow hover:bg-green-600 transition hidden">
-                                💾 Lưu thay đổi
-                            </button>
-                            <button type="button" id="cancelBtn" class="bg-gray-400 text-white px-5 py-2 rounded-lg shadow hover:bg-gray-500 transition hidden">
-                                ❌ Hủy
-                            </button>
-                        </div>
-                    </form>
-
-                    <!-- 🔒 Change Password Section -->
-                    <div class="mt-10 border-t pt-6 space-y-4">
-                        <button type="button" id="togglePasswordBtn" class="text-blue-500 hover:underline font-medium">
-                            🔒 Thay đổi mật khẩu
-                        </button>
-
-                        <form th:action="@{/user/change-password}" method="post" id="passwordForm" class="space-y-4 hidden">
-                            <div class="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-gray-700 font-medium mb-1">Mật khẩu hiện tại</label>
-                                    <input type="password" name="oldPassword" class="form-input" placeholder="Nhập mật khẩu hiện tại" />
-                                </div>
-                                <div>
-                                    <label class="block text-gray-700 font-medium mb-1">Mật khẩu mới</label>
-                                    <input type="password" name="newPassword" class="form-input" placeholder="Nhập mật khẩu mới" />
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-1">Xác nhận mật khẩu mới</label>
-                                <input type="password" name="confirmPassword" class="form-input" placeholder="Nhập lại mật khẩu mới" />
-                            </div>
-                            <div class="pt-4">
-                                <button type="submit" class="bg-pink-500 text-white px-6 py-2 rounded-lg shadow hover:bg-pink-600 transition">
-                                    🔄 Cập nhật mật khẩu
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- 🚀 Upgrade Plan -->
-                    <div class="pt-8 border-t mt-6 text-center">
-                        <h3 class="text-gray-700 font-semibold mb-2">
-                            <span th:text="${user.premium} ? '♻️ Gia hạn Premium' : '🚀 Nâng cấp tài khoản của bạn'"></span>
-                        </h3>
-                        <p class="text-gray-500 text-sm mb-3">
-          <span th:if="${user.premium}">
-            Hạn sử dụng đến: <b th:text="${#temporals.format(user.premiumExpiry, 'dd/MM/yyyy')}">--/--/----</b>
-          </span>
-                            <span th:unless="${user.premium}">
-            Mở khóa nhiều tính năng chuyên nghiệp hơn, hỗ trợ tốt hơn và quyền truy cập nâng cao.
-          </span>
-                        </p>
-                        <button id="upgradeBtn" class="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition">
-                            <span th:text="${user.premium} ? '♻️ Gia hạn Premium' : '🌟 Mua gói Pro'"></span>
-                        </button>
-                    </div>
-                </div>
+      <main class="flex-1 p-8 overflow-y-auto bg-gray-50">
+        <div class="grid grid-cols-12 gap-8">
+          <!-- ✅ Left Profile Card -->
+          <div class="col-span-4 bg-white rounded-2xl shadow p-6 text-center">
+            <img
+              th:src="${user.avatarUrl != null ? user.avatarUrl : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}"
+              alt="Avatar"
+              class="w-36 h-36 mx-auto rounded-full object-cover border-4 border-blue-500"
+            />
+            <h2 class="text-lg font-semibold mt-4" th:text="${user.name}">
+              User Name
+            </h2>
+            <p
+              class="text-gray-500"
+              th:text="${user.timezone != null ? user.timezone : 'Không có múi giờ'}"
+            >
+              Asia/Ho_Chi_Minh
+            </p>
+            <div class="mt-3 px-4">
+              <p
+                class="text-sm text-gray-600 italic"
+                th:text="${user.bio != null ? user.bio : 'Chưa có mô tả cá nhân'}"
+              >
+                Chưa có mô tả cá nhân
+              </p>
             </div>
-        </main>
+
+            <div class="mt-6 space-y-2 text-sm text-gray-700">
+              <div>
+                <span class="font-semibold text-gray-600">Skill:</span>
+                <span
+                  th:text="${user.skills != null ? user.skills : 'Chưa cập nhật kỹ năng'}"
+                  >Java</span
+                >
+              </div>
+              <div>
+                <span class="font-semibold text-gray-600">Email:</span>
+                <span th:text="${user.email}">example@email.com</span>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-600">Language:</span>
+                <span
+                  th:text="${user.preferredLanguage != null ? user.preferredLanguage : 'Chưa chọn ngôn ngữ'}"
+                  >English</span
+                >
+              </div>
+              <div>
+                <span class="font-semibold text-gray-600">User Verified:</span>
+                <span
+                  th:text="${user.status}"
+                  th:classappend="${user.status == 'active'} ? 'text-green-600 font-medium' : 'text-red-500 font-medium'"
+                >
+                  active
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ Right Profile Form (fills more width) -->
+          <div class="col-span-8 bg-white rounded-2xl shadow p-8">
+            <h2 class="text-2xl font-semibold mb-6 border-b pb-3">
+              👤 Thông tin cá nhân
+            </h2>
+
+            <form
+              th:action="@{/user/update}"
+              th:object="${user}"
+              method="post"
+              id="profileForm"
+              th:data-user-id="${user.userId}"
+              class="space-y-5"
+            >
+              <!-- Avatar Upload -->
+              <div class="flex items-center space-x-6">
+                <img
+                  th:src="${user.avatarUrl != null ? user.avatarUrl : '/images/default-avatar.png'}"
+                  alt="Avatar"
+                  class="w-24 h-24 rounded-full border object-cover"
+                  id="avatarPreview"
+                />
+                <div>
+                  <label class="block text-gray-700 font-medium mb-1"
+                    >Ảnh đại diện</label
+                  >
+                  <button
+                    type="button"
+                    id="changeAvatarBtn"
+                    class="px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300"
+                    onclick="document.getElementById('avatarInput').click()"
+                    disabled
+                  >
+                    Thay ảnh
+                  </button>
+                  <input
+                    type="file"
+                    name="avatarFile"
+                    id="avatarInput"
+                    accept="image/*"
+                    class="hidden"
+                    onchange="previewAvatar(event)"
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <!-- Info Inputs -->
+              <div class="grid grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-gray-700 font-medium mb-1"
+                    >Họ và tên</label
+                  >
+                  <input
+                    type="text"
+                    th:field="*{name}"
+                    class="form-input bg-gray-100"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label class="block text-gray-700 font-medium mb-1"
+                    >Kỹ năng</label
+                  >
+                  <input
+                    type="text"
+                    th:field="*{skills}"
+                    class="form-input bg-gray-100"
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-gray-700 font-medium mb-1"
+                  >Giới thiệu bản thân</label
+                >
+                <textarea
+                  th:field="*{bio}"
+                  rows="3"
+                  class="form-input bg-gray-100"
+                  disabled
+                ></textarea>
+              </div>
+
+              <div class="grid grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-gray-700 font-medium mb-1"
+                    >Múi giờ</label
+                  >
+                  <select
+                    th:field="*{timezone}"
+                    id="timezoneSelect"
+                    class="form-input bg-gray-100"
+                    disabled
+                  >
+                    <option value="">-- Chọn múi giờ --</option>
+                    <option value="Asia/Ho_Chi_Minh">
+                      Asia/Ho_Chi_Minh (GMT+7)
+                    </option>
+                    <option value="Asia/Singapore">
+                      Asia/Singapore (GMT+8)
+                    </option>
+                    <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
+                    <option value="Europe/London">Europe/London (GMT+0)</option>
+                    <option value="Europe/Paris">Europe/Paris (GMT+1)</option>
+                    <option value="America/New_York">
+                      America/New_York (GMT-5)
+                    </option>
+                    <option value="America/Los_Angeles">
+                      America/Los_Angeles (GMT-8)
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-gray-700 font-medium mb-1"
+                    >Ngôn ngữ ưu tiên</label
+                  >
+                  <select
+                    th:field="*{preferredLanguage}"
+                    id="languageSelect"
+                    class="form-input bg-gray-100"
+                    disabled
+                  >
+                    <option value="">-- Chọn ngôn ngữ --</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語 (Japanese)</option>
+                    <option value="ko">한국어 (Korean)</option>
+                    <option value="fr">Français (French)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Buttons -->
+              <div class="pt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  id="editBtn"
+                  class="bg-blue-500 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-600 transition"
+                >
+                  ✏️ Chỉnh sửa hồ sơ
+                </button>
+                <button
+                  type="submit"
+                  id="saveBtn"
+                  class="bg-green-500 text-white px-5 py-2 rounded-lg shadow hover:bg-green-600 transition hidden"
+                >
+                  💾 Lưu thay đổi
+                </button>
+                <button
+                  type="button"
+                  id="cancelBtn"
+                  class="bg-gray-400 text-white px-5 py-2 rounded-lg shadow hover:bg-gray-500 transition hidden"
+                >
+                  ❌ Hủy
+                </button>
+              </div>
+            </form>
+
+            <!-- 🔒 Change Password Section -->
+            <div class="mt-10 border-t pt-6 space-y-4">
+              <button
+                type="button"
+                id="togglePasswordBtn"
+                class="text-blue-500 hover:underline font-medium"
+              >
+                🔒 Thay đổi mật khẩu
+              </button>
+
+              <form
+                th:action="@{/user/change-password}"
+                method="post"
+                id="passwordForm"
+                class="space-y-4 hidden"
+              >
+                <div class="grid grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-gray-700 font-medium mb-1"
+                      >Mật khẩu hiện tại</label
+                    >
+                    <input
+                      type="password"
+                      name="oldPassword"
+                      class="form-input"
+                      placeholder="Nhập mật khẩu hiện tại"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-gray-700 font-medium mb-1"
+                      >Mật khẩu mới</label
+                    >
+                    <input
+                      type="password"
+                      name="newPassword"
+                      class="form-input"
+                      placeholder="Nhập mật khẩu mới"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-gray-700 font-medium mb-1"
+                    >Xác nhận mật khẩu mới</label
+                  >
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    class="form-input"
+                    placeholder="Nhập lại mật khẩu mới"
+                  />
+                </div>
+                <div class="pt-4">
+                  <button
+                    type="submit"
+                    class="bg-pink-500 text-white px-6 py-2 rounded-lg shadow hover:bg-pink-600 transition"
+                  >
+                    🔄 Cập nhật mật khẩu
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- 🚀 Upgrade Plan -->
+            <div class="pt-8 border-t mt-6 text-center">
+              <h3 class="text-gray-700 font-semibold mb-2">
+                <span
+                  th:text="${user.premium} ? '♻️ Gia hạn Premium' : '🚀 Nâng cấp tài khoản của bạn'"
+                ></span>
+              </h3>
+              <p class="text-gray-500 text-sm mb-3">
+                <span th:if="${user.premium}">
+                  Hạn sử dụng đến:
+                  <b
+                    th:text="${#temporals.format(user.premiumExpiry, 'dd/MM/yyyy')}"
+                    >--/--/----</b
+                  >
+                </span>
+                <span th:unless="${user.premium}">
+                  Mở khóa nhiều tính năng chuyên nghiệp hơn, hỗ trợ tốt hơn và
+                  quyền truy cập nâng cao.
+                </span>
+              </p>
+              <button
+                id="upgradeBtn"
+                class="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition"
+              >
+                <span
+                  th:text="${user.premium} ? '♻️ Gia hạn Premium' : '🌟 Mua gói Pro'"
+                ></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
+    <!-- 🔔 Toast Notification -->
+    <div
+      id="toast"
+      class="hidden fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-white font-medium transition-all duration-300"
+    ></div>
 
     <script>
       const editBtn = document.getElementById("editBtn");
@@ -232,7 +403,7 @@
       const togglePasswordBtn = document.getElementById("togglePasswordBtn");
       const form = document.getElementById("profileForm");
       const formInputs = form.querySelectorAll(
-        "input:not([type='hidden']), textarea"
+        "input:not([type='hidden']), textarea, select"
       );
 
       // ✅ Chuyển sang chế độ chỉnh sửa
@@ -299,11 +470,11 @@
               avatarUrl = uploadResult.avatarUrl;
             } else {
               const errText = await uploadResponse.text();
-              alert("❌ Upload ảnh thất bại: " + errText);
+              showToast("❌ Upload ảnh thất bại: " + errText);
               return;
             }
           } catch (err) {
-            alert("⚠️ Lỗi khi upload ảnh: " + err);
+            showToast("⚠️ Lỗi khi upload ảnh: " + err);
             return;
           }
         }
@@ -325,7 +496,7 @@
           });
 
           if (response.ok) {
-            alert("✅ Cập nhật hồ sơ thành công!");
+            showToast("✅ Cập nhật hồ sơ thành công!");
             formInputs.forEach((el) => (el.disabled = true));
             document.getElementById("avatarInput").disabled = true;
             document.getElementById("changeAvatarBtn").disabled = true;
@@ -334,10 +505,10 @@
             editBtn.classList.remove("hidden");
           } else {
             const errText = await response.text();
-            alert("❌ Lỗi khi cập nhật hồ sơ: " + errText);
+            showToast("❌ Lỗi khi cập nhật hồ sơ: " + errText);
           }
         } catch (err) {
-          alert("❌ Không thể kết nối máy chủ: " + err);
+          showToast("❌ Không thể kết nối máy chủ: " + err);
         }
       });
 
@@ -360,11 +531,11 @@
 
         // Kiểm tra cơ bản ở frontend
         if (!oldPassword || !newPassword || !confirmPassword) {
-          alert("⚠️ Vui lòng nhập đầy đủ các trường.");
+          showToast("⚠️ Vui lòng nhập đầy đủ các trường.");
           return;
         }
         if (newPassword !== confirmPassword) {
-          alert("⚠️ Mật khẩu mới và xác nhận không khớp!");
+          showToast("⚠️ Mật khẩu mới và xác nhận không khớp!");
           return;
         }
 
@@ -372,7 +543,7 @@
         const passwordRegex =
           /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
         if (!passwordRegex.test(newPassword)) {
-          alert(
+          showToast(
             "⚠️ Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, số và ký tự đặc biệt."
           );
           return;
@@ -391,7 +562,7 @@
 
           if (response.ok) {
             const result = await response.json();
-            alert("✅ " + (result.message || "Đổi mật khẩu thành công!"));
+            showToast("✅ " + (result.message || "Đổi mật khẩu thành công!"));
             passwordFormEl.reset();
             passwordFormEl.classList.add("hidden");
           } else {
@@ -400,10 +571,10 @@
               errorData.message ||
               errorData.error ||
               "Không thể đổi mật khẩu. Vui lòng thử lại.";
-            alert("❌ " + msg);
+            showToast("❌ " + msg);
           }
         } catch (err) {
-          alert("❌ Không thể kết nối máy chủ: " + err);
+          showToast("❌ Không thể kết nối máy chủ: " + err);
         }
       });
       const upgradeBtn = document.getElementById("upgradeBtn");
@@ -411,58 +582,85 @@
       const confirmBuyBtn = document.getElementById("confirmBuyBtn");
       const cancelBuyBtn = document.getElementById("cancelBuyBtn");
       upgradeBtn.addEventListener("click", () => {
-          confirmModal.classList.remove("hidden");
+        confirmModal.classList.remove("hidden");
       });
 
       // Khi bấm "Hủy"
       cancelBuyBtn.addEventListener("click", () => {
-          confirmModal.classList.add("hidden");
+        confirmModal.classList.add("hidden");
       });
 
       // Khi bấm "Xác nhận"
       confirmBuyBtn.addEventListener("click", async () => {
-          confirmBuyBtn.disabled = true;
-          confirmBuyBtn.textContent = "Đang xử lý...";
+        confirmBuyBtn.disabled = true;
+        confirmBuyBtn.textContent = "Đang xử lý...";
 
-          try {
-              const res = await fetch("/api/payment/create", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ total: 2000, plan: "Pro" })
-              });
+        try {
+          const res = await fetch("/api/payment/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ total: 2000, plan: "Pro" }),
+          });
 
-              const data = await res.json();
-              if (data.success) {
-                  window.location.href = data.redirectUrl;
-              } else {
-                  alert("❌ Không thể tạo đơn hàng!");
-              }
-          } catch (err) {
-              alert("⚠️ Lỗi kết nối máy chủ: " + err);
-          } finally {
-              confirmBuyBtn.disabled = false;
-              confirmBuyBtn.textContent = "Xác nhận";
-              confirmModal.classList.add("hidden");
+          const data = await res.json();
+          if (data.success) {
+            window.location.href = data.redirectUrl;
+          } else {
+            showToast("❌ Không thể tạo đơn hàng!");
           }
+        } catch (err) {
+          showToast("⚠️ Lỗi kết nối máy chủ: " + err);
+        } finally {
+          confirmBuyBtn.disabled = false;
+          confirmBuyBtn.textContent = "Xác nhận";
+          confirmModal.classList.add("hidden");
+        }
       });
-      document.getElementById("buyProBtn").addEventListener("click", async () => {
+      document
+        .getElementById("buyProBtn")
+        .addEventListener("click", async () => {
           try {
-              const response = await fetch("/api/payment/create", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ total: 2000, plan: "Pro" })
-              });
+            const response = await fetch("/api/payment/create", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ total: 2000, plan: "Pro" }),
+            });
 
-              const data = await response.json();
-              if (data.success) {
-                  window.location.href = data.redirectUrl;
-              } else {
-                  alert("❌ Không thể tạo đơn hàng!");
-              }
+            const data = await response.json();
+            if (data.success) {
+              window.location.href = data.redirectUrl;
+            } else {
+              showToast("❌ Không thể tạo đơn hàng!");
+            }
           } catch (err) {
-              alert("⚠️ Lỗi khi tạo đơn hàng: " + err);
+            showToast("⚠️ Lỗi khi tạo đơn hàng: " + err);
           }
-      });
+        });
+      function showToast(message, type = "success") {
+        const toast = document.getElementById("toast");
+
+        // Màu theo loại thông báo
+        toast.className =
+          "fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-white font-medium transition-all duration-300";
+
+        if (type === "success") {
+          toast.classList.add("bg-green-500");
+        } else if (type === "error") {
+          toast.classList.add("bg-red-500");
+          toast.classList.add("shake");
+        } else {
+          toast.classList.add("bg-gray-600");
+        }
+
+        toast.textContent = message;
+        toast.classList.remove("hidden");
+        toast.style.opacity = "1";
+
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          setTimeout(() => toast.classList.add("hidden"), 300);
+        }, 2500);
+      }
     </script>
   </body>
 </html>
