@@ -180,7 +180,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
             mailService.sendNotificationMail(user.getEmail(),
                     "Lời mời tham gia dự án " + project.getName(),
                     pm.getName() + " đã mời bạn tham gia dự án này trên DevCollab.",
-                    "/project/" + projectId, pm.getName());
+                    "/view/pm/project/board?projectId=" + projectId, pm.getName());
             return true;
         }
 

@@ -354,21 +354,31 @@
         if (action === "Ban") {
             if (!confirm("⚠️ Are you sure you want to remove this project?")) return;
             const res = await fetch(`/api/admin/project-reports/${selectedReportId}/ban`, { method: "PUT" });
-            if (res.ok) { alert("🚫 Project removed successfully."); bootstrapModal.hide(); await loadAllReports(); }
-            else alert("❌ Failed to remove project.");
+            if (res.ok) { 
+                showToast("Project removed successfully.", "success"); 
+                bootstrapModal.hide(); 
+                await loadAllReports(); 
+            } else {
+                showToast("Failed to remove project.", "error");
+            }
             return;
         }
         if (action === "Warning") {
-            if (!msg) return alert("Please enter a warning message.");
+            if (!msg) return showToast("Please enter a warning message.", "warning");
             const res = await fetch(`/api/admin/project-reports/${selectedReportId}/warn`, {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ message: msg })
             });
-            if (res.ok) { alert("⚠️ Warning sent to project owner."); bootstrapModal.hide(); await loadAllReports(); }
-            else alert("❌ Failed to send warning.");
+            if (res.ok) { 
+                showToast("Warning sent to project owner.", "success"); 
+                bootstrapModal.hide(); 
+                await loadAllReports(); 
+            } else {
+                showToast("Failed to send warning.", "error");
+            }
             return;
         }
-        alert("Please choose an action.");
+        showToast("Please choose an action.", "warning");
     }
 
     document.getElementById("saveChangesBtn").addEventListener("click", saveChanges);

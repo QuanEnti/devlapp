@@ -1033,11 +1033,33 @@ body {
   pointer-events: none;
 }
 
+.member-row__avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .member-row__avatar img,
 .member-row__avatar div {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   font-weight: 600;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(9, 30, 66, 0.15);
+  object-fit: cover;
+}
+
+.member-row__avatar img {
+  border-radius: 50%;
+}
+
+.member-row__avatar div {
+  border-radius: 50%;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .member-row__info {
@@ -1298,6 +1320,47 @@ body {
 
 .kanban-card:active {
   transform: scale(0.98);
+}
+
+/* Member avatars on card - Trello style */
+.kanban-card .member-avatar-chip {
+  display: inline-block;
+  z-index: 1;
+}
+
+.kanban-card .member-avatar-chip:not(:first-child) {
+  margin-left: -4px;
+}
+
+.kanban-card .member-avatar-chip img,
+.kanban-card .member-avatar-chip div {
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(9, 30, 66, 0.15);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.kanban-card .member-avatar-chip:hover {
+  z-index: 2;
+  transform: translateY(-2px);
+}
+
+.kanban-card .member-avatar-chip:hover img,
+.kanban-card .member-avatar-chip:hover div {
+  box-shadow: 0 2px 6px rgba(9, 30, 66, 0.25);
+}
+
+.kanban-card .member-avatar-more {
+  cursor: pointer;
+}
+
+.kanban-card .member-avatar-more:hover {
+  transform: translateY(-2px);
+}
+
+.kanban-card .member-avatar-more:hover div {
+  background-color: #64748b !important;
+  box-shadow: 0 2px 6px rgba(9, 30, 66, 0.25);
 }
 
 /* Add card button area - Trello style */

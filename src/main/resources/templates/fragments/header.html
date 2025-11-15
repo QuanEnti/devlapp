@@ -1,34 +1,34 @@
 <header
   th:fragment="header"
-  class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
+  class="bg-white px-6 py-3 flex justify-between items-center shadow-sm sticky top-0 z-50 h-14 border-b border-gray-100"
 >
   <!-- 🔹 Logo -->
   <div class="flex items-center space-x-3 w-64 flex-shrink-0">
     <img
       th:src="@{/photo/logo1.png}"
       alt="DevCollab Logo"
-      class="w-9 h-9 rounded-lg shadow-sm"
+      class="w-8 h-8 rounded-lg"
     />
-    <span class="text-2xl font-extrabold text-blue-700 tracking-wider"
+    <span class="text-xl font-bold text-gray-800 tracking-tight"
       >DevCollab</span
     >
   </div>
 
   <!-- 🔹 Search -->
-  <div class="flex-grow flex justify-center mx-10">
-    <div class="relative w-full max-w-xl">
+  <div class="flex-grow flex justify-center mx-8">
+    <div class="relative w-full max-w-2xl">
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+        class="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
+        stroke-width="2"
         id="searchIcon"
       >
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
-          stroke-width="2"
           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
         />
       </svg>
@@ -37,19 +37,22 @@
         id="searchInput"
         type="text"
         placeholder="Search for anything..."
-        class="border border-gray-200 rounded-full pl-12 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm shadow-sm"
+        class="border border-gray-200 rounded-md pl-10 pr-4 py-1.5 w-full focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-white text-sm transition-colors"
       />
 
       <div
         id="searchDropdown"
-        class="hidden absolute left-0 mt-3 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-30"
+        class="hidden absolute left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-[100]"
       >
-        <div class="p-3 border-b bg-gray-50 font-semibold text-gray-700">
-          Kết quả tìm kiếm
+        <div class="px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
+          <span
+            class="text-xs font-semibold text-gray-600 uppercase tracking-wide"
+            >Search Results</span
+          >
         </div>
         <div id="searchResults" class="max-h-80 overflow-y-auto">
           <p class="p-4 text-gray-500 text-sm text-center">
-            Nhập để bắt đầu tìm kiếm...
+            Type to start searching...
           </p>
         </div>
       </div>
@@ -57,98 +60,194 @@
   </div>
 
   <!-- 🔹 Right side -->
-  <div class="flex items-center space-x-6 flex-shrink-0">
+  <div class="flex items-center space-x-3 flex-shrink-0">
     <div class="relative">
       <button
         id="open-notif-btn"
-        class="relative bg-white/90 text-gray-700 hover:bg-white px-3 py-2 rounded-md shadow-sm"
+        class="relative text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-md transition-colors"
+        title="Notifications"
       >
-        🔔
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+          />
+        </svg>
         <span
           id="notif-dot"
-          class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"
+          class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full hidden border border-white"
         ></span>
         <span
           id="notif-count-badge"
-          class="hidden absolute -top-1 -right-2 text-[10px] px-1.5 py-0.5 rounded-full bg-red-600 text-white font-semibold min-w-[18px] text-center"
+          class="hidden absolute -top-0.5 -right-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-red-600 text-white font-semibold min-w-[18px] text-center border-2 border-white"
         ></span>
       </button>
     </div>
     <div
       id="notif-panel"
-      class="hidden absolute right-6 top-16 w-[420px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-[150]"
+      class="hidden absolute right-0 top-14 w-[420px] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-[9999]"
     >
       <div
-        class="flex items-center justify-between px-4 py-3 border-b bg-gray-50 relative"
+        class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 bg-gray-50/50"
       >
-        <h2 class="font-semibold text-gray-800 text-[15px]">Thông báo</h2>
-
-        <div class="flex items-center gap-3">
-          <label
-            class="flex items-center text-sm text-gray-600 cursor-pointer select-none"
+        <h2 class="font-semibold text-gray-900 text-sm flex items-center gap-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 text-gray-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
           >
-            <span class="mr-1">Chỉ hiển thị chưa đọc</span>
-            <input id="toggle-unread" type="checkbox" class="sr-only peer" />
-            <div
-              class="w-10 h-5 bg-gray-300 rounded-full relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-4 after:h-4 after:bg-white after:rounded-full after:transition-all peer-checked:bg-blue-600 peer-checked:after:translate-x-5"
-            ></div>
-          </label>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+          Notifications
+        </h2>
 
+        <div class="flex items-center gap-2">
           <button
             id="mark-all-read"
-            class="hidden text-sm text-blue-600 hover:text-blue-800 font-medium transition"
+            class="hidden text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors px-2 py-1 hover:bg-blue-50 rounded"
           >
-            Đánh dấu tất cả đã đọc
+            Mark all as read
           </button>
 
           <!-- ⋯ Menu Button -->
           <div class="relative">
             <button
               id="notif-options-btn"
-              class="text-gray-500 hover:text-gray-800 text-xl px-2 py-1 rounded transition"
+              class="text-gray-500 hover:text-gray-700 p-1.5 rounded hover:bg-gray-200 transition-colors"
+              title="Settings"
             >
-              ⋯
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                />
+              </svg>
             </button>
 
             <!-- Dropdown menu -->
             <div
               id="notif-options-menu"
-              class="hidden absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-[999] animate-[fadeIn_0.15s_ease-out]"
+              class="hidden absolute right-0 mt-1.5 w-56 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-[10000]"
             >
-              <ul class="divide-y divide-gray-100">
-                <!-- 📧 Toggle Email Notification -->
+              <ul class="py-1">
+                <li>
+                  <label
+                    class="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <span class="flex items-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                      <span class="text-xs text-gray-600"
+                        >Show unread only</span
+                      >
+                    </span>
+                    <input
+                      id="toggle-unread"
+                      type="checkbox"
+                      class="sr-only peer"
+                    />
+                    <div
+                      class="w-9 h-5 bg-gray-300 rounded-full relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-4 after:h-4 after:bg-white after:rounded-full after:transition-all peer-checked:bg-blue-600 peer-checked:after:translate-x-4"
+                    ></div>
+                  </label>
+                </li>
+                <li class="border-t border-gray-100 my-1"></li>
                 <li>
                   <button
                     id="toggle-email-btn"
                     type="button"
-                    class="w-full text-left px-4 py-2.5 text-sm flex items-center justify-between hover:bg-gray-50 transition"
+                    class="w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition text-gray-700"
                   >
-                    <div class="flex items-center gap-2 text-gray-700">
-                      <span class="text-[16px]">📧</span>
-                      <span id="email-toggle-text" class="font-medium"
-                        >Tắt thông báo qua Gmail</span
+                    <div class="flex items-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4 text-gray-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
                       >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span id="email-toggle-text" class="text-xs">
+                        Disable Gmail notifications
+                      </span>
                     </div>
-                    <!-- 🔘 Switch -->
                     <div
                       id="email-toggle-icon"
-                      class="w-9 h-5 flex items-center bg-gray-300 rounded-full p-0.5 transition-all duration-300"
+                      class="w-8 h-4 flex items-center bg-gray-300 rounded-full p-0.5 transition-all duration-300"
                     >
                       <div
-                        class="dot bg-white w-4 h-4 rounded-full transform translate-x-0 transition-all duration-300"
+                        class="dot bg-white w-3.5 h-3.5 rounded-full transform translate-x-0 transition-all duration-300"
                       ></div>
                     </div>
                   </button>
                 </li>
-
                 <li>
                   <a
                     id="open-settings-link"
                     href="/settings/notifications"
-                    class="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition"
+                    class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                   >
-                    <span class="text-[16px]">⚙️</span>
-                    <span class="font-medium">Tất cả cài đặt thông báo</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 text-gray-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    <span class="text-xs">All notification settings</span>
                   </a>
                 </li>
               </ul>
@@ -166,14 +265,14 @@
           alt="empty"
           class="w-24 h-24 opacity-80 mb-3"
         />
-        <p class="text-gray-500 text-sm font-medium">No unread notifications</p>
+        <p class="text-gray-500 text-sm font-medium">No new notifications</p>
+        <p class="text-gray-400 text-xs mt-1">
+          All notifications have been read
+        </p>
       </div>
 
       <!-- List (render động) -->
-      <div
-        id="notif-list"
-        class="max-h-[480px] overflow-y-auto divide-y divide-gray-100"
-      >
+      <div id="notif-list" class="max-h-[500px] overflow-y-auto">
         <!-- JS sẽ render nội dung vào đây -->
       </div>
     </div>
@@ -181,84 +280,121 @@
     <div class="relative">
       <div
         id="userMenuButton"
-        class="flex items-center space-x-3 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition"
+        class="flex items-center space-x-2 cursor-pointer p-1.5 rounded-md hover:bg-gray-100 transition-colors"
       >
-        <div class="text-right leading-tight">
-          <div class="flex items-center justify-end space-x-2">
+        <!-- Avatar -->
+        <img
+          th:src="${user != null && user.avatarUrl != null && !#strings.isEmpty(user.avatarUrl)
+                              ? user.avatarUrl : '/photo/default-avatar.png'}"
+          class="rounded-full w-8 h-8 border border-gray-200 object-cover"
+          alt="User Avatar"
+        />
+        <div class="text-left leading-tight hidden md:block">
+          <div class="flex items-center space-x-1.5">
             <span
-              class="block text-sm font-semibold text-gray-800"
+              class="block text-sm font-medium text-gray-700"
               th:text="${user != null ? user.name : 'User'}"
-              >User</span>
+              >User</span
+            >
 
-                        <!-- 🏆 Premium -->
-                          <span
-                                  th:if="${user != null && (user.isPremium || user.premium)}"
-                                  class="bg-yellow-400 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center space-x-1"
-                                  title="Tài khoản Premium"
-                          >
+            <!-- 🏆 Premium -->
+            <span
+              th:if="${user != null && (user.isPremium || user.premium)}"
+              class="bg-yellow-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center space-x-0.5"
+              title="Premium Account"
+            >
               <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      class="w-3.5 h-3.5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                class="w-3 h-3"
               >
                 <path
-                        fill-rule="evenodd"
-                        d="M10 2a1 1 0 01.894.553l1.382 2.802
+                  fill-rule="evenodd"
+                  d="M10 2a1 1 0 01.894.553l1.382 2.802
                   3.09.45a1 1 0 01.554 1.707l-2.236
                   2.18.528 3.078a1 1 0 01-1.45
                   1.054L10 12.347l-2.762
                   1.457a1 1 0 01-1.45-1.054l.528-3.078-2.236-2.18a1
                   1 0 01.554-1.707l3.09-.45L9.106
                   2.553A1 1 0 0110 2z"
-                        clip-rule="evenodd"
+                  clip-rule="evenodd"
                 />
               </svg>
               <span>Premium</span>
             </span>
 
-              <!-- 🆓 Free -->
-              <span
-                      th:if="${user != null && !(user.isPremium || user.premium)}"
-                      class="bg-gray-200 text-gray-600 text-[11px] font-medium px-2 py-0.5 rounded-full shadow-sm"
-                      title="Tài khoản miễn phí"
-              >Free</span
-              >
+            <!-- 🆓 Free -->
+            <span
+              th:if="${user != null && !(user.isPremium || user.premium)}"
+              class="bg-gray-200 text-gray-600 text-[10px] font-medium px-1.5 py-0.5 rounded"
+              title="Free Account"
+            >
+              Free
+            </span>
           </div>
-
-          <span
-            class="block text-xs text-gray-500"
-            th:text="${user != null ? user.email : ''}"
-            >user@email.com</span
-          >
         </div>
-
-        <!-- Avatar -->
-        <img
-          th:src="${user != null && user.avatarUrl != null && !#strings.isEmpty(user.avatarUrl)
-                              ? user.avatarUrl : '/photo/default-avatar.png'}"
-          class="rounded-full w-10 h-10 border-2 border-white shadow-lg object-cover"
-          alt="User Avatar"
-        />
       </div>
 
       <!-- Dropdown -->
       <div
         id="userDropdown"
-        class="hidden absolute right-0 mt-3 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30"
+        class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] overflow-hidden"
       >
+        <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+          <p
+            class="text-sm font-semibold text-gray-900"
+            th:text="${user != null ? user.name : 'User'}"
+          >
+            User
+          </p>
+          <p
+            class="text-xs text-gray-500 mt-0.5"
+            th:text="${user != null ? user.email : ''}"
+          >
+            user@email.com
+          </p>
+        </div>
         <a
           href="/user/view/profile"
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-xl"
+          class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          👤 Profile
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
+          Profile
         </a>
         <a
           href="#"
           id="logoutBtn"
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-xl"
+          class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          🚪 Logout
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
+          Logout
         </a>
       </div>
     </div>
@@ -313,8 +449,12 @@
         notifEmpty.classList.add("hidden");
 
         try {
+          const headers = {};
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
           const res = await fetch(`/api/notifications`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers,
           });
           if (!res.ok)
             throw new Error(`Failed to fetch notifications (${res.status})`);
@@ -360,27 +500,70 @@
                   ? n.senderAvatar
                   : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
+              // Tạo avatar chữ cái đầu nếu không có avatar
+              const avatarInitial = senderName.charAt(0).toUpperCase();
+              const avatarBgColors = [
+                "#3b82f6", // Blue
+                "#10b981", // Green
+                "#8b5cf6", // Purple
+                "#f59e0b", // Amber
+                "#ef4444", // Red
+                "#06b6d4", // Cyan
+                "#ec4899", // Pink
+                "#14b8a6", // Teal
+                "#f97316", // Orange
+                "#6366f1", // Indigo
+              ];
+              // Sử dụng hash của toàn bộ tên để có màu đa dạng hơn
+              let hash = 0;
+              for (let i = 0; i < senderName.length; i++) {
+                hash = senderName.charCodeAt(i) + ((hash << 5) - hash);
+              }
+              const avatarBgColor =
+                avatarBgColors[Math.abs(hash) % avatarBgColors.length];
+
               return `
             <div onclick="handleNotificationClick(${id}, '${link}')"
-                class="bg-white px-4 py-3 hover:bg-gray-50 transition cursor-pointer relative border-b border-gray-100 ${
-                  isRead ? "opacity-60" : ""
+                class="px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                  isRead ? "bg-white" : "bg-blue-50/50"
                 }">
-              <div class="flex items-start gap-3">
-                <img src="${senderAvatar}" 
-                    class="w-9 h-9 rounded-full border object-cover" 
-                    alt="avatar">
-                <div class="flex-1 text-sm">
-                  <p class="text-gray-800 font-medium">${senderName}</p>
-                  <p class="text-gray-700 leading-snug">${msg}</p>
-                  <p class="text-xs text-gray-400 mt-1">${formatRelativeTime(
-                    createdAt
-                  )}</p>
+              <div class="flex items-start gap-2.5">
+                <div class="relative flex-shrink-0">
+                  ${
+                    senderAvatar && senderAvatar.includes("http")
+                      ? `<img 
+                          src="${senderAvatar}" 
+                          class="w-8 h-8 rounded-full border border-gray-200 object-cover" 
+                          alt="avatar"
+                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                        />`
+                      : ""
+                  }
+                  <div 
+                    class="${
+                      senderAvatar && senderAvatar.includes("http")
+                        ? "hidden"
+                        : "flex"
+                    } w-8 h-8 rounded-full items-center justify-center text-white font-semibold text-[11px]"
+                    style="background-color: ${avatarBgColor};"
+                  >
+                    ${avatarInitial}
+                  </div>
+                  ${
+                    !isRead
+                      ? `<span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white"></span>`
+                      : ""
+                  }
                 </div>
-                ${
-                  !isRead
-                    ? `<span class="absolute right-3 top-3 w-2.5 h-2.5 bg-blue-500 rounded-full"></span>`
-                    : ""
-                }
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between gap-2 mb-0.5">
+                    <p class="text-gray-900 font-semibold text-[13px] leading-tight">${senderName}</p>
+                    <p class="text-[11px] text-gray-400 whitespace-nowrap flex-shrink-0 leading-tight">${formatRelativeTime(
+                      createdAt
+                    )}</p>
+                  </div>
+                  <p class="text-gray-600 text-[13px] leading-relaxed break-words">${msg}</p>
+                </div>
               </div>
             </div>`;
             })
@@ -396,9 +579,13 @@
         if (!id) return;
         const token = localStorage.getItem("token");
         try {
+          const headers = {};
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
           const res = await fetch(`/api/notifications/${id}/read`, {
             method: "PUT",
-            headers: { Authorization: `Bearer ${token}` },
+            headers,
           });
           if (!res.ok) console.warn("⚠️ Failed to mark read:", res.status);
         } catch (err) {
@@ -410,9 +597,13 @@
       async function markAllNotificationsRead() {
         const token = localStorage.getItem("token");
         try {
+          const headers = {};
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
           const res = await fetch(`/api/notifications/read-all`, {
             method: "PUT",
-            headers: { Authorization: `Bearer ${token}` },
+            headers,
           });
           if (!res.ok) throw new Error("Failed to mark all as read");
           await loadNotifications(toggleUnread.checked);
@@ -461,17 +652,20 @@
 
       async function openTaskDetailFromApi(taskId) {
         try {
+          const token = localStorage.getItem("token");
+          const headers = {};
+          if (token) {
+            headers.Authorization = "Bearer " + token;
+          }
           const res = await fetch(`/api/tasks/${taskId}`, {
-            headers: {
-              Authorization: "Bearer " + localStorage.getItem("token"),
-            },
+            headers,
           });
           if (!res.ok) throw new Error("Failed to load task");
           const task = await res.json();
           openTaskModal(task);
         } catch (err) {
           console.error("❌ openTaskDetailFromApi:", err);
-          alert("Không thể tải thông tin công việc.");
+          showToast("Failed to load task information.", "error");
         }
       }
 
@@ -576,11 +770,13 @@
                 data.email || data.user?.email
               );
             } else {
-              console.warn("⚠️ Không thể xác thực cookie, WS sẽ không kết nối");
+              console.warn(
+                "⚠️ Cannot authenticate cookie, WS will not connect"
+              );
               return;
             }
           } catch (err) {
-            console.error("❌ Lỗi khi xác thực cookie:", err);
+            console.error("❌ Error authenticating cookie:", err);
             return;
           }
         }
@@ -673,9 +869,12 @@
       }
 
       // ================== 🎯 Event bindings ==================
-      toggleUnread.addEventListener("change", (e) =>
-        loadNotifications(e.target.checked)
-      );
+      const toggleUnreadEl = document.getElementById("toggle-unread");
+      if (toggleUnreadEl) {
+        toggleUnreadEl.addEventListener("change", (e) =>
+          loadNotifications(e.target.checked)
+        );
+      }
 
       notifBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -729,31 +928,34 @@
 
         try {
           const token = localStorage.getItem("token");
+          const headers = {
+            "Content-Type": "application/json",
+          };
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
 
           const res = await fetch("/api/settings/notifications/email-toggle", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+            headers,
             body: JSON.stringify({ enabled: emailEnabled }),
           });
 
           if (res.ok) {
             emailToggleText.textContent = emailEnabled
-              ? "Tắt thông báo qua Gmail"
-              : "Bật lại thông báo qua Gmail";
+              ? "Disable Gmail notifications"
+              : "Enable Gmail notifications";
             showToast(
               emailEnabled
-                ? "✅ Đã bật lại thông báo Gmail"
-                : "🚫 Đã tắt thông báo Gmail"
+                ? "✅ Gmail notifications enabled"
+                : "🚫 Gmail notifications disabled"
             );
           } else {
-            showToast("⚠️ Không thể cập nhật cài đặt.");
+            showToast("⚠️ Failed to update settings.");
           }
         } catch (err) {
           console.error("❌ toggleEmailBtn error:", err);
-          showToast("⚠️ Lỗi kết nối server.");
+          showToast("⚠️ Server connection error.");
         }
 
         notifMenu.classList.add("hidden");
@@ -773,8 +975,11 @@
             });
 
             if (!meRes.ok) {
-              alert("⚠️ Bạn chưa đăng nhập! Vui lòng đăng nhập để tiếp tục.");
-              window.location.href = "/view/signin";
+              showToast(
+                "You are not logged in! Please login to continue.",
+                "warning"
+              );
+              setTimeout(() => (window.location.href = "/view/signin"), 1500);
               return;
             }
 
@@ -791,10 +996,11 @@
             });
 
             if (!res.ok) {
-              alert(
-                "❌ Không thể truy cập trang cài đặt. Vui lòng đăng nhập lại!"
+              showToast(
+                "Cannot access settings page. Please login again!",
+                "error"
               );
-              window.location.href = "/view/signin";
+              setTimeout(() => (window.location.href = "/view/signin"), 1500);
               return;
             }
 
@@ -802,7 +1008,7 @@
             window.location.href = "/settings/notifications";
           } catch (err) {
             console.error("⚠️ openSettingsLink error:", err);
-            alert("❌ Lỗi kết nối. Vui lòng thử lại sau.");
+            showToast("Connection error. Please try again later.", "error");
           }
         });
       });
@@ -812,7 +1018,7 @@
         try {
           connectWebSocketNotifications();
         } catch (err) {
-          console.warn("⚠️ Không thể khởi tạo WebSocket:", err);
+          console.warn("⚠️ Failed to initialize WebSocket:", err);
         }
       });
 
@@ -842,69 +1048,82 @@
         return `${days} day${days > 1 ? "s" : ""} ago`;
       }
       // --- Search ---
-        const searchInput = document.getElementById("searchInput");
-        const searchDropdown = document.getElementById("searchDropdown");
-        const searchResults = document.getElementById("searchResults");
+      const searchInput = document.getElementById("searchInput");
+      const searchDropdown = document.getElementById("searchDropdown");
+      const searchResults = document.getElementById("searchResults");
 
-        function escapeHtml(unsafe) {
-            if (!unsafe) return "";
-            return unsafe.replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+      function escapeHtml(unsafe) {
+        if (!unsafe) return "";
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
 
-        if (searchInput && searchDropdown && searchResults) {
-            let searchTimeout;
+      if (searchInput && searchDropdown && searchResults) {
+        let searchTimeout;
 
-            searchInput.addEventListener("focus", () => {
-                searchDropdown.classList.remove("hidden");
+        searchInput.addEventListener("focus", () => {
+          searchDropdown.classList.remove("hidden");
+          searchResults.innerHTML =
+            "<p class='p-4 text-gray-500 text-sm text-center'>Type to start searching...</p>";
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!searchDropdown.contains(e.target) && e.target !== searchInput) {
+            searchDropdown.classList.add("hidden");
+          }
+        });
+
+        searchInput.addEventListener("input", () => {
+          clearTimeout(searchTimeout);
+          const query = searchInput.value.trim();
+          if (query.length < 1) {
+            searchResults.innerHTML =
+              "<p class='p-4 text-gray-500 text-sm text-center'>Type to start searching...</p>";
+            return;
+          }
+
+          searchTimeout = setTimeout(() => {
+            fetch("/api/search?query=" + encodeURIComponent(query))
+              .then((res) => res.json())
+              .then((data) => {
+                if (!Array.isArray(data) || data.length === 0) {
+                  searchResults.innerHTML =
+                    "<p class='p-4 text-gray-500 text-sm text-center'>No results found</p>";
+                  return;
+                }
+
+                searchResults.innerHTML = data
+                  .map(function (item) {
+                    return (
+                      "" +
+                      '<div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition" ' +
+                      "     onclick=\"window.location.href='/view/pm/project/board?projectId=" +
+                      item.projectId +
+                      "'\">" +
+                      '  <p class="text-sm font-semibold text-gray-800">' +
+                      escapeHtml(item.name) +
+                      "</p>" +
+                      '  <p class="text-xs text-gray-500 truncate">' +
+                      escapeHtml(item.description || "") +
+                      "</p>" +
+                      '  <p class="text-[11px] text-gray-400 mt-0.5">Status: ' +
+                      (item.status || "") +
+                      "</p>" +
+                      "</div>"
+                    );
+                  })
+                  .join("");
+              })
+              .catch((err) => {
+                console.error("Search error:", err);
                 searchResults.innerHTML =
-                    "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
-            });
-
-            document.addEventListener("click", (e) => {
-                if (!searchDropdown.contains(e.target) && e.target !== searchInput) {
-                    searchDropdown.classList.add("hidden");
-                }
-            });
-
-            searchInput.addEventListener("input", () => {
-                clearTimeout(searchTimeout);
-                const query = searchInput.value.trim();
-                if (query.length < 1) {
-                    searchResults.innerHTML =
-                        "<p class='p-4 text-gray-500 text-sm text-center'>Nhập để bắt đầu tìm kiếm...</p>";
-                    return;
-                }
-
-                searchTimeout = setTimeout(() => {
-                    fetch("/api/search?query=" + encodeURIComponent(query))
-                        .then(res => res.json())
-                        .then(data => {
-                            if (!Array.isArray(data) || data.length === 0) {
-                                searchResults.innerHTML =
-                                    "<p class='p-4 text-gray-500 text-sm text-center'>Không có kết quả</p>";
-                                return;
-                            }
-
-                            searchResults.innerHTML = data.map(function(item) {
-                                return '' +
-                                    '<div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition" ' +
-                                    '     onclick="window.location.href=\'/view/pm/project/board?projectId=' + item.projectId + '\'">' +
-                                    '  <p class="text-sm font-semibold text-gray-800">' + escapeHtml(item.name) + '</p>' +
-                                    '  <p class="text-xs text-gray-500 truncate">' + escapeHtml(item.description || "") + '</p>' +
-                                    '  <p class="text-[11px] text-gray-400 mt-0.5">Status: ' + (item.status || "") + '</p>' +
-                                    '</div>';
-                            }).join("");
-                        })
-                        .catch(err => {
-                            console.error("Search error:", err);
-                            searchResults.innerHTML =
-                                "<p class='p-4 text-gray-500 text-sm text-center'>Không thể tải kết quả</p>";
-                        });
-                }, 300);
+                  "<p class='p-4 text-gray-500 text-sm text-center'>Failed to load results</p>";
+              });
+          }, 300);
         });
       }
 
@@ -943,104 +1162,159 @@
       }
     });
   </script>
-    <script>
-        (async () => {
-            try {
-                // 👤 Lấy các phần tử trong header
-                const nameEl = document.querySelector(
-                    "#userMenuButton span[th\\:text]"
-                );
-                const emailEl = document.querySelector("#userMenuButton .text-xs");
-                const freeBadge = document.querySelector(
-                    "#userMenuButton .bg-gray-200"
-                );
-                const premiumBadge = document.querySelector(
-                    "#userMenuButton .bg-yellow-400"
-                );
-                const avatarImg = document.querySelector(
-                    '#userMenuButton img[alt="User Avatar"]'
-                );
+  <script>
+    (async () => {
+      try {
+        // 👤 Lấy các phần tử trong header
+        const nameEl = document.querySelector(
+          "#userMenuButton span[th\\:text]"
+        );
+        const emailEl = document.querySelector("#userMenuButton .text-xs");
+        const freeBadge = document.querySelector(
+          "#userMenuButton .bg-gray-200"
+        );
+        const premiumBadge = document.querySelector(
+          "#userMenuButton .bg-yellow-400"
+        );
+        const avatarImg = document.querySelector(
+          '#userMenuButton img[alt="User Avatar"]'
+        );
 
-                // 🔍 QUAN TRỌNG: Kiểm tra xem Thymeleaf đã render badge chưa
-                const hasThymeleafBadge = freeBadge && premiumBadge &&
-                    (!freeBadge.classList.contains("hidden") ||
-                        !premiumBadge.classList.contains("hidden"));
+        // 🔍 QUAN TRỌNG: Kiểm tra xem Thymeleaf đã render badge chưa
+        const hasThymeleafBadge =
+          freeBadge &&
+          premiumBadge &&
+          (!freeBadge.classList.contains("hidden") ||
+            !premiumBadge.classList.contains("hidden"));
 
-                // Nếu Thymeleaf đã render badge thành công, KHÔNG làm gì cả
-                if (hasThymeleafBadge) {
-                    console.log("✅ Thymeleaf đã render badge - không cần JavaScript");
-                    return;
-                }
+        // Nếu Thymeleaf đã render badge thành công, KHÔNG làm gì cả
+        if (hasThymeleafBadge) {
+          console.log("✅ Thymeleaf đã render badge - không cần JavaScript");
+          return;
+        }
 
-                // Nếu Thymeleaf chưa render (trang không dùng Thymeleaf hoặc lỗi), thì mới fetch API
-                console.log("🔄 Thymeleaf chưa render - dùng JavaScript fallback");
+        // Nếu Thymeleaf chưa render (trang không dùng Thymeleaf hoặc lỗi), thì mới fetch API
+        console.log("🔄 Thymeleaf chưa render - dùng JavaScript fallback");
 
-                const token = localStorage.getItem("token");
-                const res = await fetch("/api/auth/me", {
-                    headers: token ? { Authorization: "Bearer " + token } : {},
-                    credentials: "include",
-                });
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/auth/me", {
+          headers: token ? { Authorization: "Bearer " + token } : {},
+          credentials: "include",
+        });
 
-                if (!res.ok) throw new Error("Unauthorized");
-                const data = await res.json();
-                const u = data.user || data;
+        if (!res.ok) throw new Error("Unauthorized");
+        const data = await res.json();
+        const u = data.user || data;
 
-                const user = {
-                    name: u.name || u.fullName || "User",
-                    email: u.email || "",
-                    avatarUrl: u.avatarUrl && u.avatarUrl.trim() !== "" ? u.avatarUrl : "",
-                    isPremium: !!u.isPremium || !!u.premium || (u.roles || []).includes("ROLE_PREMIUM"),
-                };
+        const user = {
+          name: u.name || u.fullName || "User",
+          email: u.email || "",
+          avatarUrl:
+            u.avatarUrl && u.avatarUrl.trim() !== "" ? u.avatarUrl : "",
+          isPremium:
+            !!u.isPremium ||
+            !!u.premium ||
+            (u.roles || []).includes("ROLE_PREMIUM"),
+        };
 
-                // 🟩 Chỉ cập nhật nếu element tồn tại VÀ chưa có nội dung từ Thymeleaf
-                if (nameEl && (!nameEl.textContent || nameEl.textContent.trim() === "User")) {
-                    nameEl.textContent = user.name;
-                }
-                if (emailEl && (!emailEl.textContent || emailEl.textContent.trim() === "")) {
-                    emailEl.textContent = user.email;
-                }
+        // 🟩 Chỉ cập nhật nếu element tồn tại VÀ chưa có nội dung từ Thymeleaf
+        if (
+          nameEl &&
+          (!nameEl.textContent || nameEl.textContent.trim() === "User")
+        ) {
+          nameEl.textContent = user.name;
+        }
+        if (
+          emailEl &&
+          (!emailEl.textContent || emailEl.textContent.trim() === "")
+        ) {
+          emailEl.textContent = user.email;
+        }
 
-                // 🏆 Cập nhật badge Free / Premium - CHỈ khi chưa có từ Thymeleaf
-                if (freeBadge && premiumBadge) {
-                    if (freeBadge.classList.contains("hidden") && premiumBadge.classList.contains("hidden")) {
-                        // Cả hai đều hidden -> chưa được render từ Thymeleaf
-                        if (user.isPremium) {
-                            freeBadge.classList.add("hidden");
-                            premiumBadge.classList.remove("hidden");
-                        } else {
-                            premiumBadge.classList.add("hidden");
-                            freeBadge.classList.remove("hidden");
-                        }
-                    }
-                    // Nếu một trong hai đang hiện -> Thymeleaf đã render, không làm gì
-                }
-
-                // 🟦 Cập nhật avatar - CHỈ khi avatar mặc định
-                if (avatarImg && avatarImg.src.includes("default-avatar.png")) {
-                    if (user.avatarUrl) {
-                        avatarImg.src = user.avatarUrl;
-                    } else {
-                        // Tạo avatar chữ cái đầu
-                        const canvas = document.createElement("canvas");
-                        canvas.width = 100;
-                        canvas.height = 100;
-                        const ctx = canvas.getContext("2d");
-                        ctx.fillStyle = "#2563eb";
-                        ctx.beginPath();
-                        ctx.arc(50, 50, 50, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.fillStyle = "#fff";
-                        ctx.font = "bold 50px Inter, sans-serif";
-                        ctx.textAlign = "center";
-                        ctx.textBaseline = "middle";
-                        ctx.fillText(user.name.charAt(0).toUpperCase(), 50, 55);
-                        avatarImg.src = canvas.toDataURL();
-                    }
-                }
-
-            } catch (err) {
-                console.warn("⚠️ Auto-load user header failed:", err);
+        // 🏆 Cập nhật badge Free / Premium - CHỈ khi chưa có từ Thymeleaf
+        if (freeBadge && premiumBadge) {
+          if (
+            freeBadge.classList.contains("hidden") &&
+            premiumBadge.classList.contains("hidden")
+          ) {
+            // Cả hai đều hidden -> chưa được render từ Thymeleaf
+            if (user.isPremium) {
+              freeBadge.classList.add("hidden");
+              premiumBadge.classList.remove("hidden");
+            } else {
+              premiumBadge.classList.add("hidden");
+              freeBadge.classList.remove("hidden");
             }
-        })();
-    </script>
+          }
+          // Nếu một trong hai đang hiện -> Thymeleaf đã render, không làm gì
+        }
+
+        // 🟦 Cập nhật avatar - CHỈ khi avatar mặc định
+        if (avatarImg && avatarImg.src.includes("default-avatar.png")) {
+          if (user.avatarUrl) {
+            avatarImg.src = user.avatarUrl;
+          } else {
+            // Tạo avatar chữ cái đầu
+            const canvas = document.createElement("canvas");
+            canvas.width = 100;
+            canvas.height = 100;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#2563eb";
+            ctx.beginPath();
+            ctx.arc(50, 50, 50, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 50px Inter, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(user.name.charAt(0).toUpperCase(), 50, 55);
+            avatarImg.src = canvas.toDataURL();
+          }
+        }
+      } catch (err) {
+        console.warn("⚠️ Auto-load user header failed:", err);
+      }
+    })();
+
+    // Toast function (if not already defined)
+    if (typeof showToast === "undefined") {
+      function showToast(message, type = "info") {
+        const cleanMessage = message.replace(/[✅❌⚠️🚫🔒]/g, "").trim();
+        const toast = document.createElement("div");
+        toast.textContent = cleanMessage || message;
+
+        let bgClass = "bg-blue-600";
+        if (
+          type === "error" ||
+          message.includes("❌") ||
+          message.includes("Failed") ||
+          message.includes("Error") ||
+          message.includes("Cannot")
+        ) {
+          bgClass = "bg-red-600";
+        } else if (type === "warning" || message.includes("⚠️")) {
+          bgClass = "bg-amber-500";
+        } else if (
+          type === "success" ||
+          message.includes("✅") ||
+          message.includes("successfully")
+        ) {
+          bgClass = "bg-emerald-600";
+        }
+
+        toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg text-white text-sm font-medium shadow-xl z-[9999]
+            pointer-events-none transition-all duration-200 ease-out translate-y-4 opacity-0 ${bgClass}`;
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          toast.classList.remove("translate-y-4", "opacity-0");
+        });
+
+        setTimeout(() => {
+          toast.classList.add("opacity-0", "translate-y-4");
+          setTimeout(() => toast.remove(), 250);
+        }, 3000);
+      }
+    }
+  </script>
 </header>

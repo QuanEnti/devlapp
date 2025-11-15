@@ -411,8 +411,8 @@ public class AuthController {
         }
 
         @PostMapping("/refresh")
-        public ResponseEntity<?> refreshToken(
-                        @CookieValue(value = "REFRESH_TOKEN", defaultValue = "") String refreshToken) {
+        public ResponseEntity<?> refreshToken(@CookieValue(value = "REFRESH_TOKEN",
+                        defaultValue = "") String refreshToken) {
                 try {
                         if (refreshToken.isEmpty() || !jwtService.isValid(refreshToken)) {
                                 return ResponseEntity.status(401).body(new ErrorResponseDTO(
@@ -423,9 +423,10 @@ public class AuthController {
                         String email = jwtService.extractEmail(refreshToken);
                         String newAccessToken = jwtService.generateAccessToken(email);
 
-                        ResponseCookie newAccessCookie = ResponseCookie.from("AUTH_TOKEN", newAccessToken)
-                                        .httpOnly(true).secure(false).path("/")
-                                        .maxAge(15 * 60).sameSite("Lax").build();
+                        ResponseCookie newAccessCookie =
+                                        ResponseCookie.from("AUTH_TOKEN", newAccessToken)
+                                                        .httpOnly(true).secure(false).path("/")
+                                                        .maxAge(15 * 60).sameSite("Lax").build();
 
                         return ResponseEntity.ok()
                                         .header(HttpHeaders.SET_COOKIE, newAccessCookie.toString())
@@ -514,10 +515,11 @@ public class AuthController {
                         // ✅ Lấy roles riêng, không chạm UserDTO
                         Optional<User> userOpt = userRepository
                                         .findByEmailFetchRoles(currentUser.getEmail());
-                        List<String> roles = userOpt.isPresent()
-                                        ? userOpt.get().getRoles().stream()
-                                                        .map(Role::getName).toList()
-                                        : List.of("ROLE_MEMBER");
+                        List<String> roles =
+                                        userOpt.isPresent()
+                                                        ? userOpt.get().getRoles().stream()
+                                                                        .map(Role::getName).toList()
+                                                        : List.of("ROLE_MEMBER");
 
                         // ✅ Gói vào 1 JSON object
                         Map<String, Object> response = new LinkedHashMap<>();

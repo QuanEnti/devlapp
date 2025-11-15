@@ -65,4 +65,10 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
             """)
     List<AttachmentDTO> findRecentLinksByUser(@Param("userId") Long userId);
 
+    @Query("SELECT COUNT(a) FROM Attachment a WHERE a.task.taskId = :taskId AND a.deletedAt IS NULL")
+    long countByTaskId(@Param("taskId") Long taskId);
+
+    @Query("SELECT a.task.taskId, COUNT(a) FROM Attachment a WHERE a.task.taskId IN :taskIds AND a.deletedAt IS NULL GROUP BY a.task.taskId")
+    List<Object[]> countByTaskIds(@Param("taskIds") List<Long> taskIds);
+
 }

@@ -47,6 +47,7 @@ public class ViewPmController {
             model.addAttribute("unreadNotifications", notificationService.countUnread(userEmail));
         });
     }
+
     @GetMapping("/project/schedule/calendar")
     public String scheduleCalendar(@RequestParam Long projectId, Model model, Authentication auth) {
         Project project = projectService.getById(projectId);
@@ -63,10 +64,12 @@ public class ViewPmController {
 
         return "pm/schedule-calendar";
     }
+
     @GetMapping("/project/{id}/dashboard")
     public String dashboard(@PathVariable("id") Long id, Model model) {
         Project checkStatusProject = projectService.getById(id);
-        if (checkStatusProject == null || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
+        if (checkStatusProject == null
+                || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
             return "redirect:/view/pm/project-archived?projectId=" + id;
         }
 
@@ -85,7 +88,8 @@ public class ViewPmController {
     @GetMapping("/project/board")
     public String projectBoard(@RequestParam("projectId") Long id, Model model) {
         Project checkStatusProject = projectService.getById(id);
-        if (checkStatusProject == null || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
+        if (checkStatusProject == null
+                || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
             return "redirect:/view/pm/project-archived?projectId=" + id;
         }
 
@@ -102,12 +106,11 @@ public class ViewPmController {
     }
 
     @GetMapping("/project/detail")
-    public String viewProjectDetail(
-            @RequestParam("projectId") Long projectId,
-            Model model,
+    public String viewProjectDetail(@RequestParam("projectId") Long projectId, Model model,
             Authentication auth) {
         Project checkStatusProject = projectService.getById(projectId);
-        if (checkStatusProject == null || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
+        if (checkStatusProject == null
+                || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
             return "redirect:/view/pm/project-archived?projectId=" + projectId;
         }
 
@@ -133,9 +136,11 @@ public class ViewPmController {
     }
 
     @GetMapping("/project/members")
-    public String viewProjectMembers(@RequestParam Long projectId, Model model, Authentication auth) {
+    public String viewProjectMembers(@RequestParam Long projectId, Model model,
+            Authentication auth) {
         Project checkStatusProject = projectService.getById(projectId);
-        if (checkStatusProject == null || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
+        if (checkStatusProject == null
+                || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
             return "redirect:/view/pm/project-archived?projectId=" + projectId;
         }
         String email = getEmailFromAuthentication(auth);
@@ -150,7 +155,8 @@ public class ViewPmController {
     @GetMapping("/project/review")
     public String viewProjectReview(@RequestParam Long projectId, Model model) {
         Project checkStatusProject = projectService.getById(projectId);
-        if (checkStatusProject == null || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
+        if (checkStatusProject == null
+                || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
             return "redirect:/view/pm/project-archived?projectId=" + projectId;
         }
         model.addAttribute("projectId", projectId);
@@ -160,20 +166,18 @@ public class ViewPmController {
     @GetMapping("/project/performance")
     public String viewPerformance(@RequestParam("projectId") Long projectId, Model model) {
         Project checkStatusProject = projectService.getById(projectId);
-        if (checkStatusProject == null || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
+        if (checkStatusProject == null
+                || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
             return "redirect:/view/pm/project-archived?projectId=" + projectId;
         }
         Project project = projectService.getById(projectId);
         var performanceList = taskService.getMemberPerformance(projectId);
 
         // Extract names & scores for Chart.js
-        List<String> names = performanceList.stream()
-                .map(MemberPerformanceDTO::getName)
-                .toList();
+        List<String> names = performanceList.stream().map(MemberPerformanceDTO::getName).toList();
 
-        List<Double> scores = performanceList.stream()
-                .map(MemberPerformanceDTO::getPerformanceScore)
-                .toList();
+        List<Double> scores =
+                performanceList.stream().map(MemberPerformanceDTO::getPerformanceScore).toList();
 
         model.addAttribute("project", project);
         model.addAttribute("performance", performanceList);

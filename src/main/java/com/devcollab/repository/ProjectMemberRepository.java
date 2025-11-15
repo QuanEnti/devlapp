@@ -266,6 +266,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Pr
                     )
                 """)
         List<User> findUsersByProjectIds(@Param("projectIds") List<Long> projectIds, @Param("userId") Long userId);
+    // ✅ Sort by Manager roles first, then by project creation date (newest first)
     @Query("""
         SELECT pm FROM ProjectMember pm
         WHERE pm.user = :user
@@ -274,11 +275,11 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Pr
                 WHEN LOWER(pm.roleInProject) IN ('pm','project manager','manager','projectmanager') THEN 1
                 ELSE 2
             END,
-            pm.joinedAt DESC
+            pm.project.createdAt DESC
     """)
     Page<ProjectMember> findByUserSortedByManager(User user, Pageable pageable);
 
-    // ✅ Sort by Member roles first
+    // ✅ Sort by Member roles first, then by project creation date (newest first)
     @Query("""
         SELECT pm FROM ProjectMember pm
         WHERE pm.user = :user
@@ -287,10 +288,15 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Pr
                 WHEN LOWER(pm.roleInProject) IN ('member','normal','user') THEN 1
                 ELSE 2
             END,
-            pm.joinedAt DESC
+            pm.project.createdAt DESC
     """)
     Page<ProjectMember> findByUserSortedByMember(User user, Pageable pageable);
 
-    // ✅ Default (no special sort)
+    // ✅ Default: Sort by project creation date (newest first)
+    @Query("""
+        SELECT pm FROM ProjectMember pm
+        WHERE pm.user = :user
+        ORDER BY pm.project.createdAt DESC
+    """)
     Page<ProjectMember> findByUser(User user, Pageable pageable);
 }

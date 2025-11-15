@@ -6,6 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/toast.js}"></script>
 
     <style>
         html, body {
@@ -126,7 +127,7 @@
             render();
         } catch (error) {
             console.error('Error loading users:', error);
-            alert('Failed to load users: ' + error.message);
+            showToast('Failed to load users: ' + error.message, 'error');
         }
     }
 
@@ -255,14 +256,14 @@
                 if (idx > -1) allUsers[idx].status = result.newStatus;
 
                 applySearch();
-                alert(`User ${action}ned successfully!`);
+                showToast(`User ${action}ned successfully!`, 'success');
             } else {
                 const errorData = await res.json();
-                alert('Failed to update user status: ' + (errorData.message || 'Unknown error'));
+                showToast('Failed to update user status: ' + (errorData.message || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error toggling ban:', error);
-            alert('Failed to update user status: ' + error.message);
+            showToast('Failed to update user status: ' + error.message, 'error');
         }
     }
 

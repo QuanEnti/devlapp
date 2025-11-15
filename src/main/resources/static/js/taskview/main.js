@@ -8,6 +8,7 @@ import {
   getInitials,
   getColorForId,
   safeStop,
+  getToken,
 } from "./utils.js";
 
 // ================== IMPORT MODULES ==================
@@ -41,16 +42,28 @@ const closeModalBtn = document.getElementById("close-modal-btn");
 
 // ================== BOARD ==================
 async function loadColumns(projectId) {
+  const token = getToken();
+  const headers = {};
+  if (token) {
+    headers.Authorization = "Bearer " + token;
+  }
   const res = await fetch(`/api/columns/project/${projectId}`, {
-    headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+    headers,
+    credentials: "include",
   });
   if (!res.ok) throw new Error("Không thể tải danh sách cột");
   return await res.json();
 }
 
 async function loadTasks(projectId) {
+  const token = getToken();
+  const headers = {};
+  if (token) {
+    headers.Authorization = "Bearer " + token;
+  }
   const res = await fetch(`/api/tasks/project/${projectId}`, {
-    headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+    headers,
+    credentials: "include",
   });
   if (!res.ok) throw new Error("Không thể tải danh sách task");
   return await res.json();
@@ -80,7 +93,7 @@ async function renderDashboard(projectId) {
       const items = grouped[col.name] || [];
       const htmlTasks = items.length
         ? items.map(renderCard).join("")
-        : `<div class="text-sm text-slate-400 italic">Chưa có thẻ</div>`;
+        : `<div class="text-sm text-slate-400 italic">No cards yet</div>`;
 
       board.innerHTML += `
   <div class="kanban-list w-[300px] rounded-lg border-0 shadow-sm
@@ -161,31 +174,50 @@ function renderCard(t) {
   const taskId = t.id || t.taskId;
 
   // Map từ assigneeName/assigneeAvatar/assigneeId sang assignees array nếu chưa có
-  if (!t.assignees && t.assigneeName && t.assigneeName !== "Unassigned") {
-    t.assignees = [
-      {
-        name: t.assigneeName,
-        assigneeName: t.assigneeName,
-        avatarUrl: t.assigneeAvatar || "",
-        userId: t.assigneeId,
-        id: t.assigneeId,
-        color:
-          t.assigneeColor ||
-          getColorForId(String(t.assigneeId || t.assigneeName)),
-      },
-    ];
+  if (!t.assignees || !Array.isArray(t.assignees) || t.assignees.length === 0) {
+    if (t.assigneeName && t.assigneeName !== "Unassigned") {
+      t.assignees = [
+        {
+          name: t.assigneeName,
+          assigneeName: t.assigneeName,
+          avatarUrl: t.assigneeAvatar || "",
+          userId: t.assigneeId,
+          id: t.assigneeId,
+          color:
+            t.assigneeColor ||
+            getColorForId(String(t.assigneeId || t.assigneeName)),
+        },
+      ];
+    } else {
+      t.assignees = [];
+    }
   }
 
-  // Debug: Kiểm tra dữ liệu assignees
-  console.log(`Task ${taskId} data:`, {
-    assignees: t.assignees,
-    assigneeName: t.assigneeName,
-    assigneeAvatar: t.assigneeAvatar,
-    assigneeId: t.assigneeId,
-    hasAssignees:
-      t.assignees && Array.isArray(t.assignees) && t.assignees.length > 0,
-    hasAssigneeName: t.assigneeName && t.assigneeName !== "Unassigned",
-  });
+  // Đảm bảo assignees là array hợp lệ và có dữ liệu đầy đủ
+  // Loại bỏ duplicate dựa trên userId
+  if (Array.isArray(t.assignees)) {
+    const seen = new Set();
+    t.assignees = t.assignees
+      .map((a) => ({
+        name: a.name || a.assigneeName || "",
+        assigneeName: a.assigneeName || a.name || "",
+        avatarUrl: a.avatarUrl || a.assigneeAvatar || "",
+        userId: a.userId || a.id || a.assigneeId,
+        id: a.id || a.userId || a.assigneeId,
+        color:
+          a.color ||
+          a.assigneeColor ||
+          getColorForId(
+            String(a.userId || a.id || a.assigneeId || a.name || a.assigneeName)
+          ),
+      }))
+      .filter((a) => {
+        if (!a.userId) return false; // Bỏ qua nếu không có userId
+        if (seen.has(a.userId)) return false; // Bỏ qua nếu đã có
+        seen.add(a.userId);
+        return true;
+      });
+  }
 
   // 🔹 Render labels (colored tags với tên) - như ảnh 2
   const labelHtml =
@@ -273,7 +305,7 @@ function renderCard(t) {
       ${
         commentCount > 0
           ? `
-        <div class="flex items-center gap-1 text-gray-600">
+        <div class="flex items-center gap-1 text-gray-600" data-comment-count="${taskId}">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
@@ -286,7 +318,7 @@ function renderCard(t) {
       ${
         attachmentCount > 0
           ? `
-        <div class="flex items-center gap-1 text-gray-600">
+        <div class="flex items-center gap-1 text-gray-600" data-attachment-count="${taskId}">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
           </svg>
@@ -312,27 +344,29 @@ function renderCard(t) {
       ${
         hasAssignee
           ? (() => {
-              console.log(
-                `Rendering members for task ${taskId}, hasAssignee:`,
-                hasAssignee
-              );
               const hasAssigneesArray =
                 t.assignees &&
                 Array.isArray(t.assignees) &&
                 t.assignees.length > 0;
-              console.log(
-                `hasAssigneesArray:`,
-                hasAssigneesArray,
-                `assignees:`,
-                t.assignees
-              );
+
+              // Loại bỏ duplicate và lấy tối đa 2 avatars
+              const uniqueAssignees = hasAssigneesArray
+                ? t.assignees.filter(
+                    (a, index, self) =>
+                      a.userId &&
+                      index === self.findIndex((b) => b.userId === a.userId)
+                  )
+                : [];
+
+              const maxAvatars = 2;
+              const visibleAssignees = uniqueAssignees.slice(0, maxAvatars);
+              const remainingCount = uniqueAssignees.length - maxAvatars;
 
               return `
         <div class="flex items-center ml-auto gap-1">
           ${
-            hasAssigneesArray
-              ? t.assignees
-                  .slice(0, 2)
+            visibleAssignees.length > 0
+              ? visibleAssignees
                   .map((assignee) => {
                     const assigneeData = {
                       name: assignee.name || assignee.assigneeName || "",
@@ -346,40 +380,36 @@ function renderCard(t) {
                           )
                         ),
                     };
-                    console.log(`Rendering assignee:`, assigneeData);
-                    // Hiển thị avatar như Trello - ưu tiên avatar, fallback về chữ cái đầu
-                    if (assigneeData.avatarUrl) {
-                      return `
-                          <div class="relative w-6 h-6">
-                            <img src="${assigneeData.avatarUrl}" 
-                                 alt="${escapeHtml(assigneeData.name)}"
-                                 class="w-6 h-6 rounded-full border border-white shadow-sm object-cover"
-                                 title="${escapeHtml(assigneeData.name)}"
-                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm absolute inset-0 hidden"
-                                 style="background-color: ${assigneeData.color}"
-                                 title="${escapeHtml(assigneeData.name)}">
-                              ${getInitials(assigneeData.name)}
-                            </div>
-                          </div>
-                        `;
-                    } else {
-                      return `
-                          <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm"
-                               style="background-color: ${assigneeData.color}"
-                               title="${escapeHtml(assigneeData.name)}">
-                            ${getInitials(assigneeData.name)}
-                          </div>
-                        `;
-                    }
+
+                    // Sử dụng renderAvatar với size "sm" cho card bên ngoài
+                    return `<div class="relative member-avatar-chip">${renderAvatar(
+                      assigneeData,
+                      "sm"
+                    )}</div>`;
                   })
-                  .join("")
-              : `
-          <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm bg-teal-500"
-               title="${escapeHtml(t.assigneeName || "")}">
-            ${getInitials(t.assigneeName || "?")}
-          </div>
+                  .join("") +
+                (remainingCount > 0
+                  ? `<div class="relative member-avatar-chip member-avatar-more" title="${remainingCount} more members">
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-semibold border-2 border-white shadow-sm bg-gray-500" style="box-shadow: 0 1px 3px rgba(9, 30, 66, 0.15);">
+                        +${remainingCount}
+                      </div>
+                    </div>`
+                  : "")
+              : t.assigneeName && t.assigneeName !== "Unassigned"
+              ? `
+          <div class="relative member-avatar-chip">${renderAvatar(
+            {
+              name: t.assigneeName || "",
+              avatarUrl: t.assigneeAvatar || "",
+              userId: t.assigneeId,
+              color:
+                t.assigneeColor ||
+                getColorForId(String(t.assigneeId || t.assigneeName)),
+            },
+            "sm"
+          )}</div>
         `
+              : ""
           }
         </div>
       `;
@@ -388,18 +418,6 @@ function renderCard(t) {
       }
     </div>
   `;
-
-  // 🔹 Comments button - như ảnh 2
-  const commentsButtonHtml =
-    commentCount > 0
-      ? `
-    <div class="mt-2">
-      <button class="w-full bg-gray-700 hover:bg-gray-800 text-white text-[10px] font-medium px-2 py-1 rounded transition-colors">
-        Comments
-      </button>
-    </div>
-  `
-      : "";
 
   // 🔹 Checkbox tròn - như ảnh mẫu
   const isCompleted =
@@ -445,7 +463,6 @@ function renderCard(t) {
           ? metadataHtml
           : ""
       }
-      ${commentsButtonHtml}
     </div>
   `;
 }
@@ -474,9 +491,13 @@ function handleCardDragStart(e) {
 
 function handleCardDragEnd(e) {
   const card = e.currentTarget;
-  card.classList.remove("opacity-50");
-  delete card.dataset.originalColumnId;
-  delete card.dataset.originalNextTaskId;
+  // ✅ Chỉ remove opacity nếu không đang trong quá trình move (isMoving)
+  // Nếu đang move, onDrop sẽ xử lý việc này
+  if (!window.isMovingCard) {
+    card.classList.remove("opacity-50");
+  }
+  // ✅ Không xóa dataset ngay, để onDrop có thể sử dụng
+  // onDrop sẽ cleanup trong finally block
 }
 
 function attachCardDragHandlers(card) {
@@ -489,6 +510,18 @@ function attachCardDragHandlers(card) {
 function insertTaskCardIntoColumn(columnId, task) {
   const columnEl = document.getElementById(`col-${columnId}`);
   if (!columnEl) return null;
+
+  // ✅ Xóa empty state "Chưa có thẻ" hoặc "No cards yet" nếu có
+  const emptyState = columnEl.querySelector(".text-slate-400, .text-gray-400");
+  if (
+    emptyState &&
+    (emptyState.textContent.includes("Chưa có thẻ") ||
+      emptyState.textContent.includes("No cards") ||
+      emptyState.textContent.includes("No card"))
+  ) {
+    emptyState.remove();
+  }
+
   const tempWrapper = document.createElement("div");
   tempWrapper.innerHTML = renderCard({
     ...task,
@@ -496,6 +529,8 @@ function insertTaskCardIntoColumn(columnId, task) {
   }).trim();
   const newCard = tempWrapper.firstElementChild;
   if (!newCard) return null;
+
+  // ✅ Chèn card vào cuối column (trước add-card-area)
   columnEl.appendChild(newCard);
   newCard.dataset.columnId = columnId;
   newCard.setAttribute("data-column-id", columnId);
@@ -593,12 +628,17 @@ async function addCard(columnId) {
   textarea.disabled = true;
 
   try {
+    const token = getToken();
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch("/api/tasks/quick", {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers,
+      credentials: "include",
       body: JSON.stringify({ title, projectId: PROJECT_ID, columnId }),
     });
 
@@ -606,16 +646,20 @@ async function addCard(columnId) {
     const createdTask = await res.json().catch(() => null);
     if (createdTask) {
       insertTaskCardIntoColumn(columnId, createdTask);
-      textarea.value = "";
+      // ✅ Đóng form add card sau khi thêm thành công (sẽ reset textarea)
+      cancelAddCard(columnId);
     } else {
       await renderDashboard(PROJECT_ID);
     }
   } catch (err) {
     console.error("❌ Lỗi tạo task:", err);
     showToast("Không thể tạo task!", "error");
+    // ✅ Nếu lỗi, giữ form mở và enable lại textarea
+    if (textarea) {
+      textarea.disabled = false;
+    }
   } finally {
     document.getElementById(tempId)?.remove();
-    textarea.disabled = false;
   }
 }
 
@@ -626,10 +670,14 @@ document.addEventListener("click", (e) => {
 
 async function openModal(taskId) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers,
+      credentials: "include",
     });
 
     if (!res.ok) throw new Error("Không thể tải chi tiết task");
@@ -1055,12 +1103,17 @@ async function saveDescription() {
   const taskId = window.CURRENT_TASK_ID;
 
   try {
+    const token = getToken();
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}/description`, {
       method: "PUT",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers,
+      credentials: "include",
       body: JSON.stringify({ description_md: newDescription }),
     });
 
@@ -1072,7 +1125,6 @@ async function saveDescription() {
         msg.includes("could not initialize proxy") ||
         msg.includes("no Session")
       ) {
-        console.log(" Saved successfully (proxy serialization error ignored).");
         // Store updated description
         currentTaskDescription = newDescription;
         // Update both content elements
@@ -1187,6 +1239,7 @@ function enableDragDrop() {
   columns.forEach((col) => {
     const onDragOver = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       const afterEl = getDragAfterElement(col, e.clientY);
       const taskId = e.dataTransfer.getData("taskId");
       const dragged = document.querySelector(`[data-open-task='${taskId}']`);
@@ -1201,8 +1254,10 @@ function enableDragDrop() {
 
     const onDrop = async (e) => {
       e.preventDefault();
+      e.stopPropagation();
       if (isMoving) return;
       isMoving = true;
+      window.isMovingCard = true; // ✅ Flag để dragend không reset
 
       const taskId = e.dataTransfer.getData("taskId");
       const colId = parseInt(col.id.replace("col-", ""), 10);
@@ -1225,12 +1280,17 @@ function enableDragDrop() {
       }
 
       try {
+        const token = getToken();
+        const headers = {
+          "Content-Type": "application/json",
+        };
+        if (token) {
+          headers.Authorization = "Bearer " + token;
+        }
         const res = await fetch(`/api/tasks/${taskId}/move`, {
           method: "PUT",
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-            "Content-Type": "application/json",
-          },
+          headers,
+          credentials: "include",
           body: JSON.stringify({
             targetColumnId: colId,
             newOrderIndex: newIndex,
@@ -1238,10 +1298,67 @@ function enableDragDrop() {
         });
 
         if (!res.ok) throw new Error(`Move failed: ${res.status}`);
-        await res.json();
-        await renderDashboard(PROJECT_ID);
+        const updatedTask = await res.json();
+
+        // ✅ Đảm bảo card đã ở đúng vị trí trong column mới (đã được di chuyển trong onDragOver)
+        // Nếu card chưa ở trong column mới, di chuyển nó
+        if (!col.contains(dragged)) {
+          const afterEl = getDragAfterElement(col, e.clientY);
+          if (afterEl == null) {
+            col.appendChild(dragged);
+          } else {
+            col.insertBefore(dragged, afterEl);
+          }
+        }
+
+        // ✅ Không reload toàn bộ board, chỉ cập nhật metadata
         dragged.dataset.columnId = String(colId);
         dragged.setAttribute("data-column-id", String(colId));
+
+        // ✅ Đảm bảo card hiển thị bình thường (remove opacity)
+        dragged.classList.remove("opacity-50");
+
+        // ✅ Re-attach drag handlers để card vẫn có thể drag tiếp
+        attachCardDragHandlers(dragged);
+
+        // ✅ Xóa empty state message trong column mới nếu có
+        const emptyState = col.querySelector(".text-slate-400, .text-gray-400");
+        if (
+          emptyState &&
+          (emptyState.textContent.includes("No cards") ||
+            emptyState.textContent.includes("No card") ||
+            emptyState.textContent.includes("Chưa có thẻ"))
+        ) {
+          emptyState.remove();
+        }
+
+        // ✅ Thêm empty state vào column cũ nếu trống
+        if (
+          originalColumnEl &&
+          originalColumnEl !== col &&
+          originalColumnEl.querySelectorAll("[data-open-task]").length === 0
+        ) {
+          const emptyMsg = document.createElement("div");
+          emptyMsg.className = "text-sm text-slate-400 italic";
+          emptyMsg.textContent = "No cards yet";
+          originalColumnEl.appendChild(emptyMsg);
+        }
+
+        // ✅ Cập nhật column name trong modal nếu đang mở
+        if (
+          window.CURRENT_TASK_ID &&
+          String(window.CURRENT_TASK_ID) === String(taskId)
+        ) {
+          const columnNameEl = document.getElementById("column-name-display");
+          if (columnNameEl && updatedTask.columnName) {
+            columnNameEl.textContent = updatedTask.columnName;
+          }
+          showActivitySectionIfHidden();
+          await refreshActivityFeedOnly(taskId);
+        }
+
+        // ✅ Hiển thị toast thông báo thành công (optional)
+        // showToast("Card moved successfully", "success");
       } catch (err) {
         console.error("⚠️ Move failed:", err);
         if (originalColumnEl) {
@@ -1261,6 +1378,9 @@ function enableDragDrop() {
         delete dragged.dataset.originalColumnId;
         delete dragged.dataset.originalNextTaskId;
         isMoving = false;
+        window.isMovingCard = false; // ✅ Reset flag
+        // ✅ Đảm bảo card không còn opacity sau khi move xong
+        dragged.classList.remove("opacity-50");
       }
     };
 
@@ -1276,8 +1396,39 @@ function enableDragDrop() {
   });
 }
 
+// ========== ⚙️ HELPER: SHOW ACTIVITY SECTION ==========
+export function showActivitySectionIfHidden() {
+  const feedEl = document.getElementById("activity-feed");
+  const toggleBtn = document.getElementById("toggle-activity-btn");
+
+  if (feedEl && feedEl.classList.contains("hidden")) {
+    // Show activity feed
+    feedEl.classList.remove("hidden");
+
+    // Show activity header and HR if they exist
+    const activityHr = feedEl?.previousElementSibling?.previousElementSibling;
+    const activityHeader = feedEl?.previousElementSibling;
+
+    if (
+      activityHeader &&
+      activityHeader.tagName === "H4" &&
+      activityHeader.textContent.includes("Activity")
+    ) {
+      activityHeader.classList.remove("hidden");
+    }
+    if (activityHr && activityHr.tagName === "HR") {
+      activityHr.classList.remove("hidden");
+    }
+
+    // Update toggle button text
+    if (toggleBtn) {
+      toggleBtn.textContent = "Hide details";
+    }
+  }
+}
+
 // ========== ⚙️ LOAD ACTIVITY + COMMENTS ==========
-async function loadActivityFeed(taskId) {
+export async function loadActivityFeed(taskId) {
   const container = document.getElementById("activity-section");
   if (!container) return;
   container.innerHTML = `
@@ -1515,19 +1666,66 @@ async function loadActivityFeed(taskId) {
   }
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}/activity`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers,
+      credentials: "include",
     });
 
     const data = await res.json();
     renderCommentAndActivity(taskId, data.comments, data.activityLogs);
   } catch (err) {
     console.error(err);
-    container.querySelector(
-      "#activity-feed"
-    ).innerHTML = `<p class="text-red-500">❌ Failed to load comments or activity</p>`;
+    const feedEl = container.querySelector("#activity-feed");
+    if (feedEl) {
+      feedEl.innerHTML = `<p class="text-red-500">❌ Failed to load comments or activity</p>`;
+    }
+  }
+}
+
+// ========== ⚙️ REFRESH ACTIVITY FEED ONLY (không rebuild toàn bộ) ==========
+export async function refreshActivityFeedOnly(taskId) {
+  const feedEl = document.getElementById("activity-feed");
+  if (!feedEl) {
+    // Nếu chưa có activity feed, load toàn bộ
+    await loadActivityFeed(taskId);
+    return;
+  }
+
+  try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
+    const res = await fetch(`/api/tasks/${taskId}/activity`, {
+      headers,
+      credentials: "include",
+    });
+
+    if (!res.ok) throw new Error("Failed to fetch activity");
+
+    const data = await res.json();
+
+    // Chỉ update phần activity feed, giữ nguyên comments
+    if (feedEl && data.activityLogs) {
+      const renderedActivities = data.activityLogs
+        .filter((a) => !a.action.startsWith("COMMENT_"))
+        .map((a) => renderSingleActivity(a));
+
+      if (renderedActivities.length > 0) {
+        feedEl.innerHTML = renderedActivities.join("");
+      } else {
+        feedEl.innerHTML = "";
+      }
+    }
+  } catch (err) {
+    console.error("Failed to refresh activity feed:", err);
+    // Không hiển thị error để tránh làm phiền user
   }
 }
 /**
@@ -2096,10 +2294,16 @@ function highlightMentions(text, mentionsJson) {
 
 async function openMentionProfile(email) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/users/by-email/${encodeURIComponent(email)}`,
       {
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
     if (!res.ok) throw new Error("Không tìm thấy người dùng");
@@ -2215,7 +2419,7 @@ document.addEventListener("input", async (e) => {
     const match = text.match(/@([\wÀ-ỹ\s]*)$/u);
     if (match) {
       const keyword = match[1].trim();
-      console.log("🔍 Mention trigger:", keyword);
+
       await loadMentionSuggestions(keyword);
     } else {
       document.getElementById("mention-suggestions")?.classList.add("hidden");
@@ -2528,10 +2732,13 @@ async function postReply(taskId, parentId) {
   try {
     const res = await fetch(`/api/tasks/${taskId}/comments/${parentId}/reply`, {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers: (() => {
+        const token = getToken();
+        const h = { "Content-Type": "application/json" };
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
       body: JSON.stringify({ content }),
     });
 
@@ -2592,6 +2799,10 @@ async function postReply(taskId, parentId) {
     // Clear input và đóng reply box
     if (input) input.value = "";
     toggleReplyBox(parentId);
+
+    // Refresh activity feed to show new reply
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
   } catch (err) {
     console.error(err);
     showToast("Failed to send reply", "error");
@@ -2710,10 +2921,13 @@ async function postComment(taskId, content) {
   try {
     const res = await fetch(`/api/tasks/${taskId}/comments`, {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers: (() => {
+        const token = getToken();
+        const h = { "Content-Type": "application/json" };
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
       body: JSON.stringify({ content }),
     });
 
@@ -2729,6 +2943,17 @@ async function postComment(taskId, content) {
 
     const commentInput = document.getElementById("comment-input");
     if (commentInput) commentInput.value = "";
+
+    // Refresh activity feed to show new comment
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
+
+    // Update comment count on card
+    const commentsListEl = document.getElementById("comments-list");
+    const commentCount = commentsListEl
+      ? commentsListEl.querySelectorAll("[data-comment-id]").length
+      : 0;
+    updateCardCommentCount(taskId, commentCount);
   } catch (err) {
     console.error(err);
     showToast("Failed to post comment", "error");
@@ -2739,7 +2964,13 @@ async function deleteComment(taskId, commentId) {
   try {
     const res = await fetch(`/api/tasks/${taskId}/comments/${commentId}`, {
       method: "DELETE",
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers: (() => {
+        const token = getToken();
+        const h = {};
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
     });
 
     if (!res.ok) throw new Error("Delete failed");
@@ -2750,6 +2981,17 @@ async function deleteComment(taskId, commentId) {
     if (commentContainer) {
       commentContainer.remove();
     }
+
+    // Refresh activity feed to update activity log
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
+
+    // Update comment count on card
+    const commentsListEl = document.getElementById("comments-list");
+    const commentCount = commentsListEl
+      ? commentsListEl.querySelectorAll("[data-comment-id]").length
+      : 0;
+    updateCardCommentCount(taskId, commentCount);
   } catch (err) {
     console.error(err);
     showToast("Failed to delete comment", "error");
@@ -2835,7 +3077,13 @@ async function deleteReply(taskId, replyId) {
     // Reply là comment con, nên dùng API comment
     const res = await fetch(`/api/tasks/${taskId}/comments/${replyId}`, {
       method: "DELETE",
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers: (() => {
+        const token = getToken();
+        const h = {};
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
     });
 
     if (!res.ok) throw new Error("Delete failed");
@@ -2847,6 +3095,10 @@ async function deleteReply(taskId, replyId) {
     if (replyContainer) {
       replyContainer.remove();
     }
+
+    // Refresh activity feed to update activity log
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
   } catch (err) {
     console.error(err);
     showToast("Failed to delete reply", "error");
@@ -2977,10 +3229,13 @@ async function saveReplyEdit(taskId, replyId) {
     // Reply là comment con, nên dùng API comment
     const res = await fetch(`/api/tasks/${taskId}/comments/${replyId}`, {
       method: "PUT",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers: (() => {
+        const token = getToken();
+        const h = { "Content-Type": "application/json" };
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
       body: JSON.stringify({ content }),
     });
 
@@ -3007,6 +3262,10 @@ async function saveReplyEdit(taskId, replyId) {
         if (actionBar) actionBar.classList.remove("hidden");
       }
     }
+
+    // Refresh activity feed to update activity log
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
   } catch (err) {
     console.error(
       "❌ saveReplyEdit error:",
@@ -3039,18 +3298,25 @@ const confirmDeleteBtn = document.getElementById("confirm-delete-link");
 async function syncShareUI(projectId) {
   try {
     const res = await fetch(`/api/pm/invite/project/${projectId}/share/link`, {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers: (() => {
+        const token = getToken();
+        const h = {};
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
     });
-    if (!res.ok) throw new Error("Không thể tải trạng thái chia sẻ");
+    if (!res.ok) throw new Error("Cannot load share status");
     const data = await res.json();
 
-    const hint = document.getElementById("share-link-hint");
-    const copyLinkBtn = document.getElementById("copy-link");
-    const deleteLinkBtn = document.getElementById("delete-link");
+    if (!hintText || !copyLinkBtn || !deleteLinkBtn) {
+      console.warn("Share UI elements not found");
+      return;
+    }
 
     if (data.allowLinkJoin && data.inviteLink) {
-      // ✅ Khi link đang bật
-      hint.textContent = ""; // Không in thêm dòng mô tả
+      // ✅ When link is enabled
+      hintText.textContent = ""; // Don't show additional description
       copyLinkBtn.textContent = "Copy link";
       deleteLinkBtn.textContent = "Delete link";
       deleteLinkBtn.classList.remove("text-gray-400", "cursor-not-allowed");
@@ -3058,9 +3324,9 @@ async function syncShareUI(projectId) {
       copyLinkBtn.disabled = false;
       deleteLinkBtn.disabled = false;
     } else {
-      // 🔒 Khi link bị xóa → hiển thị "Create link"
-      hint.textContent = "🔒 Link sharing is disabled.";
-      hint.className = "text-xs text-gray-500 mt-1 ml-5 italic";
+      // 🔒 When link is deleted → show "Create link"
+      hintText.textContent = "🔒 Link sharing is disabled.";
+      hintText.className = "text-xs text-gray-500 mt-1 ml-5 italic";
       copyLinkBtn.textContent = "Create link";
       deleteLinkBtn.classList.remove("text-red-600", "hover:underline");
       deleteLinkBtn.classList.add("text-gray-400", "cursor-not-allowed");
@@ -3068,21 +3334,22 @@ async function syncShareUI(projectId) {
     }
   } catch (err) {
     console.error("❌ syncShareUI error:", err);
-    const hint = document.getElementById("share-link-hint");
-    hint.textContent = "⚠️ Cannot load share status.";
-    hint.className = "text-xs text-red-500 mt-1 ml-5 italic";
+    if (hintText) {
+      hintText.textContent = "⚠️ Cannot load share status.";
+      hintText.className = "text-xs text-red-500 mt-1 ml-5 italic";
+    }
   }
 }
 
 async function openSharePopup() {
   sharePopup.classList.remove("hidden");
   await loadBoardMembers(PROJECT_ID);
-  syncShareUI(PROJECT_ID); // ✅ gọi ngay khi mở
+  syncShareUI(PROJECT_ID); // ✅ Call immediately when opening
 
-  // ✅ Kiểm tra quyền PM và ẩn tab Join requests nếu không phải PM
+  // ✅ Check PM permission and hide Join requests tab if not PM
   await checkAndHideJoinRequestsTab(PROJECT_ID);
 
-  // Mặc định hiển thị tab Board members
+  // Default to show Board members tab
   switchTab("members");
 }
 
@@ -3093,10 +3360,16 @@ async function checkAndHideJoinRequestsTab(projectId) {
 
   try {
     // Thử load join requests để kiểm tra quyền
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/pm/invite/project/${projectId}/join-requests`,
       {
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
 
@@ -3124,10 +3397,16 @@ async function checkAndHideJoinRequestsTab(projectId) {
 // ========== LOAD JOIN REQUESTS COUNT (for badge) ==========
 async function loadJoinRequestsCount(projectId) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/pm/invite/project/${projectId}/join-requests`,
       {
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
 
@@ -3168,10 +3447,16 @@ copyLinkBtn.addEventListener("click", async (e) => {
   e.preventDefault();
   try {
     // Kiểm tra xem đã có link chưa
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const checkRes = await fetch(
       `/api/pm/invite/project/${PROJECT_ID}/share/link`,
       {
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
 
@@ -3182,27 +3467,36 @@ copyLinkBtn.addEventListener("click", async (e) => {
     let fullLink = "";
 
     if (!checkData.allowLinkJoin || !checkData.inviteLink) {
+      const enableToken = getToken();
+      const enableHeaders = {};
+      if (enableToken) {
+        enableHeaders.Authorization = "Bearer " + enableToken;
+      }
       const enableRes = await fetch(
         `/api/pm/invite/project/${PROJECT_ID}/share/enable`,
         {
           method: "POST",
-          headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+          headers: enableHeaders,
+          credentials: "include",
         }
       );
       if (!enableRes.ok) throw new Error("Cannot enable share link");
       const enableData = await enableRes.json();
       fullLink = `${window.location.origin}/join/${enableData.inviteLink}`;
       await syncShareUI(PROJECT_ID);
-      showToast(
-        "Link đã tạo! Người được mời sẽ tham gia trực tiếp.",
-        "success"
-      );
+      showToast("Link created! Invited users will join directly.", "success");
     } else {
+      const copyToken = getToken();
+      const copyHeaders = {};
+      if (copyToken) {
+        copyHeaders.Authorization = "Bearer " + copyToken;
+      }
       const copyRes = await fetch(
         `/api/pm/invite/project/${PROJECT_ID}/share/copy`,
         {
           method: "POST",
-          headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+          headers: copyHeaders,
+          credentials: "include",
         }
       );
 
@@ -3214,14 +3508,11 @@ copyLinkBtn.addEventListener("click", async (e) => {
       const copyData = await copyRes.json();
       fullLink = `${window.location.origin}/join/${copyData.inviteLink}`;
 
-      // ✅ Hiển thị thông báo dựa trên requiresApproval
+      // ✅ Show message based on requiresApproval
       if (copyData.requiresApproval) {
-        showToast("Link đã copy! Người được mời sẽ cần được PM duyệt.", "info");
+        showToast("Link copied! Invited users will need PM approval.", "info");
       } else {
-        showToast(
-          "Link đã copy! Người được mời sẽ tham gia trực tiếp.",
-          "success"
-        );
+        showToast("Link copied! Invited users will join directly.", "success");
       }
     }
 
@@ -3229,7 +3520,7 @@ copyLinkBtn.addEventListener("click", async (e) => {
     copyLinkBtn.textContent = "Copy link";
   } catch (err) {
     console.error("❌ Copy link error:", err);
-    showToast(err.message || "Không thể copy link", "error");
+    showToast(err.message || "Cannot copy link", "error");
   }
 });
 
@@ -3242,18 +3533,24 @@ deleteLinkBtn.addEventListener("click", (e) => {
 });
 confirmDeleteBtn.addEventListener("click", async () => {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/pm/invite/project/${PROJECT_ID}/share/disable`,
       {
         method: "DELETE",
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
     if (!res.ok) throw new Error();
     showToast("🔒 Link sharing disabled.");
     deleteConfirmPopup.classList.add("hidden");
 
-    // ✅ Sau khi xóa link → đồng bộ lại UI (hiển thị "Create link")
+    // ✅ After deleting link → sync UI again (show "Create link")
     await syncShareUI(PROJECT_ID);
   } catch {
     showToast("❌ Failed to disable link", "error");
@@ -3275,7 +3572,13 @@ async function loadBoardMembers(projectId) {
 
   try {
     const res = await fetch(`/api/pm/invite/project/${projectId}`, {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers: (() => {
+        const token = getToken();
+        const h = {};
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
     });
 
     if (!res.ok) throw new Error(`Cannot load members: ${res.status}`);
@@ -3338,14 +3641,19 @@ async function updateMemberRole(projectId, userId, newRole) {
     const selectEl = event?.target;
     if (selectEl) selectEl.disabled = true; // ⏳ disable khi đang cập nhật
 
+    const token = getToken();
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/pm/invite/project/${projectId}/member/${userId}/role?role=${newRole}`,
       {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        headers,
+        credentials: "include",
       }
     );
 
@@ -3467,10 +3775,16 @@ async function loadJoinRequests(projectId) {
   requestsList.innerHTML = `<p class="text-gray-400 text-sm italic">Loading...</p>`;
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/pm/invite/project/${projectId}/join-requests`,
       {
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
 
@@ -3540,11 +3854,17 @@ async function loadJoinRequests(projectId) {
 // ========== APPROVE JOIN REQUEST ==========
 async function approveJoinRequest(requestId, projectId) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/pm/invite/join-requests/${requestId}/approve`,
       {
         method: "POST",
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
 
@@ -3556,10 +3876,16 @@ async function approveJoinRequest(requestId, projectId) {
     await loadJoinRequests(projectId);
     await loadBoardMembers(projectId); // Reload members list
     // Cập nhật badge sau khi approve
+    const badgeToken = getToken();
+    const badgeHeaders = {};
+    if (badgeToken) {
+      badgeHeaders.Authorization = "Bearer " + badgeToken;
+    }
     const requests = await fetch(
       `/api/pm/invite/project/${projectId}/join-requests`,
       {
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers: badgeHeaders,
+        credentials: "include",
       }
     ).then((r) => (r.ok ? r.json() : []));
     updateJoinRequestsBadge(Array.isArray(requests) ? requests.length : 0);
@@ -3572,11 +3898,17 @@ async function approveJoinRequest(requestId, projectId) {
 // ========== REJECT JOIN REQUEST ==========
 async function rejectJoinRequest(requestId, projectId) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/pm/invite/join-requests/${requestId}/reject`,
       {
         method: "POST",
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
 
@@ -3606,15 +3938,19 @@ inviteBtn.addEventListener("click", async () => {
   }
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const resInvite = await fetch(
       `/api/pm/invite?projectId=${PROJECT_ID}&email=${encodeURIComponent(
         email
       )}&role=${role}`,
       {
         method: "POST",
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        headers,
+        credentials: "include",
       }
     );
     if (!resInvite.ok) {
@@ -3677,10 +4013,13 @@ async function handleJoinByLink(path) {
   try {
     const res = await fetch(`/api/pm/invite/join/${inviteLink}`, {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers: (() => {
+        const token = getToken();
+        const h = { "Content-Type": "application/json" };
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -3735,7 +4074,7 @@ inviteInput.addEventListener("input", (e) => {
 });
 async function loadInviteSuggestions(keyword) {
   try {
-    const token = localStorage.getItem("token");
+    const token = getToken();
 
     const headers = token
       ? { Authorization: "Bearer " + token, "Content-Type": "application/json" }
@@ -3808,10 +4147,13 @@ async function saveEdit(taskId, commentId) {
   try {
     const res = await fetch(`/api/tasks/${taskId}/comments/${commentId}`, {
       method: "PUT",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers: (() => {
+        const token = getToken();
+        const h = { "Content-Type": "application/json" };
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
       body: JSON.stringify({ content: newText }),
     });
 
@@ -3840,6 +4182,10 @@ async function saveEdit(taskId, commentId) {
         if (actionBar) actionBar.classList.remove("hidden");
       }
     }
+
+    // Refresh activity feed to update activity log
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
   } catch (err) {
     console.error(err);
     showToast("❌ Failed to update comment", "error");
@@ -4006,9 +4352,13 @@ contextMenu.addEventListener("click", async (e) => {
 async function archiveTask(taskId) {
   const res = await fetch(`/api/tasks/${taskId}/archive`, {
     method: "PUT",
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-    },
+    headers: (() => {
+      const token = getToken();
+      const h = {};
+      if (token) h.Authorization = "Bearer " + token;
+      return h;
+    })(),
+    credentials: "include",
   });
   if (!res.ok) throw new Error("Archive failed");
 }
@@ -4068,9 +4418,13 @@ function updateTaskCheckboxUI(buttonEl, isCompleted) {
 async function markTaskComplete(taskId) {
   const res = await fetch(`/api/tasks/${taskId}/complete`, {
     method: "PUT",
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-    },
+    headers: (() => {
+      const token = getToken();
+      const h = {};
+      if (token) h.Authorization = "Bearer " + token;
+      return h;
+    })(),
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -4168,10 +4522,22 @@ export function updateCardMembers(taskId, assignees) {
   );
 
   if (assignees && Array.isArray(assignees) && assignees.length > 0) {
+    // Loại bỏ duplicate dựa trên userId
+    const seen = new Set();
+    const uniqueAssignees = assignees.filter((a) => {
+      const userId = a.userId || a.id;
+      if (!userId || seen.has(userId)) return false;
+      seen.add(userId);
+      return true;
+    });
+
+    const maxAvatars = 2;
+    const visibleAssignees = uniqueAssignees.slice(0, maxAvatars);
+    const remainingCount = uniqueAssignees.length - maxAvatars;
+
     const membersHtml = `
       <div class="flex items-center ml-auto gap-1">
-        ${assignees
-          .slice(0, 2)
+        ${visibleAssignees
           .map((assignee) => {
             const assigneeData = {
               name: assignee.name || assignee.assigneeName || "",
@@ -4183,33 +4549,22 @@ export function updateCardMembers(taskId, assignees) {
                   String(assignee.userId || assignee.id || assignee.name)
                 ),
             };
-            // Hiển thị avatar như Trello - ưu tiên avatar, fallback về chữ cái đầu
-            if (assigneeData.avatarUrl) {
-              return `
-                  <div class="relative w-6 h-6">
-                    <img src="${assigneeData.avatarUrl}" 
-                         alt="${escapeHtml(assigneeData.name)}"
-                         class="w-6 h-6 rounded-full border border-white shadow-sm object-cover"
-                         title="${escapeHtml(assigneeData.name)}"
-                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm absolute inset-0 hidden"
-                         style="background-color: ${assigneeData.color}"
-                         title="${escapeHtml(assigneeData.name)}">
-                      ${getInitials(assigneeData.name)}
-                    </div>
-                  </div>
-                `;
-            } else {
-              return `
-                  <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shadow-sm"
-                       style="background-color: ${assigneeData.color}"
-                       title="${escapeHtml(assigneeData.name)}">
-                    ${getInitials(assigneeData.name)}
-                  </div>
-                `;
-            }
+            // Sử dụng renderAvatar với size "sm" cho card bên ngoài
+            return `<div class="relative member-avatar-chip">${renderAvatar(
+              assigneeData,
+              "sm"
+            )}</div>`;
           })
           .join("")}
+        ${
+          remainingCount > 0
+            ? `<div class="relative member-avatar-chip member-avatar-more" title="${remainingCount} more members">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-semibold border-2 border-white shadow-sm bg-gray-500" style="box-shadow: 0 1px 3px rgba(9, 30, 66, 0.15);">
+                  +${remainingCount}
+                </div>
+              </div>`
+            : ""
+        }
       </div>
     `;
 
@@ -4227,6 +4582,90 @@ export function updateCardMembers(taskId, assignees) {
 }
 
 // Cập nhật date trong card bên ngoài
+export function updateCardCommentCount(taskId, commentCount) {
+  const card = document.querySelector(`[data-open-task="${taskId}"]`);
+  if (!card) return;
+
+  const metadataRow = card.querySelector(".flex.items-center.gap-2.mt-2");
+  if (!metadataRow) return;
+
+  // Tìm hoặc tạo comment count element
+  let commentEl = metadataRow.querySelector("[data-comment-count]");
+
+  if (commentCount > 0) {
+    const commentHtml = `
+      <div class="flex items-center gap-1 text-gray-600" data-comment-count="${taskId}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <span class="text-[10px]">${commentCount}</span>
+      </div>
+    `;
+
+    if (commentEl) {
+      commentEl.outerHTML = commentHtml;
+    } else {
+      // Tìm vị trí chèn (sau due date, trước attachments)
+      const dueDateEl = metadataRow.querySelector("[data-due-date]");
+      const attachmentEl = metadataRow.querySelector("[data-attachment-count]");
+      const insertBefore = attachmentEl || metadataRow.lastElementChild;
+
+      if (insertBefore) {
+        insertBefore.insertAdjacentHTML("beforebegin", commentHtml);
+      } else {
+        metadataRow.insertAdjacentHTML("beforeend", commentHtml);
+      }
+    }
+  } else {
+    // Xóa nếu comment count = 0
+    if (commentEl) {
+      commentEl.remove();
+    }
+  }
+}
+
+export function updateCardAttachmentCount(taskId, attachmentCount) {
+  const card = document.querySelector(`[data-open-task="${taskId}"]`);
+  if (!card) return;
+
+  const metadataRow = card.querySelector(".flex.items-center.gap-2.mt-2");
+  if (!metadataRow) return;
+
+  // Tìm hoặc tạo attachment count element
+  let attachmentEl = metadataRow.querySelector("[data-attachment-count]");
+
+  if (attachmentCount > 0) {
+    const attachmentHtml = `
+      <div class="flex items-center gap-1 text-gray-600" data-attachment-count="${taskId}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+        </svg>
+        <span class="text-[10px]">${attachmentCount}</span>
+      </div>
+    `;
+
+    if (attachmentEl) {
+      attachmentEl.outerHTML = attachmentHtml;
+    } else {
+      // Tìm vị trí chèn (sau comments, trước subtasks)
+      const commentEl = metadataRow.querySelector("[data-comment-count]");
+      const subtaskEl = metadataRow.querySelector("[data-subtask-count]");
+      const insertBefore = subtaskEl || metadataRow.lastElementChild;
+
+      if (insertBefore) {
+        insertBefore.insertAdjacentHTML("beforebegin", attachmentHtml);
+      } else {
+        metadataRow.insertAdjacentHTML("beforeend", attachmentHtml);
+      }
+    }
+  } else {
+    // Xóa nếu attachment count = 0
+    if (attachmentEl) {
+      attachmentEl.remove();
+    }
+  }
+}
+
 export function updateCardDate(taskId, deadline) {
   const card = document.querySelector(`[data-open-task="${taskId}"]`);
   if (!card) {
@@ -4324,10 +4763,14 @@ export function updateCardDate(taskId, deadline) {
 // Hàm reload card từ server để đồng bộ
 async function reloadCardFromServer(taskId) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers,
+      credentials: "include",
     });
     if (!res.ok) return null;
     const task = await res.json();
@@ -4341,9 +4784,13 @@ async function reloadCardFromServer(taskId) {
 async function markTaskIncomplete(taskId) {
   const res = await fetch(`/api/tasks/${taskId}/incomplete`, {
     method: "PUT",
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-    },
+    headers: (() => {
+      const token = getToken();
+      const h = {};
+      if (token) h.Authorization = "Bearer " + token;
+      return h;
+    })(),
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -4462,9 +4909,13 @@ function showConfirmModal(message, options = {}) {
 async function deleteTask(taskId) {
   const res = await fetch(`/api/tasks/${taskId}`, {
     method: "DELETE",
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-    },
+    headers: (() => {
+      const token = getToken();
+      const h = {};
+      if (token) h.Authorization = "Bearer " + token;
+      return h;
+    })(),
+    credentials: "include",
   });
   if (!res.ok) throw new Error("Delete failed");
 }
@@ -4472,7 +4923,13 @@ async function deleteTask(taskId) {
 async function ensureCurrentUser() {
   try {
     const res = await fetch("/api/auth/me", {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers: (() => {
+        const token = getToken();
+        const h = {};
+        if (token) h.Authorization = "Bearer " + token;
+        return h;
+      })(),
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to fetch /api/auth/me");
     const result = await res.json();
@@ -4490,8 +4947,14 @@ async function ensureCurrentUser() {
 
 async function fetchProjectRole(projectId) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/projects/${projectId}/role`, {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers,
+      credentials: "include",
     });
 
     if (!res.ok) throw new Error("Failed to fetch project role");
@@ -4514,6 +4977,8 @@ Object.assign(window, {
   toggleReplyBox,
   saveEdit,
   loadActivityFeed,
+  refreshActivityFeedOnly,
+  showActivitySectionIfHidden,
   editReply,
   deleteReply,
   saveReplyEdit,

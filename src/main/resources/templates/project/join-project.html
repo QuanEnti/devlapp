@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tham gia dự án - DevCollab</title>
+    <title>Join Project - DevCollab</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
@@ -22,11 +22,11 @@
         />
 
         <h1 id="invite-title" class="text-xl font-semibold text-gray-800 mb-2">
-          Bạn được mời tham gia dự án
+          You've been invited to join a project
         </h1>
 
         <p class="text-gray-600 text-sm">
-          Hãy xác nhận để bắt đầu cộng tác cùng nhóm
+          Please confirm to start collaborating with the team
         </p>
       </div>
 
@@ -34,19 +34,19 @@
         id="join-btn"
         class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-md shadow-sm transition-all duration-200 hover:shadow-md"
       >
-        Tham gia dự án
+        Join Project
       </button>
 
       <p class="text-xs text-gray-400 mt-5 text-center">
-        Không phải bạn?
+        Not you?
         <a href="#" id="logout-link" class="text-blue-600 hover:underline"
-          >Đăng xuất</a
+          >Logout</a
         >
       </p>
     </div>
 
     <script>
-      // ✅ Toast notification (thay thế alert) - hiển thị ở giữa màn hình
+      // ✅ Toast notification (replaces alert) - displays in center of screen
       function showToast(message, type = "info") {
         const toast = document.createElement("div");
         toast.textContent = message;
@@ -85,7 +85,7 @@
         const inviteLink = path.split("/join/")[1];
         const joinBtn = document.getElementById("join-btn");
 
-        // Ngăn vòng lặp reload sau đăng nhập
+        // Prevent reload loop after login
         if (sessionStorage.getItem("redirectedOnce") === "true") {
           sessionStorage.removeItem("redirectedOnce");
         } else if (!hasToken()) {
@@ -95,12 +95,12 @@
           return;
         }
 
-        // Đợi token cookie ổn định (đặc biệt sau OAuth2 redirect)
+        // Wait for token cookie to stabilize (especially after OAuth2 redirect)
         await new Promise((r) => setTimeout(r, 300));
 
         joinBtn.addEventListener("click", async () => {
           joinBtn.disabled = true;
-          joinBtn.textContent = "Đang xử lý...";
+          joinBtn.textContent = "Processing...";
 
           const token =
             localStorage.getItem("token") || getCookie("AUTH_TOKEN");
@@ -117,19 +117,20 @@
 
             const text = await res.text();
 
-            // 🟢 Nếu backend trả lỗi
+            // 🟢 If backend returns error
             if (!res.ok) {
-              let errorMessage = "Không thể tham gia dự án";
+              let errorMessage = "Unable to join project";
 
-              // ✅ Parse JSON error nếu có
+              // ✅ Parse JSON error if available
               try {
                 const errObj = JSON.parse(text);
                 errorMessage = errObj.error || errObj.message || errorMessage;
 
-                // ✅ Nếu đã gửi join request → redirect về user dashboard
+                // ✅ If join request already sent → redirect to user dashboard
                 if (
-                  errorMessage.includes("đã gửi yêu cầu") ||
-                  errorMessage.includes("đang chờ phê duyệt")
+                  errorMessage.includes("request sent") ||
+                  errorMessage.includes("pending approval") ||
+                  errorMessage.includes("waiting for approval")
                 ) {
                   showToast(errorMessage, "info");
                   setTimeout(() => {
@@ -138,7 +139,7 @@
                   return;
                 }
 
-                // Nếu có projectId trong error → redirect
+                // If projectId exists in error → redirect
                 if (errObj.projectId) {
                   showToast(errorMessage, "info");
                   setTimeout(() => {
@@ -147,18 +148,24 @@
                   return;
                 }
               } catch (_) {
-                // Nếu không parse được JSON → dùng text trực tiếp
-                if (text.includes("đã là thành viên")) {
+                // If cannot parse JSON → use text directly
+                if (
+                  text.includes("already a member") ||
+                  text.includes("đã là thành viên")
+                ) {
                   errorMessage =
-                    "Bạn đã là thành viên của dự án này. Đang chuyển đến bảng công việc...";
+                    "You are already a member of this project. Redirecting to board...";
                   showToast(errorMessage, "info");
                   setTimeout(() => {
                     window.location.href = `/view/pm/dashboard?joined=true`;
                   }, 1500);
                   return;
                 }
-                // ✅ Kiểm tra nếu text chứa thông báo đã gửi request
+                // ✅ Check if text contains request sent message
                 if (
+                  text.includes("request sent") ||
+                  text.includes("pending approval") ||
+                  text.includes("waiting for approval") ||
                   text.includes("đã gửi yêu cầu") ||
                   text.includes("đang chờ phê duyệt")
                 ) {
@@ -176,28 +183,28 @@
               return;
             }
 
-            // 🟢 Xử lý response dựa trên message
+            // 🟢 Handle response based on message
             const data = JSON.parse(text);
 
             if (data.message === "join_request_sent") {
               showToast(
-                `Yêu cầu tham gia đã được gửi! Dự án: ${data.projectName}. Vui lòng đợi PM duyệt.`,
+                `Join request sent! Project: ${data.projectName}. Please wait for PM approval.`,
                 "info"
               );
-              // ✅ Chuyển về dashboard user sau 2 giây
+              // ✅ Redirect to user dashboard after 2 seconds
               setTimeout(() => {
                 window.location.href = `/user/view/dashboard`;
               }, 2000);
             } else if (data.message === "joined_success") {
               showToast(
-                `Tham gia dự án thành công! ${data.projectName}`,
+                `Successfully joined project! ${data.projectName}`,
                 "success"
               );
               setTimeout(() => {
                 window.location.href = `/view/pm/project/board?projectId=${data.projectId}`;
               }, 1500);
             } else {
-              // Fallback cho các message khác
+              // Fallback for other messages
               showToast(`${data.message} - ${data.projectName}`, "info");
               if (data.projectId) {
                 setTimeout(() => {
@@ -207,32 +214,32 @@
             }
           } catch (err) {
             console.error("Join failed:", err);
-            // ✅ Lấy message từ error, nếu là object thì parse
-            let errorMessage = "Không thể tham gia dự án";
+            // ✅ Get message from error, if it's an object then parse
+            let errorMessage = "Unable to join project";
             if (err.message) {
               try {
-                // Thử parse nếu là JSON string
+                // Try to parse if it's a JSON string
                 const parsed = JSON.parse(err.message);
                 errorMessage = parsed.error || parsed.message || errorMessage;
               } catch (_) {
-                // Nếu không phải JSON → dùng trực tiếp
+                // If not JSON → use directly
                 errorMessage = err.message;
               }
             }
             showToast(errorMessage, "error");
           } finally {
             joinBtn.disabled = false;
-            joinBtn.textContent = "Tham gia dự án";
+            joinBtn.textContent = "Join Project";
           }
         });
 
-        // ✅ Xử lý nút đăng xuất
+        // ✅ Handle logout button
         const logoutLink = document.getElementById("logout-link");
         if (logoutLink) {
           logoutLink.addEventListener("click", async (e) => {
             e.preventDefault();
             try {
-              // Gọi API logout
+              // Call logout API
               await fetch("/api/auth/logout", {
                 method: "POST",
                 credentials: "include",
@@ -243,18 +250,18 @@
                 },
               });
 
-              // Xóa cookie và localStorage
+              // Clear cookies and localStorage
               document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/;";
               document.cookie = "REFRESH_TOKEN=; Max-Age=0; path=/;";
               localStorage.removeItem("token");
               localStorage.removeItem("AUTH_TOKEN");
               localStorage.removeItem("REFRESH_TOKEN");
 
-              // Redirect về trang đăng nhập
+              // Redirect to login page
               window.location.href = "/view/signin";
             } catch (err) {
               console.error("Logout error:", err);
-              // Vẫn redirect về signin nếu có lỗi
+              // Still redirect to signin if there's an error
               document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/;";
               localStorage.clear();
               window.location.href = "/view/signin";

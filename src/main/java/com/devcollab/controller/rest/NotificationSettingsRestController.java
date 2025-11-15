@@ -57,10 +57,27 @@ public class NotificationSettingsRestController {
         User user = authService.getCurrentUserEntity(auth);
         UserSettings us = userSettingsService.getOrDefault(user);
 
-        boolean emailEnabled = (boolean) body.getOrDefault("emailEnabled", false);
-        boolean emailHighImmediate = (boolean) body.getOrDefault("emailHighImmediate", false);
-        boolean emailDigestEnabled = (boolean) body.getOrDefault("emailDigestEnabled", false);
-        int emailDigestEveryHours = ((Number) body.getOrDefault("emailDigestEveryHours", 2)).intValue();
+        // Safe type casting with defaults
+        boolean emailEnabled = body.get("emailEnabled") instanceof Boolean 
+                ? (Boolean) body.get("emailEnabled") 
+                : false;
+        boolean emailHighImmediate = body.get("emailHighImmediate") instanceof Boolean 
+                ? (Boolean) body.get("emailHighImmediate") 
+                : false;
+        boolean emailDigestEnabled = body.get("emailDigestEnabled") instanceof Boolean 
+                ? (Boolean) body.get("emailDigestEnabled") 
+                : false;
+        
+        int emailDigestEveryHours = 2; // default
+        if (body.get("emailDigestEveryHours") instanceof Number) {
+            emailDigestEveryHours = ((Number) body.get("emailDigestEveryHours")).intValue();
+        } else if (body.get("emailDigestEveryHours") instanceof String) {
+            try {
+                emailDigestEveryHours = Integer.parseInt((String) body.get("emailDigestEveryHours"));
+            } catch (NumberFormatException e) {
+                emailDigestEveryHours = 2;
+            }
+        }
 
         if (emailDigestEveryHours != 2 && emailDigestEveryHours != 4 && emailDigestEveryHours != 6) {
             emailDigestEveryHours = 2;

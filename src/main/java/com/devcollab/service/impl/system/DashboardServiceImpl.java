@@ -58,6 +58,36 @@ implements DashboardService {
     }
 
     @Override
+    public ProjectSummaryDTO getProjectSummaryByPm(String range, String pmEmail) {
+        LocalDateTime startDate = switch (range.toLowerCase()) {
+            case "week" -> LocalDateTime.now().minusWeeks(1);
+            case "month" -> LocalDateTime.now().minusMonths(1);
+            case "year" -> LocalDateTime.now().minusYears(1);
+            default -> LocalDateTime.now().minusMonths(6);
+        };
+
+        List<Object[]> stats = projectRepository.countProjectsByStatusSinceAndPm(pmEmail, startDate);
+
+        long total = 0, active = 0, completed = 0, onHold = 0, pending = 0, inProgress = 0;
+
+        for (Object[] row : stats) {
+            String status = (String) row[0];
+            long count = ((Number) row[1]).longValue();
+            total += count;
+
+            switch (status.toUpperCase()) {
+                case "ACTIVE" -> active = count;
+                case "COMPLETED" -> completed = count;
+                case "ON_HOLD" -> onHold = count;
+                case "PENDING" -> pending = count;
+                case "IN_PROGRESS" -> inProgress = count;
+            }
+        }
+
+        return new ProjectSummaryDTO(total, active, completed, onHold, pending, inProgress);
+    }
+
+    @Override
     public ProjectPerformanceDTO getProjectPerformance(String range) {
         Authentication auth = (Authentication) SecurityContextHolder.getContext().getAuthentication();
         Long pmId = getUserIdFromAuth(auth);
@@ -71,21 +101,41 @@ implements DashboardService {
 
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
 
+        // Get achieved from completed projects (auto-calculated)
         List<Object[]> results = projectRepository.countCompletedProjectsSince(startDate);
         Map<String, Long> achievedMap = new LinkedHashMap<>();
         results.forEach(r -> achievedMap.put((String) r[0], ((Number) r[1]).longValue()));
 
+        // Get targets from database (manually set)
         List<ProjectTarget> targets = projectTargetService.getTargetsByYearAndPm(currentYear, pmId);
         Map<Integer, Integer> targetMap = new LinkedHashMap<>();
         targets.forEach(t -> targetMap.put(t.getMonth(), t.getTargetCount()));
 
-        List<String> labels = new ArrayList<>(achievedMap.keySet());
-        List<Long> achieved = new ArrayList<>(achievedMap.values());
+        // If range is "year", show all 12 months of current year
+        List<String> labels = new ArrayList<>();
+        List<Long> achieved = new ArrayList<>();
         List<Long> target = new ArrayList<>();
 
-        for (String monthName : labels) {
-            int month = monthNameToNumber(monthName);
-            target.add((long) targetMap.getOrDefault(month, 0));
+        if ("year".equalsIgnoreCase(range)) {
+            // Show all 12 months
+            String[] monthNames = {"January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"};
+            for (int month = 1; month <= 12; month++) {
+                String monthName = monthNames[month - 1];
+                labels.add(monthName);
+                // Get achieved for this month (0 if not found)
+                achieved.add(achievedMap.getOrDefault(monthName, 0L));
+                // Get target for this month (0 if not found)
+                target.add((long) targetMap.getOrDefault(month, 0));
+            }
+        } else {
+            // Use only months with data
+            labels = new ArrayList<>(achievedMap.keySet());
+            achieved = new ArrayList<>(achievedMap.values());
+            for (String monthName : labels) {
+                int month = monthNameToNumber(monthName);
+                target.add((long) targetMap.getOrDefault(month, 0));
+            }
         }
 
         return new ProjectPerformanceDTO(labels, achieved, target);
@@ -112,6 +162,7 @@ implements DashboardService {
             };
         }
     }
+
     private Long getUserIdFromAuth(Authentication auth) {
         String email;
         if (auth instanceof OAuth2AuthenticationToken oauth2Auth) {

@@ -3,381 +3,468 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DevCollab – PM Dashboard Overview</title>
-
+    <title>AProjectO Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-
-    <style>
-      body {
-        font-family: "Inter", sans-serif;
-        background-color: #f8fafc;
-      }
-      #pieChart {
-        max-width: 160px;
-        margin: auto;
-      }
-      #chart-legend li {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      #chart-legend span {
-        width: 12px;
-        height: 12px;
-        border-radius: 2px;
-        display: inline-block;
-      }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:src="@{/js/toast.js}"></script>
   </head>
 
-  <body class="bg-slate-50">
-    <button
-      onclick="openTargetModal()"
-      class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg text-lg"
-    >
-      🎯
-    </button>
+  <body class="bg-gray-50">
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
 
-    <aside
-      class="fixed top-0 left-0 h-full w-60 bg-white border-r border-slate-200 flex flex-col pt-6 shadow-sm"
-    >
-      <div class="flex items-center px-6 mb-8">
-        <div
-          class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3"
-        >
-          <i class="fa-solid fa-user text-blue-600 text-lg"></i>
-        </div>
-        <h1 class="text-lg font-semibold text-slate-700">DevCollab</h1>
-      </div>
+    <div class="flex" style="min-height: calc(100vh - 3.5rem)">
+      <!-- Sidebar -->
+      <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-      <nav class="flex-1 space-y-2 text-slate-600">
-        <a
-          href="/view/pm/dashboard"
-          class="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-700 rounded-r-full font-medium"
-        >
-          <i class="fa-regular fa-chart-bar"></i> Overview
-        </a>
-        <a
-          href="/view/pm/projects"
-          class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full"
-        >
-          <i class="fa-regular fa-clipboard"></i> Projects
-        </a>
-        <a
-          href="/view/pm/teams"
-          class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full"
-        >
-          <i class="fa-regular fa-users"></i> Teams
-        </a>
-        <a
-          href="/view/pm/settings"
-          class="flex items-center gap-3 px-6 py-3 hover:bg-slate-100 rounded-r-full"
-        >
-          <i class="fa-solid fa-gear"></i> Settings
-        </a>
-      </nav>
-    </aside>
-
-    <header
-      class="ml-60 bg-white h-16 flex items-center justify-between px-8 shadow-sm border-b border-slate-200 sticky top-0 z-30"
-    >
-      <div class="flex items-center space-x-2">
-        <div class="bg-blue-100 p-2 rounded-lg">
-          <img
-            src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png"
-            class="w-6 h-6"
-            alt="DevCollab"
-          />
-        </div>
-        <span class="text-lg font-semibold text-slate-700"
-          >PM Dashboard Overview</span
-        >
-      </div>
-
-      <div class="relative w-96">
-        <input
-          type="text"
-          placeholder="Search for anything..."
-          class="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-        />
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="2"
-          stroke="currentColor"
-          class="w-5 h-5 text-slate-400 absolute left-3 top-2.5"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"
-          />
-        </svg>
-      </div>
-
-      <div class="flex items-center space-x-4">
-        <button class="text-slate-500 hover:text-blue-600">
-          <i class="fa-regular fa-bell text-lg"></i>
-        </button>
-        <div class="text-right">
-          <p class="text-sm font-medium text-slate-700">Nguyễn Tiến Quân</p>
-          <p class="text-xs text-slate-400">Project Manager</p>
-        </div>
-        <img
-          src="https://i.pravatar.cc/60?img=68"
-          alt="avatar"
-          class="w-10 h-10 rounded-full border"
-        />
-      </div>
-    </header>
-
-    <main class="flex-1 p-8 ml-60 bg-slate-50 space-y-8">
-      <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-semibold text-slate-800">Overview</h1>
-        <select
-          id="rangeSelect"
-          onchange="loadOverview()"
-          class="text-sm px-3 py-1 border rounded-lg bg-blue-50 text-blue-700 font-medium"
-        >
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-          <option value="6months" selected>Last 6 Months</option>
-          <option value="year">This Year</option>
-        </select>
-      </div>
-
-      <div class="grid grid-cols-12 gap-6">
-        <div class="col-span-12 md:col-span-4 bg-white rounded-2xl shadow p-6">
-          <h3 class="font-semibold text-slate-700 mb-4">Projects Status</h3>
-          <div class="flex items-start">
-            <div class="w-1/2">
-              <canvas id="pieChart" height="180"></canvas>
-            </div>
-            <div class="w-1/2 pl-4">
-              <ul
-                id="chart-legend"
-                class="space-y-2 text-sm font-medium text-slate-600"
-              ></ul>
-              <ul id="summary-stats" class="mt-4 space-y-1 text-sm"></ul>
-            </div>
-          </div>
+      <!-- Main Content -->
+      <div class="flex-1 overflow-auto">
+        <!-- Page Title -->
+        <div class="bg-white border-b border-gray-200 px-6 py-4">
+          <h1 class="text-2xl font-bold text-gray-800">Projects</h1>
         </div>
 
-        <div class="col-span-12 md:col-span-8 bg-white rounded-2xl shadow p-6">
-          <h3 class="font-semibold text-slate-700 mb-4">
-            Performance (Completed Projects)
-          </h3>
-          <canvas id="lineChart" height="180"></canvas>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-12 gap-6 mt-6">
-        <div class="col-span-12 md:col-span-8 bg-white rounded-2xl shadow p-6">
-          <div class="flex justify-between items-center mb-4">
-            <div class="flex items-center space-x-2">
-              <h3 class="font-semibold text-slate-700">
-                Members (<span id="total-members">0</span>)
-              </h3>
-              <div class="relative">
-                <input
-                  id="search-member"
-                  type="text"
-                  placeholder="Search members..."
-                  class="pl-9 pr-3 py-1 text-sm border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-400 outline-none transition w-64"
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+        <!-- Dashboard Content -->
+        <div class="p-6 space-y-6">
+          <div class="grid grid-cols-3 gap-6">
+            <!-- Project Stats -->
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Projects Stats</h2>
+                <select
+                  id="rangeSelect"
+                  onchange="loadOverview()"
+                  class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full border-0 focus:outline-none cursor-pointer"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"
-                  />
-                </svg>
+                  <option value="week" selected>This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="6months">Last 6 Months</option>
+                  <option value="year">This Year</option>
+                </select>
+              </div>
+              <div class="relative w-48 h-48 mx-auto mb-4">
+                <canvas id="pieChart"></canvas>
+              </div>
+              <div class="mt-4 space-y-2">
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span>Active</span>
+                  </div>
+                  <span class="font-semibold" id="activePercent">0%</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-teal-500 rounded-full"></div>
+                    <span>Completed</span>
+                  </div>
+                  <span class="font-semibold" id="completedPercent">0%</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span>In Progress</span>
+                  </div>
+                  <span class="font-semibold" id="onProgressPercent">0%</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span>On Hold</span>
+                  </div>
+                  <span class="font-semibold" id="onHoldPercent">0%</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span>Pending</span>
+                  </div>
+                  <span class="font-semibold" id="pendingPercent">0%</span>
+                </div>
               </div>
             </div>
-            <a
-              href="/view/pm/teams"
-              class="text-sm text-blue-600 hover:underline"
-              >View all</a
-            >
-          </div>
-          <div
-            id="members-grid"
-            class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-4 mb-6"
-          ></div>
-          <div
-            id="members-pagination"
-            class="flex justify-center items-center gap-2 text-sm"
-          ></div>
-        </div>
 
-        <div class="col-span-12 md:col-span-4 bg-white rounded-2xl shadow p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-semibold text-slate-700">Projects</h3>
-            <a
-              href="/view/pm/projects"
-              class="text-sm text-blue-600 hover:underline"
-              >View all</a
-            >
-          </div>
-          <div id="projects-grid" class="grid grid-cols-2 gap-4"></div>
-        </div>
-      </div>
-    </main>
+            <!-- Performance Chart -->
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Performance</h2>
+                <select
+                  id="rangeSelectPerf"
+                  onchange="syncRangeAndLoad()"
+                  class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full border-0 focus:outline-none cursor-pointer"
+                >
+                  <option value="week" selected>This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="6months">Last 6 Months</option>
+                  <option value="year">This Year</option>
+                </select>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center space-x-2 text-sm">
+                  <div class="w-3 h-3 bg-red-400 rounded-full"></div>
+                  <span>Achieved</span>
+                  <span class="ml-auto font-semibold" id="achievedCount"
+                    >0 Projects</span
+                  >
+                </div>
+                <div class="flex items-center space-x-2 text-sm">
+                  <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span>Target</span>
+                  <span class="ml-auto font-semibold" id="targetCount"
+                    >0 Projects</span
+                  >
+                  <button
+                    id="setTargetBtn"
+                    onclick="openSetTargetModal()"
+                    class="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200"
+                    title="Set target for this month"
+                  >
+                    ✏️ Set
+                  </button>
+                </div>
+              </div>
+              <div class="h-40">
+                <canvas id="performanceChart"></canvas>
+              </div>
+            </div>
 
-    <div
-      id="targetModal"
-      class="fixed inset-0 bg-black/30 hidden items-center justify-center z-50"
-    >
-      <div class="bg-white rounded-xl shadow-lg w-96 p-6">
-        <h2 class="text-lg font-semibold text-slate-700 mb-4">
-          🎯 Đặt Target tháng
-        </h2>
-        <div class="space-y-3">
-          <div>
-            <label class="text-sm text-slate-600">Tháng</label>
-            <select
-              id="targetMonth"
-              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+            <!-- Set Target Modal -->
+            <div
+              id="setTargetModal"
+              class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
             >
-              <option value="">-- Chọn tháng --</option>
-              <option value="1">Tháng 1</option>
-              <option value="2">Tháng 2</option>
-              <option value="3">Tháng 3</option>
-              <option value="4">Tháng 4</option>
-              <option value="5">Tháng 5</option>
-              <option value="6">Tháng 6</option>
-              <option value="7">Tháng 7</option>
-              <option value="8">Tháng 8</option>
-              <option value="9">Tháng 9</option>
-              <option value="10">Tháng 10</option>
-              <option value="11">Tháng 11</option>
-              <option value="12">Tháng 12</option>
-            </select>
+              <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-lg font-semibold mb-4">Set Target</h3>
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Month
+                    </label>
+                    <select
+                      id="targetMonthSelect"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="1">January</option>
+                      <option value="2">February</option>
+                      <option value="3">March</option>
+                      <option value="4">April</option>
+                      <option value="5">May</option>
+                      <option value="6">June</option>
+                      <option value="7">July</option>
+                      <option value="8">August</option>
+                      <option value="9">September</option>
+                      <option value="10">October</option>
+                      <option value="11">November</option>
+                      <option value="12">December</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Target Count
+                    </label>
+                    <input
+                      type="number"
+                      id="targetCountInput"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                      placeholder="Enter target count"
+                    />
+                  </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                  <button
+                    onclick="closeSetTargetModal()"
+                    class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onclick="saveTarget()"
+                    class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Projects</h2>
+                <a
+                  href="/user/view/view-all-projects"
+                  class="text-sm text-blue-600 hover:underline"
+                  >View all</a
+                >
+              </div>
+              <div class="grid grid-cols-3 gap-3" id="projectsGrid">
+                <!-- Projects will be loaded here -->
+                <div class="text-center text-gray-400 text-sm py-8 col-span-3">
+                  Loading projects...
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label class="text-sm text-slate-600"
-              >Số lượng dự án mục tiêu</label
-            >
-            <input
-              type="number"
-              id="targetCount"
-              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
-              min="1"
-              placeholder="VD: 5"
-            />
+          <!-- Members Section -->
+          <div class="bg-white rounded-xl p-6 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold">
+                Members (<span id="totalMembers">0</span>)
+              </h2>
+              <a
+                th:href="@{/view/pm/project/members(projectId=${projectId})}"
+                class="text-sm text-blue-600 hover:underline"
+                >View all</a
+              >
+            </div>
+            <div class="mb-4">
+              <div class="relative">
+                <i
+                  class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                ></i>
+                <input
+                  type="text"
+                  id="memberSearch"
+                  placeholder="Search for anything..."
+                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-7 gap-4 mb-6" id="membersGrid">
+              <!-- Members will be loaded here -->
+            </div>
+            <div
+              class="flex justify-center items-center space-x-2"
+              id="pagination"
+            ></div>
           </div>
-        </div>
-
-        <div class="flex justify-end space-x-3 mt-5">
-          <button
-            onclick="closeTargetModal()"
-            class="px-4 py-2 text-sm rounded-lg bg-slate-100 hover:bg-slate-200"
-          >
-            Hủy
-          </button>
-          <button
-            onclick="saveTarget()"
-            class="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Lưu
-          </button>
         </div>
       </div>
     </div>
 
     <script th:inline="javascript">
-      let pieChart, lineChart;
+      // Get project ID from Thymeleaf or URL
+      let projectId = /*[[${projectId}]]*/ null;
+
+      // Fallback: Extract projectId from URL if Thymeleaf didn't provide it
+      if (!projectId) {
+        // Try multiple URL patterns
+        const pathMatch1 = window.location.pathname.match(
+          /\/project\/(\d+)\/dashboard/
+        );
+        const pathMatch2 = window.location.pathname.match(/\/project\/(\d+)/);
+        const pathMatch3 = window.location.search.match(/[?&]projectId=(\d+)/);
+
+        if (pathMatch1) {
+          projectId = parseInt(pathMatch1[1]);
+          console.log("Extracted projectId from URL (pattern 1):", projectId);
+        } else if (pathMatch2) {
+          projectId = parseInt(pathMatch2[1]);
+          console.log("Extracted projectId from URL (pattern 2):", projectId);
+        } else if (pathMatch3) {
+          projectId = parseInt(pathMatch3[1]);
+          console.log("Extracted projectId from URL (query param):", projectId);
+        } else {
+          // Try from project object
+          const projectObj = /*[[${project}]]*/ null;
+          if (projectObj) {
+            projectId = projectObj.projectId || projectObj.id || null;
+            console.log("Extracted projectId from project object:", projectId);
+          }
+        }
+      }
+
+      console.log("Final projectId:", projectId);
+
+      // Helper function to get token
+      function getCookie(name) {
+        const value = document.cookie.match(
+          "(^|;)\\s*" + name + "\\s*=\\s*([^;]+)"
+        );
+        return value ? value.pop() : null;
+      }
+
+      function getToken() {
+        return localStorage.getItem("token") || getCookie("AUTH_TOKEN") || "";
+      }
+
+      let pieChart = null;
+      let performanceChart = null;
+      let currentPage = 1; // Frontend uses 1-based pagination
+      let itemsPerPage = 21;
+      let allMembers = [];
+      let filteredMembers = [];
+
+      // Color palette for member avatars
+      const colors = [
+        "bg-yellow-500",
+        "bg-pink-400",
+        "bg-green-400",
+        "bg-blue-400",
+        "bg-teal-400",
+        "bg-purple-500",
+        "bg-pink-500",
+        "bg-orange-400",
+        "bg-yellow-600",
+        "bg-orange-500",
+        "bg-blue-500",
+        "bg-teal-500",
+        "bg-red-600",
+        "bg-purple-600",
+        "bg-indigo-500",
+        "bg-cyan-500",
+        "bg-rose-500",
+        "bg-amber-500",
+        "bg-lime-500",
+        "bg-sky-500",
+        "bg-violet-500",
+        "bg-fuchsia-500",
+        "bg-emerald-500",
+        "bg-red-400",
+        "bg-green-500",
+        "bg-yellow-400",
+        "bg-purple-400",
+        "bg-pink-600",
+        "bg-indigo-600",
+      ];
 
       async function loadOverview() {
         try {
-          const range =
-            document.getElementById("rangeSelect")?.value || "6months";
-          const token = localStorage.getItem("token");
-          const resSummary = await fetch(
-            `/api/pm/dashboard/summary?range=${range}`,
-            {
-              headers: { Authorization: "Bearer " + token },
-              credentials: "include",
-            }
-          );
+          const range = document.getElementById("rangeSelect")?.value || "week";
+          const token = getToken();
+
+          // Use project-specific API if projectId exists, otherwise use general dashboard API
+          let summaryUrl, perfUrl;
+
+          if (projectId) {
+            summaryUrl = `/api/pm/project/${projectId}/dashboard`;
+            perfUrl = `/api/pm/project/${projectId}/performance`;
+          } else {
+            summaryUrl = `/api/pm/dashboard/summary?range=${range}`;
+            perfUrl = `/api/pm/dashboard/performance?range=${range}`;
+          }
+
+          // Load summary/stats
+          const resSummary = await fetch(summaryUrl, {
+            headers: { Authorization: "Bearer " + token },
+            credentials: "include",
+          });
+
+          if (!resSummary.ok) {
+            throw new Error(`Failed to load summary: ${resSummary.status}`);
+          }
 
           const summaryData = await resSummary.json();
           const s = summaryData.data ?? summaryData;
 
-          document.getElementById("summary-stats").innerHTML = `
-        <li class="flex justify-between text-sm text-slate-600"><span>Completed</span><span>${s.completed}</span></li>
-        <li class="flex justify-between text-sm text-slate-600"><span>On Hold</span><span>${s.onHold}</span></li>
-        <li class="flex justify-between text-sm text-slate-600"><span>In Progress</span><span>${s.inProgress}</span></li>
-        <li class="flex justify-between text-sm text-slate-600"><span>Pending</span><span>${s.pending}</span></li>
-      `;
+          // Always use project status format (not task status)
+          let total, active, completed, onHold, inProgress, pending;
 
-          const total = s.total || 1;
-          const completed = ((s.completed / total) * 100).toFixed(0);
-          const onHold = ((s.onHold / total) * 100).toFixed(0);
-          const inProgress = ((s.inProgress / total) * 100).toFixed(0);
-          const pending = ((s.pending / total) * 100).toFixed(0);
+          // General dashboard format - project status
+          total = s.total || 0;
+          active = s.active || 0;
+          completed = s.completed || 0;
+          onHold = s.onHold || 0;
+          inProgress = s.inProgress || 0;
+          pending = s.pending || 0;
 
-          const pieCtx = document.getElementById("pieChart").getContext("2d");
-          if (pieChart) pieChart.destroy();
+          if (total === 0) total = 1; // Avoid division by zero
+
+          const activePercent = Math.round((active / total) * 100);
+          const completedPercent = Math.round((completed / total) * 100);
+          const onHoldPercent = Math.round((onHold / total) * 100);
+          const inProgressPercent = Math.round((inProgress / total) * 100);
+          const pendingPercent = Math.round((pending / total) * 100);
+
+          // Update percentages - Project Status
+          document.getElementById("activePercent").textContent =
+            activePercent + "%";
+          document.getElementById("completedPercent").textContent =
+            completedPercent + "%";
+          document.getElementById("onHoldPercent").textContent =
+            onHoldPercent + "%";
+          document.getElementById("onProgressPercent").textContent =
+            inProgressPercent + "%";
+          document.getElementById("pendingPercent").textContent =
+            pendingPercent + "%";
+
+          // Create pie chart
+          const pieCtx = document.getElementById("pieChart");
+          if (pieChart) {
+            pieChart.destroy();
+          }
+
           pieChart = new Chart(pieCtx, {
             type: "doughnut",
             data: {
-              labels: ["Completed", "On Hold", "In Progress", "Pending"],
+              labels: [
+                "Active",
+                "Completed",
+                "In Progress",
+                "On Hold",
+                "Pending",
+              ],
               datasets: [
                 {
-                  data: [completed, onHold, inProgress, pending],
-                  backgroundColor: ["#22c55e", "#eab308", "#3b82f6", "#ef4444"],
-                  borderColor: "#fff",
-                  borderWidth: 2,
+                  data: [active, completed, inProgress, onHold, pending],
+                  backgroundColor: [
+                    "#10b981",
+                    "#14b8a6",
+                    "#3b82f6",
+                    "#8b5cf6",
+                    "#ef4444",
+                  ],
+                  borderWidth: 0,
                 },
               ],
             },
             options: {
               responsive: true,
-              cutout: "65%",
+              maintainAspectRatio: true,
               plugins: {
-                legend: { display: false },
-                datalabels: {
-                  color: "#fff",
-                  font: { weight: "bold", size: 12 },
-                  formatter: (v) => v + "%",
+                legend: {
+                  display: false,
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const label = context.label || "";
+                      const value = context.parsed || 0;
+                      const total = context.dataset.data.reduce(
+                        (a, b) => a + b,
+                        0
+                      );
+                      const percentage = Math.round((value / total) * 100);
+                      return `${label}: ${value} (${percentage}%)`;
+                    },
+                  },
                 },
               },
             },
-            plugins: [ChartDataLabels],
           });
 
-          const legendContainer = document.getElementById("chart-legend");
-          legendContainer.innerHTML = pieChart.data.labels
-            .map(
-              (label, i) => `
-        <li><span style="background:${pieChart.data.datasets[0].backgroundColor[i]}"></span>${label}</li>
-      `
-            )
-            .join("");
+          // Sync rangeSelectPerf with rangeSelect
+          const rangeSelectPerf = document.getElementById("rangeSelectPerf");
+          if (rangeSelectPerf) {
+            rangeSelectPerf.value = range;
+          }
 
-          const resPerf = await fetch(
-            `/api/pm/dashboard/performance?range=${range}`,
-            {
-              headers: { Authorization: "Bearer " + token },
-              credentials: "include",
-            }
-          );
+          // Load performance data
+          const resPerf = await fetch(perfUrl, {
+            headers: { Authorization: "Bearer " + token },
+            credentials: "include",
+          });
+
+          if (!resPerf.ok) {
+            console.warn("Failed to load performance data:", resPerf.status);
+            return;
+          }
 
           const perfData = await resPerf.json();
           const perf = perfData.data ?? perfData;
@@ -386,298 +473,696 @@
           const achieved = perf.achieved ?? [];
           const target = perf.target ?? [];
 
-          if (lineChart) lineChart.destroy();
-          const lineCtx = document.getElementById("lineChart").getContext("2d");
-          lineChart = new Chart(lineCtx, {
-            type: "line",
+          // Update achieved and target counts
+          if (achieved.length > 0) {
+            const latestAchieved = achieved[achieved.length - 1];
+            document.getElementById("achievedCount").textContent =
+              latestAchieved + " Projects";
+          }
+          if (target.length > 0) {
+            const latestTarget = target[target.length - 1];
+            document.getElementById("targetCount").textContent =
+              latestTarget + " Projects";
+          }
+
+          // Create performance chart
+          if (performanceChart) {
+            performanceChart.destroy();
+          }
+
+          const perfCtx = document.getElementById("performanceChart");
+          performanceChart = new Chart(perfCtx, {
+            type: "bar",
             data: {
-              labels,
+              labels: labels,
               datasets: [
                 {
                   label: "Achieved",
                   data: achieved,
-                  borderColor: "#f97316",
-                  backgroundColor: "rgba(249,115,22,0.2)",
-                  fill: true,
-                  tension: 0.3,
+                  backgroundColor: "#ef4444",
+                  borderRadius: 4,
                 },
                 {
                   label: "Target",
                   data: target,
-                  borderColor: "#6366f1",
-                  backgroundColor: "rgba(99,102,241,0.2)",
-                  fill: true,
-                  tension: 0.3,
+                  backgroundColor: "#3b82f6",
+                  borderRadius: 4,
                 },
               ],
             },
             options: {
-              plugins: { legend: { display: false } },
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false,
+                },
+              },
               scales: {
                 y: {
                   beginAtZero: true,
-                  ticks: { stepSize: 1 },
-                  grid: { color: "rgba(226,232,240,0.6)" },
+                  ticks: {
+                    stepSize: 1,
+                  },
+                  grid: {
+                    display: false,
+                  },
                 },
-                x: { grid: { display: false } },
+                x: {
+                  grid: {
+                    display: false,
+                  },
+                  ticks: {
+                    maxRotation: 45,
+                    minRotation: 45,
+                  },
+                },
               },
             },
           });
         } catch (err) {
-          console.error("⚠️ Lỗi tải dashboard tổng quan:", err);
+          console.error("⚠️ Error loading dashboard overview:", err);
         }
       }
-      let currentPage = 0;
-      let totalPages = 1;
-      let searchKeyword = "";
 
-      async function loadMembers(page = 0) {
+      async function loadProjects() {
         try {
-          const token = localStorage.getItem("token");
-          const res = await fetch(
-            `/api/pm/members/all?page=${page}&size=20&keyword=${encodeURIComponent(
-              searchKeyword
-            )}`,
-            {
-              headers: { Authorization: "Bearer " + token },
-              credentials: "include",
-            }
-          );
+          const token = getToken();
+          const res = await fetch("/api/pm/project/top?limit=9", {
+            headers: { Authorization: "Bearer " + token },
+            credentials: "include",
+          });
+
+          if (!res.ok) {
+            throw new Error(`Failed to load projects: ${res.status}`);
+          }
 
           const data = await res.json();
+          const projects = data.data ?? data ?? [];
 
-          const members = data.content || [];
-          totalPages = data.totalPages || 1;
-          currentPage = data.currentPage || 0;
+          const grid = document.getElementById("projectsGrid");
 
-          document.getElementById("total-members").textContent =
-            data.totalElements || 0;
-
-          const grid = document.getElementById("members-grid");
-          if (!members.length) {
-            grid.innerHTML = `<p class="text-sm text-slate-500">Không tìm thấy thành viên nào.</p>`;
-            document.getElementById("members-pagination").innerHTML = "";
+          if (!projects.length) {
+            grid.innerHTML = `<p class="text-sm text-gray-500 text-center py-4 col-span-3">No recent projects.</p>`;
             return;
           }
 
-          grid.innerHTML = members
-            .map(
-              (m) => `
-      <div class="relative group cursor-pointer" title="${m.name}">
-        <img src="${m.avatarUrl || "https://i.pravatar.cc/100"}"
-             alt="${m.name}"
-             class="w-12 h-12 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform" />
-        <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border border-white"></div>
-      </div>
-    `
-            )
-            .join("");
+          // Generate emoji or use cover image
+          const emojis = ["🎸", "🎭", "🎃", "👻", "🦇", "🕷️", "🧛", "🖤", "🎨"];
 
+          grid.innerHTML = projects
+            .map((p, i) => {
+              const coverImage = p.coverImage?.trim();
+              const emoji = emojis[i % emojis.length];
+              const bgColors = [
+                "bg-gray-800",
+                "bg-gray-700",
+                "bg-orange-600",
+                "bg-purple-900",
+                "bg-gray-900",
+                "bg-black",
+                "bg-red-900",
+                "bg-gray-600",
+                "bg-blue-800",
+              ];
+
+              return `
+          <div class="text-center">
+            <div 
+              class="${
+                bgColors[i % bgColors.length]
+              } rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+              onclick="window.location.href='/view/pm/project/board?projectId=${
+                p.projectId || p.id
+              }'"
+              style="${
+                coverImage
+                  ? `background-image: url('${coverImage}'); background-size: cover; background-position: center;`
+                  : ""
+              }"
+              title="${p.name}"
+            >
+              ${!coverImage ? emoji : ""}
+            </div>
+            <p class="text-xs font-medium truncate">${p.name || "Untitled"}</p>
+          </div>
+        `;
+            })
+            .join("");
+        } catch (err) {
+          console.error("⚠️ Error loading projects list:", err);
+          document.getElementById("projectsGrid").innerHTML =
+            '<p class="text-sm text-red-500 text-center py-4 col-span-3">Failed to load projects</p>';
+        }
+      }
+
+      async function loadMembers(page = 1) {
+        try {
+          const token = getToken();
+          console.log("Loading members, page:", page, "projectId:", projectId);
+
+          // Use project-specific members if projectId exists, otherwise use general API
+          let membersUrl;
+          if (projectId) {
+            // Try to use Thymeleaf data first
+            const membersFromThymeleaf = /*[[${members}]]*/ null;
+            if (
+              membersFromThymeleaf &&
+              Array.isArray(membersFromThymeleaf) &&
+              membersFromThymeleaf.length > 0
+            ) {
+              console.log(
+                "Using Thymeleaf members data:",
+                membersFromThymeleaf.length
+              );
+              // Use Thymeleaf data
+              allMembers = membersFromThymeleaf
+                .filter((m) => m != null) // Filter out null/undefined
+                .map((m, i) => {
+                  const user = m.user || m;
+                  return {
+                    name: user?.name || "Member",
+                    avatarUrl: user?.avatarUrl || null,
+                    color: colors[i % colors.length],
+                    id: user?.userId || user?.id || i,
+                  };
+                });
+              filteredMembers = [...allMembers];
+              document.getElementById("totalMembers").textContent =
+                allMembers.length;
+              currentPage = page; // Set current page
+              renderMembers();
+              renderPagination();
+              return;
+            }
+            // Fallback to API - project members API doesn't use pagination, returns list
+            membersUrl = `/api/pm/members?projectId=${projectId}&limit=200&keyword=${encodeURIComponent(
+              searchKeyword
+            )}`;
+            console.log("Loading project members from API:", membersUrl);
+          } else {
+            // Load all members at once (use large size to get all)
+            // Convert 1-based page to 0-based for backend API
+            const backendPage = Math.max(0, page - 1);
+            // Load all members at once with large size
+            // If there are more than 200 members, we'll need to load multiple times
+            membersUrl = `/api/pm/members/all?page=0&size=500&keyword=${encodeURIComponent(
+              searchKeyword
+            )}`;
+            console.log("Loading all members from API:", membersUrl);
+          }
+
+          const res = await fetch(membersUrl, {
+            headers: { Authorization: "Bearer " + token },
+            credentials: "include",
+          });
+
+          console.log("Members API response status:", res.status);
+
+          if (!res.ok) {
+            const errorText = await res.text();
+            console.error("Members API error:", res.status, errorText);
+            throw new Error(`Failed to load members: ${res.status}`);
+          }
+
+          const data = await res.json();
+          console.log("Members API response data:", data);
+
+          // Handle different response formats
+          let members = [];
+          let totalElements = 0;
+          let totalPages = 1;
+          let backendCurrentPage = 0;
+
+          if (projectId) {
+            // Project members API returns a list directly (List<MemberDTO>)
+            if (Array.isArray(data)) {
+              members = data;
+            } else if (data.data && Array.isArray(data.data)) {
+              // Wrapped in ApiResponse
+              members = data.data;
+            } else {
+              members = data.members || [];
+            }
+            totalElements = members.length;
+            totalPages = Math.ceil(totalElements / itemsPerPage);
+            backendCurrentPage = page - 1; // Convert to 0-based for consistency
+            console.log(
+              "Project members loaded:",
+              members.length,
+              "total pages:",
+              totalPages
+            );
+          } else {
+            // General members API returns paginated response
+            // Check if wrapped in ApiResponse
+            const responseData = data.data || data;
+            members = responseData.content || responseData.members || [];
+            totalElements =
+              responseData.totalElements ||
+              responseData.total ||
+              members.length;
+
+            // If we loaded all members at once (size=500), use frontend pagination
+            // Otherwise use backend pagination
+            if (members.length >= totalElements || members.length >= 500) {
+              // Loaded all members, use frontend pagination
+              totalPages = Math.ceil(totalElements / itemsPerPage);
+              backendCurrentPage = 0; // We loaded from page 0
+              console.log(
+                "All members loaded at once:",
+                members.length,
+                "total:",
+                totalElements,
+                "frontend pages:",
+                totalPages
+              );
+            } else if (members.length < totalElements) {
+              // Didn't load all members, but we have totalElements
+              // Use frontend pagination with what we have, or could load more
+              totalPages = Math.ceil(totalElements / itemsPerPage);
+              backendCurrentPage = 0;
+              console.log(
+                "Partial members loaded:",
+                members.length,
+                "total:",
+                totalElements,
+                "frontend pages:",
+                totalPages,
+                "(Note: Some members may not be visible)"
+              );
+            } else {
+              // Backend pagination (shouldn't happen with size=500, but keep as fallback)
+              totalPages =
+                responseData.totalPages ||
+                Math.ceil(totalElements / itemsPerPage) ||
+                1;
+              backendCurrentPage = responseData.currentPage ?? page - 1;
+              console.log(
+                "Members loaded (backend pagination):",
+                members.length,
+                "total:",
+                totalElements,
+                "backend pages:",
+                totalPages
+              );
+            }
+          }
+
+          const totalMembersEl = document.getElementById("totalMembers");
+          if (totalMembersEl) {
+            totalMembersEl.textContent = totalElements;
+          }
+
+          allMembers = members
+            .filter((m) => m != null && typeof m === "object") // Filter out null/undefined
+            .map((m, i) => {
+              // Handle MemberDTO format (has name, email, avatarUrl directly)
+              // or ProjectMember format (has user object)
+              let memberName, memberAvatar, memberId;
+
+              if (m.name) {
+                // MemberDTO format - has name, email, avatarUrl directly
+                memberName = m.name || "Member";
+                memberAvatar = m.avatarUrl || null;
+                memberId = m.userId || m.id || i;
+              } else if (m.user) {
+                // ProjectMember format - has user object
+                const user = m.user;
+                memberName = user.name || "Member";
+                memberAvatar = user.avatarUrl || null;
+                memberId = user.userId || user.id || i;
+              } else {
+                // Fallback - try to extract any available data
+                memberName = m.email || m.username || "Member";
+                memberAvatar = m.avatarUrl || m.avatar || null;
+                memberId = m.userId || m.id || m.user?.userId || i;
+              }
+
+              return {
+                name: memberName,
+                avatarUrl: memberAvatar,
+                color: colors[i % colors.length],
+                id: memberId,
+              };
+            });
+
+          console.log("Processed members:", allMembers.length);
+          filteredMembers = [...allMembers];
+
+          // Convert backend 0-based page to frontend 1-based
+          currentPage = backendCurrentPage + 1;
+          if (currentPage < 1) currentPage = 1;
+          if (currentPage > totalPages && totalPages > 0)
+            currentPage = totalPages;
+
+          console.log(
+            "Rendering members, currentPage:",
+            currentPage,
+            "totalPages:",
+            totalPages,
+            "filteredMembers:",
+            filteredMembers.length
+          );
+          renderMembers();
           renderPagination();
         } catch (err) {
-          console.error("⚠️ Lỗi tải danh sách thành viên:", err);
+          console.error("⚠️ Error loading members list:", err);
+          const grid = document.getElementById("membersGrid");
+          if (grid) {
+            grid.innerHTML =
+              '<p class="text-sm text-red-500 col-span-full text-center py-4">Failed to load members. Please try again.</p>';
+          }
+          // Initialize empty arrays to prevent further errors
+          allMembers = [];
+          filteredMembers = [];
+          renderPagination();
         }
       }
 
-      function renderPagination() {
-        const container = document.getElementById("members-pagination");
-        let buttons = "";
-
-        buttons += `<button class="px-3 py-1 rounded-md border ${
-          currentPage === 0
-            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-            : "hover:bg-slate-100"
-        }"
-                  ${
-                    currentPage === 0
-                      ? "disabled"
-                      : `onclick="loadMembers(${currentPage - 1})"`
-                  }>
-                  Previous</button>`;
-
-        for (let i = 0; i < totalPages; i++) {
-          buttons += `<button class="px-3 py-1 rounded-md border ${
-            i === currentPage ? "bg-blue-600 text-white" : "hover:bg-blue-50"
-          }"
-                    onclick="loadMembers(${i})">${i + 1}</button>`;
-        }
-
-        buttons += `<button class="px-3 py-1 rounded-md border ${
-          currentPage === totalPages - 1
-            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-            : "hover:bg-slate-100"
-        }"
-                  ${
-                    currentPage === totalPages - 1
-                      ? "disabled"
-                      : `onclick="loadMembers(${currentPage + 1})"`
-                  }>
-                  Next</button>`;
-
-        container.innerHTML = buttons;
-      }
-
+      let searchKeyword = "";
       let searchTimeout;
-      document
-        .getElementById("search-member")
-        .addEventListener("input", (e) => {
-          clearTimeout(searchTimeout);
-          searchTimeout = setTimeout(() => {
-            searchKeyword = e.target.value.trim();
-            loadMembers(0);
-          }, 300);
-        });
 
-      function openTargetModal() {
-        document.getElementById("targetModal").classList.remove("hidden");
-        document.getElementById("targetModal").classList.add("flex");
-      }
-
-      function closeTargetModal() {
-        document.getElementById("targetModal").classList.add("hidden");
-        document.getElementById("targetModal").classList.remove("flex");
-      }
-
-      async function saveTarget() {
-        const month = parseInt(document.getElementById("targetMonth").value);
-        const targetCount = parseInt(
-          document.getElementById("targetCount").value
-        );
-        const year = new Date().getFullYear();
-
-        if (!month || !targetCount) {
-          alert(" Vui lòng chọn tháng và nhập số lượng target!");
+      function renderMembers() {
+        const grid = document.getElementById("membersGrid");
+        if (!grid) {
+          console.error("Members grid element not found");
           return;
         }
 
+        grid.innerHTML = "";
+
+        // Validate filteredMembers
+        if (!Array.isArray(filteredMembers) || filteredMembers.length === 0) {
+          console.log("No filtered members to display");
+          grid.innerHTML =
+            '<p class="text-sm text-gray-500 col-span-full text-center py-4">No members found.</p>';
+          return;
+        }
+
+        // Ensure currentPage is valid
+        if (currentPage < 1) currentPage = 1;
+
+        const start = Math.max(0, (currentPage - 1) * itemsPerPage);
+        const end = Math.min(start + itemsPerPage, filteredMembers.length);
+
+        console.log(
+          "Rendering members from",
+          start,
+          "to",
+          end,
+          "of",
+          filteredMembers.length
+        );
+
+        // Validate start and end
+        if (start >= filteredMembers.length || start < 0) {
+          console.warn(
+            "Invalid start index:",
+            start,
+            "for array length:",
+            filteredMembers.length
+          );
+          grid.innerHTML =
+            '<p class="text-sm text-gray-500 col-span-full text-center py-4">No members to display.</p>';
+          return;
+        }
+
+        let renderedCount = 0;
+        for (let i = start; i < end; i++) {
+          const member = filteredMembers[i];
+
+          // Validate member object
+          if (!member || typeof member !== "object") {
+            console.warn("Invalid member at index", i, member);
+            continue;
+          }
+
+          const memberName = member.name || "Member";
+          const div = document.createElement("div");
+          div.className = "flex flex-col items-center member-item";
+          div.setAttribute("data-name", memberName);
+
+          if (member.avatarUrl) {
+            div.innerHTML = `
+              <img 
+                src="${member.avatarUrl}" 
+                alt="${member.name}"
+                class="w-14 h-14 rounded-full hover:scale-110 transition-transform cursor-pointer object-cover border-2 border-gray-200"
+                onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';"
+              />
+              <div class="w-14 h-14 rounded-full hover:scale-110 transition-transform cursor-pointer ${
+                member.color
+              } hidden items-center justify-center text-white font-bold text-lg">
+                ${member.name.charAt(0).toUpperCase()}
+              </div>
+            `;
+          } else {
+            div.innerHTML = `
+              <div class="w-14 h-14 rounded-full hover:scale-110 transition-transform cursor-pointer ${
+                member.color
+              } flex items-center justify-center text-white font-bold text-lg">
+                ${member.name.charAt(0).toUpperCase()}
+              </div>
+            `;
+          }
+
+          grid.appendChild(div);
+          renderedCount++;
+        }
+
+        console.log("Rendered", renderedCount, "members");
+      }
+
+      function renderPagination() {
+        if (!Array.isArray(filteredMembers)) {
+          filteredMembers = [];
+        }
+        const totalPages = Math.max(
+          1,
+          Math.ceil(filteredMembers.length / itemsPerPage)
+        );
+        const pagination = document.getElementById("pagination");
+        if (!pagination) {
+          console.error("Pagination element not found");
+          return;
+        }
+        pagination.innerHTML = "";
+
+        const prevBtn = document.createElement("button");
+        prevBtn.className =
+          "px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded";
+        prevBtn.textContent = "Previous";
+        prevBtn.onclick = function () {
+          changePage(-1);
+        };
+        if (currentPage === 1) {
+          prevBtn.disabled = true;
+          prevBtn.className += " opacity-50 cursor-not-allowed";
+        }
+        pagination.appendChild(prevBtn);
+
+        // Show pages around current page (max 5 pages visible)
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + 4);
+
+        // Adjust start if we're near the end
+        if (endPage - startPage < 4) {
+          startPage = Math.max(1, endPage - 4);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+          const btn = document.createElement("button");
+          btn.className = "px-3 py-1 text-sm rounded page-btn";
+          btn.setAttribute("data-page", i);
+          btn.textContent = i;
+
+          if (i === currentPage) {
+            btn.className += " bg-blue-600 text-white";
+          } else {
+            btn.className += " text-gray-600 hover:bg-gray-100";
+          }
+
+          btn.onclick = (function (page) {
+            return function () {
+              goToPage(page);
+            };
+          })(i);
+
+          pagination.appendChild(btn);
+        }
+
+        const nextBtn = document.createElement("button");
+        nextBtn.className =
+          "px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded";
+        nextBtn.textContent = "Next";
+        nextBtn.onclick = function () {
+          changePage(1);
+        };
+        if (currentPage >= totalPages) {
+          nextBtn.disabled = true;
+          nextBtn.className += " opacity-50 cursor-not-allowed";
+        }
+        pagination.appendChild(nextBtn);
+      }
+
+      function changePage(direction) {
+        const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+        currentPage += direction;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        renderMembers();
+        renderPagination();
+      }
+
+      function goToPage(page) {
+        currentPage = page;
+        renderMembers();
+        renderPagination();
+      }
+
+      function syncRangeAndLoad() {
+        const rangeSelect = document.getElementById("rangeSelect");
+        const rangeSelectPerf = document.getElementById("rangeSelectPerf");
+        if (rangeSelect && rangeSelectPerf) {
+          rangeSelect.value = rangeSelectPerf.value;
+        }
+        loadOverview();
+      }
+
+      // Search members
+      document
+        .getElementById("memberSearch")
+        .addEventListener("input", function (e) {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            searchKeyword = e.target.value.toLowerCase();
+            filteredMembers = allMembers.filter((member) =>
+              member.name.toLowerCase().includes(searchKeyword)
+            );
+            currentPage = 1;
+            renderMembers();
+            renderPagination();
+          }, 300);
+        });
+
+      // Set Target Modal
+      function openSetTargetModal() {
+        const currentMonth = new Date().getMonth() + 1; // 1-12
+
+        // Set default values
+        document.getElementById("targetMonthSelect").value = currentMonth;
+
+        // Try to get current target for selected month (if available)
+        const currentTarget =
+          document
+            .getElementById("targetCount")
+            ?.textContent?.match(/\d+/)?.[0] || "0";
+        document.getElementById("targetCountInput").value = currentTarget;
+
+        // Show modal
+        document.getElementById("setTargetModal").classList.remove("hidden");
+      }
+
+      function closeSetTargetModal() {
+        document.getElementById("setTargetModal").classList.add("hidden");
+      }
+
+      function saveTarget() {
+        const month = parseInt(
+          document.getElementById("targetMonthSelect").value
+        );
+        const year = new Date().getFullYear(); // Use current year
+        const targetCount = parseInt(
+          document.getElementById("targetCountInput").value
+        );
+
+        if (isNaN(month) || month < 1 || month > 12) {
+          showToast("Please select a valid month", "error");
+          return;
+        }
+
+        if (isNaN(targetCount) || targetCount < 0) {
+          showToast("Please enter a valid target count (>= 0)", "error");
+          return;
+        }
+
+        setTargetForMonth(month, year, targetCount);
+        closeSetTargetModal();
+      }
+
+      // Close modal when clicking outside
+      document.addEventListener("click", function (e) {
+        const modal = document.getElementById("setTargetModal");
+        if (e.target === modal) {
+          closeSetTargetModal();
+        }
+      });
+
+      async function setTargetForMonth(month, year, targetCount) {
         try {
-          const token = localStorage.getItem("token");
+          const token = getToken();
           const res = await fetch("/api/pm/targets/set", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: "Bearer " + token,
             },
-            body: JSON.stringify({ month, year, targetCount }),
             credentials: "include",
+            body: JSON.stringify({
+              month: month,
+              year: year,
+              targetCount: targetCount,
+            }),
           });
-
-          if (res.ok) {
-            alert(" Đã lưu target thành công!");
-            closeTargetModal();
-            loadOverview();
-          } else {
-            alert(" Lỗi khi lưu target!");
-          }
-        } catch (err) {
-          console.error("Lỗi khi gọi API:", err);
-          alert(" Không thể kết nối đến server!");
-        }
-      }
-
-      async function loadProjects() {
-        try {
-          const token = localStorage.getItem("token");
-          const res = await fetch("/api/pm/project/top?limit=6", {
-            headers: { Authorization: "Bearer " + token },
-            credentials: "include",
-          });
-
-          const data = await res.json();
-          const projects = data.data ?? [];
-
-          const grid = document.getElementById("projects-grid");
-          if (!projects.length) {
-            grid.innerHTML = `<p class="text-sm text-slate-500 text-center col-span-2">Không có dự án nào gần đây.</p>`;
-            return;
-          }
-
-          const statusColors = {
-            Active: "bg-green-100 text-green-700 border-green-200",
-            "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-            "On Hold": "bg-yellow-100 text-yellow-700 border-yellow-200",
-            Completed: "bg-gray-100 text-gray-600 border-gray-200",
-            Pending: "bg-orange-100 text-orange-700 border-orange-200",
-          };
-
-          grid.innerHTML = projects
-            .map((p, i) => {
-              const badgeClass =
-                statusColors[p.status] ||
-                "bg-slate-100 text-slate-600 border-slate-200";
-              const img =
-                p.coverImage?.trim() ||
-                `https://picsum.photos/300/180?random=${i + 1}`;
-
-              return `
-        <div 
-          class="relative cursor-pointer border border-slate-100 rounded-lg overflow-hidden shadow-sm bg-white hover:shadow-md hover:scale-[1.02] transition-transform"
-          onclick="window.location.href='/view/pm/project/board?projectId=${
-            p.projectId
-          }'"
-          title="${p.name}"
-        >
-          <!-- Ảnh nền -->
-          <img src="${img}" alt="${p.name}" class="w-full h-24 object-cover">
-
-          <!-- Badge trạng thái -->
-          <div class="absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full border ${badgeClass}">
-            ${p.status || "Unknown"}
-          </div>
-
-          <!-- Tên dự án -->
-          <div class="absolute bottom-2 left-0 right-0 text-center">
-            <p class="font-medium text-white text-sm bg-black/60 mx-2 rounded-md py-0.5 truncate">${
-              p.name
-            }</p>
-          </div>
-        </div>
-      `;
-            })
-            .join("");
-        } catch (err) {
-          console.error("⚠️ Lỗi tải danh sách dự án:", err);
-        }
-      }
-
-      async function ensureCurrentUser() {
-        try {
-          const token = localStorage.getItem("token");
-          const res = await fetch("/api/auth/me", {
-            headers: { Authorization: "Bearer " + token },
-            credentials: "include",
-          });
-          if (!res.ok) throw new Error("Unauthorized");
 
           const result = await res.json();
-          const user = result.user || result;
-          const roles = user.roles || [];
 
-          // ⚠️ Nếu không phải PM → redirect
-          if (!roles.includes("ROLE_PM")) {
-            alert("⚠️ Bạn không có quyền truy cập trang này!");
-            window.location.href = "/view/member/overview";
-            return false;
+          if (
+            res.ok &&
+            (result.success || result.status === "success" || result.data)
+          ) {
+            showToast(
+              `Target set to ${targetCount} projects for ${getMonthName(
+                month
+              )} ${year}`,
+              "success"
+            );
+            // Reload performance data
+            loadOverview();
+          } else {
+            showToast(result.message || "Failed to set target", "error");
           }
-
-          document.querySelector("header .text-sm.font-medium").textContent =
-            user.name;
-          document.querySelector("header img[alt='avatar']").src =
-            user.avatarUrl || "https://i.pravatar.cc/60?img=68";
-          return true;
         } catch (err) {
-          console.error("❌ Lỗi xác thực:", err);
-          window.location.href = "/view/signin?redirect=/view/pm/dashboard";
-          return false;
+          console.error("Set target error:", err);
+          showToast("Failed to connect to server.", "error");
         }
       }
 
-      document.addEventListener("DOMContentLoaded", async () => {
-        const ok = await ensureCurrentUser();
-        if (!ok) return;
+      function getMonthName(month) {
+        const monthNames = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        return monthNames[month - 1] || "Unknown";
+      }
+
+      // Initialize on page load
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("Initializing overview page, projectId:", projectId);
         loadOverview();
-        loadMembers(0);
         loadProjects();
+        loadMembers(1); // Start from page 1
       });
     </script>
   </body>

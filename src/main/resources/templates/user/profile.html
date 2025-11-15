@@ -5,6 +5,7 @@
     <title>User Profile – DevCollab</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <script th:src="@{/js/toast.js}"></script>
 </head>
 <body class="bg-slate-50">
 
@@ -230,13 +231,13 @@
             });
 
             if (!res.ok) throw new Error("Failed to submit report");
-            alert("✅ Report submitted successfully!");
+            showToast("Report submitted successfully!", "success");
             closeReportModal();
             reportForm.reset();
 
         } catch (err) {
             console.error("❌ Report failed:", err.message);
-            alert("⚠️ " + err.message);
+            showToast(err.message, "error");
         }
     });
 </script>

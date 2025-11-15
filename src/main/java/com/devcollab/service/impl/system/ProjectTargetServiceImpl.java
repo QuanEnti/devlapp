@@ -17,7 +17,8 @@ public class ProjectTargetServiceImpl implements ProjectTargetService {
 
     @Override
     public ProjectTarget saveOrUpdateTarget(int month, int year, int targetCount, Long createdBy) {
-        Optional<ProjectTarget> existing = projectTargetRepository.findByMonthYearAndPm(month, year, createdBy);
+        Optional<ProjectTarget> existing =
+                projectTargetRepository.findByMonthYearAndPm(month, year, createdBy);
 
         if (existing.isPresent()) {
             ProjectTarget pt = existing.get();
@@ -25,12 +26,8 @@ public class ProjectTargetServiceImpl implements ProjectTargetService {
             return projectTargetRepository.save(pt);
         }
 
-        ProjectTarget newTarget = ProjectTarget.builder()
-                .month(month)
-                .year(year)
-                .targetCount(targetCount)
-                .createdBy(createdBy)
-                .build();
+        ProjectTarget newTarget = ProjectTarget.builder().month(month).year(year)
+                .targetCount(targetCount).createdBy(createdBy).build();
         return projectTargetRepository.save(newTarget);
     }
 

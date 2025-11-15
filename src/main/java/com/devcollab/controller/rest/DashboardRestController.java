@@ -4,6 +4,8 @@ import com.devcollab.dto.response.*;
 import com.devcollab.service.system.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,9 +22,18 @@ public class DashboardRestController {
     @PreAuthorize("hasAnyRole('PM','ADMIN')")
     @GetMapping("/summary")
     public ApiResponse<ProjectSummaryDTO> getSummary(
-            @RequestParam(defaultValue = "6months") String range) {
-
-        return ApiResponse.success(dashboardService.getProjectSummary(range));
+            @RequestParam(defaultValue = "6months") String range,
+            Authentication auth) {
+        
+        String email = extractEmail(auth);
+        return ApiResponse.success(dashboardService.getProjectSummaryByPm(range, email));
+    }
+    
+    private String extractEmail(Authentication auth) {
+        if (auth instanceof OAuth2AuthenticationToken oauth2Auth) {
+            return oauth2Auth.getPrincipal().getAttribute("email");
+        }
+        return auth.getName();
     }
 
     /**

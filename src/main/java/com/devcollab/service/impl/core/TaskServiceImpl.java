@@ -48,6 +48,8 @@ public class TaskServiceImpl implements TaskService {
     private final TaskFollowerService taskFollowerService;
     private final CommentService commentService;
     private final AttachmentService attachmentService;
+    private final com.devcollab.repository.CommentRepository commentRepository;
+    private final com.devcollab.repository.AttachmentRepository attachmentRepository;
 
     @Override
     public Task createTaskFromDTO(TaskDTO dto, Long creatorId) {
@@ -512,8 +514,46 @@ public class TaskServiceImpl implements TaskService {
         projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án"));
 
-        return taskRepository.findByProject_ProjectIdAndArchivedFalse(projectId).stream()
-                .map(TaskDTO::fromEntity).collect(Collectors.toList());
+        List<Task> tasks =
+                taskRepository.findByProject_ProjectIdAndArchivedFalseWithFollowers(projectId);
+
+        if (tasks.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Batch load counts để tối ưu performance - chỉ 2 queries thay vì N*2 queries
+        List<Long> taskIds = tasks.stream().map(Task::getTaskId).collect(Collectors.toList());
+
+        // Lấy counts cho tất cả tasks trong 1 query duy nhất
+        Map<Long, Long> commentCounts = new HashMap<>();
+        try {
+            List<Object[]> commentResults = commentRepository.countByTaskIds(taskIds);
+            for (Object[] result : commentResults) {
+                commentCounts.put(((Number) result[0]).longValue(),
+                        ((Number) result[1]).longValue());
+            }
+        } catch (Exception e) {
+            log.warn("Error loading comment counts: {}", e.getMessage());
+        }
+
+        Map<Long, Long> attachmentCounts = new HashMap<>();
+        try {
+            List<Object[]> attachmentResults = attachmentRepository.countByTaskIds(taskIds);
+            for (Object[] result : attachmentResults) {
+                attachmentCounts.put(((Number) result[0]).longValue(),
+                        ((Number) result[1]).longValue());
+            }
+        } catch (Exception e) {
+            log.warn("Error loading attachment counts: {}", e.getMessage());
+        }
+
+        // Map tasks to DTOs với counts đã tính sẵn
+        return tasks.stream().map(task -> {
+            TaskDTO dto = TaskDTO.fromEntity(task);
+            dto.setCommentCount(commentCounts.getOrDefault(task.getTaskId(), 0L).intValue());
+            dto.setAttachmentCount(attachmentCounts.getOrDefault(task.getTaskId(), 0L).intValue());
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -726,8 +766,8 @@ public class TaskServiceImpl implements TaskService {
             if (task == null || task.getDeadline() == null)
                 return;
 
-            String link =
-                    "/projects/" + task.getProject().getProjectId() + "/tasks/" + task.getTaskId();
+            String link = "/view/pm/project/board?projectId=" + task.getProject().getProjectId()
+                    + "&taskId=" + task.getTaskId();
 
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
             String deadlineStr = task.getDeadline().format(fmt);

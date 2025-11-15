@@ -1,6 +1,10 @@
 // ================== IMPORT UTILS ==================
-import { showToast, safeStop } from "./utils.js";
-import { updateCardDate } from "./main.js";
+import { showToast, safeStop, getToken } from "./utils.js";
+import {
+  updateCardDate,
+  refreshActivityFeedOnly,
+  showActivitySectionIfHidden,
+} from "./main.js";
 
 // ================== STATE ==================
 const datePopup = document.getElementById("date-popup");
@@ -186,10 +190,14 @@ async function loadTaskDatesIntoPopup() {
   if (!taskId) return;
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers,
+      credentials: "include",
     });
 
     if (!res.ok) return;
@@ -231,37 +239,161 @@ async function loadTaskDatesIntoPopup() {
 }
 
 // ================== OPEN POPUP ==================
+// Cấu hình dễ chỉnh sửa
+const POPUP_CONFIG = {
+  offset: 8, // Khoảng cách từ button/trigger
+  minMargin: 16, // Khoảng cách tối thiểu từ edge viewport
+  preferredPosition: "bottom-right", // Ưu tiên: "bottom-right", "bottom-left", "top-right", "top-left"
+};
+
 export function openDatePopup(e) {
   console.log("🔍 openDatePopup called");
   safeStop(e);
 
-  let rect = null;
+  if (!datePopup) return;
+
+  // Kích thước modal (từ CSS hoặc ước tính)
+  const POPUP_WIDTH = 620; // Từ CSS: w-[620px]
+  const POPUP_HEIGHT = 450; // Ước tính height
+
+  let triggerRect = null;
   if (e?.currentTarget?.getBoundingClientRect) {
-    rect = e.currentTarget.getBoundingClientRect();
+    triggerRect = e.currentTarget.getBoundingClientRect();
   }
 
-  const isValidRect =
-    rect && rect.top > 0 && rect.left > 0 && rect.width > 0 && rect.height > 0;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const scrollX = window.scrollX || 0;
+  const scrollY = window.scrollY || 0;
+
   let top, left;
 
-  if (!isValidRect) {
+  if (!triggerRect || triggerRect.width === 0 || triggerRect.height === 0) {
     // Gọi từ context menu → dùng tọa độ chuột
-    top = (window.contextMenuY || 100) + 10;
-    left = (window.contextMenuX || 100) + 10;
+    const mouseX = window.contextMenuX || viewportWidth / 2;
+    const mouseY = window.contextMenuY || viewportHeight / 2;
+
+    // Tính toán vị trí ưu tiên bottom-right
+    left = mouseX + scrollX + POPUP_CONFIG.offset;
+    top = mouseY + scrollY + POPUP_CONFIG.offset;
+
+    // Kiểm tra và điều chỉnh nếu vượt quá viewport
+    if (left + POPUP_WIDTH > viewportWidth + scrollX - POPUP_CONFIG.minMargin) {
+      left = mouseX + scrollX - POPUP_WIDTH - POPUP_CONFIG.offset;
+    }
+    if (
+      top + POPUP_HEIGHT >
+      viewportHeight + scrollY - POPUP_CONFIG.minMargin
+    ) {
+      top = mouseY + scrollY - POPUP_HEIGHT - POPUP_CONFIG.offset;
+    }
+
+    // Đảm bảo không vượt quá biên trái/trên
+    left = Math.max(scrollX + POPUP_CONFIG.minMargin, left);
+    top = Math.max(scrollY + POPUP_CONFIG.minMargin, top);
   } else {
     // Gọi từ nút modal → dùng vị trí button
-    top = rect.bottom + window.scrollY + 6;
-    left = rect.left + window.scrollX;
+    const buttonBottom = triggerRect.bottom + scrollY;
+    const buttonLeft = triggerRect.left + scrollX;
+    const buttonRight = triggerRect.right + scrollX;
+    const buttonTop = triggerRect.top + scrollY;
+
+    // Ưu tiên hiển thị bên dưới và bên phải button
+    left = buttonLeft;
+    top = buttonBottom + POPUP_CONFIG.offset;
+
+    // Kiểm tra không gian bên dưới
+    const spaceBelow = viewportHeight + scrollY - buttonBottom;
+    const spaceAbove = buttonTop - scrollY;
+    const spaceRight = viewportWidth + scrollX - buttonLeft;
+    const spaceLeft = buttonLeft - scrollX;
+
+    // Nếu không đủ chỗ bên dưới, hiển thị bên trên
+    if (
+      spaceBelow < POPUP_HEIGHT + POPUP_CONFIG.minMargin &&
+      spaceAbove > spaceBelow
+    ) {
+      top = buttonTop - POPUP_HEIGHT - POPUP_CONFIG.offset;
+    }
+
+    // Nếu không đủ chỗ bên phải, hiển thị bên trái
+    if (
+      spaceRight < POPUP_WIDTH + POPUP_CONFIG.minMargin &&
+      spaceLeft > spaceRight
+    ) {
+      left = buttonRight - POPUP_WIDTH;
+    }
+
+    // Đảm bảo không vượt quá viewport
+    left = Math.max(
+      scrollX + POPUP_CONFIG.minMargin,
+      Math.min(
+        left,
+        viewportWidth + scrollX - POPUP_WIDTH - POPUP_CONFIG.minMargin
+      )
+    );
+    top = Math.max(
+      scrollY + POPUP_CONFIG.minMargin,
+      Math.min(
+        top,
+        viewportHeight + scrollY - POPUP_HEIGHT - POPUP_CONFIG.minMargin
+      )
+    );
   }
 
+  // Áp dụng vị trí và hiển thị modal
   datePopup.style.top = `${top}px`;
   datePopup.style.left = `${left}px`;
   datePopup.classList.remove("hidden");
 
+  // Sau khi hiển thị, lấy kích thước thực tế và điều chỉnh nếu cần
+  requestAnimationFrame(() => {
+    const actualRect = datePopup.getBoundingClientRect();
+    const actualWidth = actualRect.width;
+    const actualHeight = actualRect.height;
+
+    // Điều chỉnh lại nếu kích thước thực tế khác với ước tính
+    if (actualWidth !== POPUP_WIDTH || actualHeight !== POPUP_HEIGHT) {
+      const currentTop = parseFloat(datePopup.style.top) || top;
+      const currentLeft = parseFloat(datePopup.style.left) || left;
+
+      // Kiểm tra và điều chỉnh lại để đảm bảo trong viewport
+      let adjustedLeft = currentLeft;
+      let adjustedTop = currentTop;
+
+      if (
+        currentLeft + actualWidth >
+        viewportWidth + scrollX - POPUP_CONFIG.minMargin
+      ) {
+        adjustedLeft =
+          viewportWidth + scrollX - actualWidth - POPUP_CONFIG.minMargin;
+      }
+      if (
+        currentTop + actualHeight >
+        viewportHeight + scrollY - POPUP_CONFIG.minMargin
+      ) {
+        adjustedTop =
+          viewportHeight + scrollY - actualHeight - POPUP_CONFIG.minMargin;
+      }
+
+      adjustedLeft = Math.max(scrollX + POPUP_CONFIG.minMargin, adjustedLeft);
+      adjustedTop = Math.max(scrollY + POPUP_CONFIG.minMargin, adjustedTop);
+
+      if (adjustedLeft !== currentLeft || adjustedTop !== currentTop) {
+        datePopup.style.left = `${adjustedLeft}px`;
+        datePopup.style.top = `${adjustedTop}px`;
+      }
+    }
+  });
+
   // Load task dates vào popup khi mở
   loadTaskDatesIntoPopup();
 
-  console.log(" Date popup displayed at:", { top, left });
+  console.log("✅ Date popup displayed at:", {
+    top,
+    left,
+    viewport: { width: viewportWidth, height: viewportHeight },
+  });
 }
 
 // ================== CLOSE POPUP ==================
@@ -345,12 +477,17 @@ removeDateBtn?.addEventListener("click", async () => {
 
   try {
     // Sử dụng API mới để remove deadline
+    const token = getToken();
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}/deadline/remove`, {
       method: "PUT",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers,
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -362,10 +499,14 @@ removeDateBtn?.addEventListener("click", async () => {
 
     // Reload task data từ server để đảm bảo đồng bộ với database
     try {
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
       const taskRes = await fetch(`/api/tasks/${taskId}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        headers,
+        credentials: "include",
       });
       if (taskRes.ok) {
         const task = await taskRes.json();
@@ -383,6 +524,10 @@ removeDateBtn?.addEventListener("click", async () => {
       updateDateSectionUI(null);
       updateCardDate(taskId, null);
     }
+
+    // Refresh activity feed to show new activity
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
   } catch (err) {
     console.error(" Error removing deadline:", err);
     showToast(err.message || "Failed to remove deadline", "error");
@@ -414,16 +559,21 @@ saveDateBtn?.addEventListener("click", async () => {
     : null;
 
   try {
+    const token = getToken();
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}/dates`, {
       method: "PUT",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
         startDate: start,
         deadline: due,
       }),
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -435,10 +585,14 @@ saveDateBtn?.addEventListener("click", async () => {
 
     // Reload task data từ server để đảm bảo đồng bộ với database
     try {
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
       const taskRes = await fetch(`/api/tasks/${taskId}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        headers,
+        credentials: "include",
       });
       if (taskRes.ok) {
         const task = await taskRes.json();
@@ -457,6 +611,10 @@ saveDateBtn?.addEventListener("click", async () => {
       updateDateSectionUI(updated.deadline);
       updateCardDate(taskId, updated.deadline);
     }
+
+    // Refresh activity feed to show new activity
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
 
     closeDatePopup();
   } catch (err) {

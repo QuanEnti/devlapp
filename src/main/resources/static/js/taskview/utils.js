@@ -72,6 +72,24 @@ export function safeStop(id) {
   if (id) clearInterval(id);
 }
 
+// Get token from localStorage or cookie
+export function getToken() {
+  // Try localStorage first
+  let token = localStorage.getItem("token");
+  if (token) return token;
+
+  // Fallback to cookie
+  const cookies = document.cookie.split(";");
+  for (let cookie of cookies) {
+    const [name, value] = cookie.trim().split("=");
+    if (name === "AUTH_TOKEN" && value) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
 // =============== 🎨 COLOR & AVATAR HELPERS ===============
 
 // Sinh màu ngẫu nhiên ổn định theo ID (dùng cho labels, avatars)
@@ -106,15 +124,27 @@ export function getInitials(name = "U") {
 }
 
 // Render avatar (img hoặc fallback chữ)
-export function renderAvatar(user) {
+export function renderAvatar(user, size = "md") {
+  // Size options: "sm" (24px), "md" (32px), "lg" (40px)
+  const sizeMap = {
+    sm: { class: "w-6 h-6", fontSize: "10px" },
+    md: { class: "w-8 h-8", fontSize: "12px" },
+    lg: { class: "w-10 h-10", fontSize: "14px" },
+  };
+  const sizeConfig = sizeMap[size] || sizeMap.md;
+  const name = user?.name || user?.fullName || "";
+
   if (user?.avatarUrl) {
-    return `<img src="${user.avatarUrl}" alt="${escapeHtml(user.name)}"
-              class="w-8 h-8 rounded-full border object-cover">`;
+    return `<img src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(name)}"
+              class="${
+                sizeConfig.class
+              } rounded-full border-2 border-white object-cover shadow-sm"
+              style="box-shadow: 0 1px 3px rgba(9, 30, 66, 0.15);">`;
   }
-  const initials = getInitials(user?.name);
+  const initials = getInitials(name);
   const bg = getColorForId(user?.userId || user?.id || initials);
-  return `<div class="w-8 h-8 flex items-center justify-center rounded-full text-white font-medium"
-                style="background-color:${bg}">${initials}</div>`;
+  return `<div class="${sizeConfig.class} flex items-center justify-center rounded-full text-white font-semibold border-2 border-white shadow-sm"
+                style="background-color:${bg}; font-size:${sizeConfig.fontSize}; box-shadow: 0 1px 3px rgba(9, 30, 66, 0.15);">${initials}</div>`;
 }
 
 // =============== 🔔 REUSABLE TOAST STACK (Realtime) ===============

@@ -79,6 +79,17 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             """, nativeQuery = true)
     List<Object[]> countProjectsByStatusSince(@Param("startDate") LocalDateTime startDate);
 
+    @Query(value = """
+                SELECT
+                    p.status, COUNT(*)
+                FROM project p
+                WHERE p.created_by = (SELECT user_id FROM [User] WHERE email = :email)
+                  AND p.updated_at >= :startDate
+                GROUP BY p.status
+                ORDER BY p.status
+            """, nativeQuery = true)
+    List<Object[]> countProjectsByStatusSinceAndPm(@Param("email") String email, @Param("startDate") LocalDateTime startDate);
+
     @Query("""
                 SELECT new com.devcollab.dto.ProjectDTO(
                     p.projectId,

@@ -77,7 +77,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setCreatedBy(creator);
         project.setCreatedAt(LocalDateTime.now());
         project.setUpdatedAt(LocalDateTime.now());
-        System.out.println("CvIMG"+project.getCoverImage());
+        System.out.println("CvIMG" + project.getCoverImage());
         project.setCoverImage(project.getCoverImage());
 
         if (project.getStatus() == null)
@@ -89,6 +89,17 @@ public class ProjectServiceImpl implements ProjectService {
 
 
         Project saved = projectRepository.save(project);
+
+        // 🔗 Tự động tạo invite link khi tạo project mới
+        String inviteCode = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        saved.setInviteLink(inviteCode);
+        saved.setInviteCreatedAt(LocalDateTime.now());
+        saved.setInviteExpiredAt(LocalDateTime.now().plusDays(7));
+        saved.setInviteUsageCount(0);
+        saved.setInviteMaxUses(10);
+        saved.setInviteCreatedBy(creator.getEmail());
+        saved.setAllowLinkJoin(false); // Link được tạo nhưng chưa bật, PM cần bật nếu muốn
+        saved = projectRepository.save(saved);
 
         // 🧑‍💼 Gán người tạo làm PM
         ProjectMember pm = new ProjectMember();
@@ -152,6 +163,9 @@ public class ProjectServiceImpl implements ProjectService {
         // ✅ Cập nhật độ ưu tiên
         if (patch.getPriority() != null)
             existing.setPriority(patch.getPriority());
+        // ✅ Cập nhật status
+        if (patch.getStatus() != null && !patch.getStatus().isEmpty())
+            existing.setStatus(patch.getStatus());
         if (patch.getVisibility() != null)
             existing.setVisibility(patch.getVisibility());
         if (patch.getStartDate() != null)
@@ -280,9 +294,17 @@ public class ProjectServiceImpl implements ProjectService {
                 : BigDecimal.valueOf(done).multiply(BigDecimal.valueOf(100))
                         .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
 
-        return ProjectDashboardDTO.builder().projectId(projectId).totalTasks(total).openTasks(open)
-                .inProgressTasks(inProgress).reviewTasks(review).doneTasks(done)
-                .overdueTasks(overdue).percentDone(percentDone).build();
+        return ProjectDashboardDTO.builder()
+                .projectId(projectId)
+                .totalTasks(total)
+                .openTasks(open)
+                .inProgressTasks(inProgress)
+                .reviewTasks(review)
+                .doneTasks(done)
+                .overdueTasks(overdue)
+                .percentDone(percentDone)
+                .projectStatus(project.getStatus() != null ? project.getStatus() : "Active")
+                .build();
     }
 
     @Override
@@ -455,9 +477,6 @@ public class ProjectServiceImpl implements ProjectService {
         if (exists)
             throw new BadRequestException("Bạn đã là thành viên của dự án này!");
 
-        // ✅ Kiểm tra người copy link có phải PM/ADMIN không
-        // Nếu member copy link → tạo join request
-        // Nếu PM copy link → join trực tiếp
         String creatorEmail = project.getInviteCreatedBy();
 
         boolean creatorIsPm = false;
@@ -588,6 +607,7 @@ public class ProjectServiceImpl implements ProjectService {
     public long countByStatus(String status) {
         return projectRepository.countByStatus(status);
     }
+
     @Override
     public List<Project> getTop5ProjectsByUser(Long userId) {
         try {

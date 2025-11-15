@@ -6,6 +6,7 @@
     <title>Task Review – DevCollab</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script th:src="@{/js/toast.js}"></script>
 </head>
 
 <body class="bg-slate-50 font-sans">
@@ -125,7 +126,7 @@
 
         } catch (err) {
             console.error(err);
-            alert("Error loading tasks");
+            showToast("Error loading tasks", "error");
         }
     }
     function renderPagination(data) {
@@ -212,7 +213,7 @@
 
         } catch (err) {
             console.error("Error loading task:", err);
-            alert("Failed to load task detail.");
+            showToast("Failed to load task detail.", "error");
         }
     }
     function renderSummary() {
@@ -290,12 +291,12 @@
         try {
             const res = await fetch(`/api/tasks/${window.currentTaskId}/complete`, { method: "PUT" });
             if (!res.ok) throw new Error("Failed to mark as done");
-            alert("✅ Task marked as completed!");
+            showToast("Task marked as completed!", "success");
             closeTaskModal();
             await loadTasks();
         } catch (err) {
             console.error(err);
-            alert("❌ Could not complete task.");
+            showToast("Could not complete task.", "error");
         }
     }
 

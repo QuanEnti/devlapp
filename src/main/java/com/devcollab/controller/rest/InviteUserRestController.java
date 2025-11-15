@@ -64,10 +64,15 @@ public class InviteUserRestController {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy user: " + email));
 
         var projects = projectService.getProjectsByUser(user.getUserId());
-        return ResponseEntity.ok(projects.stream()
-                .map(p -> Map.of("projectId", p.getProjectId(), "name", p.getName(), "status",
-                        p.getStatus(), "allowLinkJoin", p.isAllowLinkJoin(), "inviteLink",
-                        p.getInviteLink())));
+        return ResponseEntity.ok(projects.stream().map(p -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("projectId", p.getProjectId());
+            map.put("name", p.getName());
+            map.put("status", p.getStatus());
+            map.put("allowLinkJoin", p.isAllowLinkJoin());
+            map.put("inviteLink", p.getInviteLink()); // Can be null
+            return map;
+        }).toList());
     }
 
     @GetMapping("/project/{projectId}")
@@ -96,8 +101,11 @@ public class InviteUserRestController {
             String email = extractEmail(auth);
             // ✅ Phân quyền đã được kiểm tra trong service layer
             Project updated = projectService.enableShareLink(projectId, email);
-            return ResponseEntity.ok(Map.of("message", "Đã bật chia sẻ dự án!", "inviteLink",
-                    updated.getInviteLink(), "allowLinkJoin", updated.isAllowLinkJoin()));
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "Đã bật chia sẻ dự án!");
+            result.put("inviteLink", updated.getInviteLink());
+            result.put("allowLinkJoin", updated.isAllowLinkJoin());
+            return ResponseEntity.ok(result);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
         } catch (NotFoundException e) {
@@ -130,8 +138,10 @@ public class InviteUserRestController {
         Project project = projectRepo.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dự án!"));
 
-        return ResponseEntity.ok(Map.of("allowLinkJoin", project.isAllowLinkJoin(), "inviteLink",
-                project.getInviteLink()));
+        Map<String, Object> result = new HashMap<>();
+        result.put("allowLinkJoin", project.isAllowLinkJoin());
+        result.put("inviteLink", project.getInviteLink()); // Can be null for new projects
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/project/{projectId}/share/copy")
@@ -161,8 +171,11 @@ public class InviteUserRestController {
         String message = isPm ? "Link đã được copy. Người được mời sẽ tham gia trực tiếp."
                 : "Link đã được copy. Người được mời sẽ cần được PM duyệt.";
 
-        return ResponseEntity.ok(Map.of("inviteLink", project.getInviteLink(), "message", message,
-                "requiresApproval", !isPm));
+        Map<String, Object> result = new HashMap<>();
+        result.put("inviteLink", project.getInviteLink());
+        result.put("message", message);
+        result.put("requiresApproval", !isPm);
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/join/{inviteLink}")

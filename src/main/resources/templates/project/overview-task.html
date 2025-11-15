@@ -1,558 +1,545 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DevCollab - Task Overview</title>
+    <title>AProjectO Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      .dragging {
-        opacity: 0.5;
-        transform: rotate(2deg);
-      }
-      .drag-over {
-        background-color: #eff6ff;
-        border-color: #3b82f6;
-      }
-    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
   </head>
-  <body class="bg-gray-50 text-gray-800">
-    <header
-      class="bg-white p-4 flex justify-between items-center shadow-md sticky top-0 z-20 h-16 border-b border-gray-200"
-    >
-      <div class="flex items-center space-x-3 w-64 flex-shrink-0">
-        <img
-          src="https://cdn-icons-png.flaticon.com/512/5968/5968705.png"
-          alt="DevCollab Logo"
-          class="w-9 h-9 rounded-lg shadow-sm"
-        />
-        <span class="text-2xl font-extrabold text-blue-700 tracking-wider"
-          >DevCollab</span
-        >
-      </div>
-
-      <div class="flex-grow flex justify-center mx-10">
-        <div class="relative w-full max-w-xl">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+  <body class="bg-gray-50">
+    <div class="flex h-screen">
+      <!-- Sidebar -->
+      <div class="w-48 bg-white border-r border-gray-200 flex flex-col">
+        <div class="p-4 flex items-center space-x-2 border-b border-gray-200">
+          <div
+            class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search for anything..."
-            class="border border-gray-200 rounded-full pl-12 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm shadow-sm"
-            style="height: 40px"
-          />
-        </div>
-      </div>
-
-      <div class="flex items-center space-x-6 flex-shrink-0">
-        <div
-          class="relative cursor-pointer p-2 rounded-full hover:bg-gray-100 transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6 text-gray-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            />
-          </svg>
-        </div>
-
-        <div
-          class="flex items-center space-x-3 cursor-pointer p-1 rounded-full hover:bg-gray-100 transition"
-        >
-          <div class="text-right leading-tight">
-            <span class="block text-sm font-semibold text-gray-800"
-              >Anima Agrawal</span
-            >
-            <span class="block text-xs text-gray-500">U.P, India</span>
+            A
           </div>
-          <img
-            src="https://i.pravatar.cc/40?img=15"
-            class="rounded-full w-10 h-10 border-2 border-white shadow-lg"
-            alt="User Avatar"
-          />
+          <span class="font-bold text-lg">AProjectO</span>
         </div>
-      </div>
-    </header>
 
-    <div class="flex min-h-screen">
-      <aside class="w-60 bg-white shadow-md p-4 space-y-4 flex-shrink-0">
-        <nav class="space-y-3 text-gray-600">
+        <nav class="flex-1 p-3 space-y-1">
           <a
             href="#"
-            class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-600"
           >
-            <span class="ml-2">📁 Project</span>
+            <i class="fas fa-chart-bar"></i>
+            <span class="text-sm font-medium">Project</span>
           </a>
           <a
             href="#"
-            class="flex items-center p-2 rounded-xl bg-blue-100 text-blue-600 font-medium"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-600"
           >
-            <span class="ml-2">🗂️ Tasks</span>
+            <i class="fas fa-tasks"></i>
+            <span class="text-sm font-medium">Tasks</span>
           </a>
           <a
             href="#"
-            class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-600"
           >
-            <span class="ml-2">🕒 Work Logs</span>
+            <i class="fas fa-clock"></i>
+            <span class="text-sm font-medium">Work Logs</span>
           </a>
           <a
             href="#"
-            class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-600"
           >
-            <span class="ml-2">⚙️ Settings</span>
+            <i class="fas fa-cog"></i>
+            <span class="text-sm font-medium">Settings</span>
           </a>
           <a
             href="#"
-            class="flex items-center p-2 hover:bg-gray-100 rounded-xl transition duration-150"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-600"
           >
-            <span class="ml-2">📊 Performance</span>
+            <i class="fas fa-chart-line"></i>
+            <span class="text-sm font-medium">Performance</span>
           </a>
         </nav>
-      </aside>
+      </div>
 
-      <main class="flex-1 p-8 overflow-auto">
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-800">Tasks</h2>
-          <p class="text-gray-500">Edit or modify all cards as you want</p>
-        </div>
-
-        <div class="grid grid-cols-3 gap-6" id="board">
-          <div
-            class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col"
-            data-status="backlog"
-          >
-            <div class="flex justify-between items-center mb-3">
-              <h3 class="font-semibold text-gray-700">Backlog</h3>
-              <button class="text-gray-400 hover:text-gray-600">⋮</button>
+      <!-- Main Content -->
+      <div class="flex-1 overflow-auto">
+        <!-- Header -->
+        <div
+          class="bg-white border-b border-gray-200 p-4 flex items-center justify-between"
+        >
+          <h1 class="text-2xl font-bold text-gray-800">Projects</h1>
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <i
+                class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              ></i>
+              <input
+                type="text"
+                placeholder="Search for anything..."
+                class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            <div
-              class="border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-blue-500 text-2xl mb-4 cursor-pointer hover:bg-blue-50 h-12"
-            >
-              +
-            </div>
-            <div class="space-y-4 flex-1 min-h-[200px] drop-zone" id="backlog">
-              <div
-                class="p-4 border rounded-xl shadow-sm hover:shadow-md transition bg-white cursor-move task-card"
-                draggable="true"
-              >
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="font-semibold text-gray-800">Food Research</h4>
-                  <div class="flex items-center text-gray-400 text-xs">
-                    <svg
-                      class="w-3.5 h-3.5 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle cx="12" cy="12" r="10" stroke-width="2" />
-                      <path
-                        d="M12 6v6l4 2"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                    <span>12 Days</span>
-                  </div>
-                </div>
-
-                <p class="text-sm text-gray-500 mb-4">
-                  Food design is required for our new project let's research the
-                  best practices
-                </p>
-
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center gap-3 text-gray-500">
-                    <div class="flex items-center gap-1 text-sm">
-                      <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      <span>5</span>
-                    </div>
-                    <div class="flex items-center gap-1 text-sm">
-                      <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      <span>8</span>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-2">
-                    <button
-                      class="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg hover:bg-teal-600 transition"
-                    >
-                      +
-                    </button>
-                    <div class="flex items-center -space-x-2">
-                      <img
-                        src="https://i.pravatar.cc/32?img=1"
-                        class="w-6 h-6 rounded-full border-2 border-white"
-                        alt="User 1"
-                      />
-                      <img
-                        src="https://i.pravatar.cc/32?img=2"
-                        class="w-6 h-6 rounded-full border-2 border-white"
-                        alt="User 2"
-                      />
-                      <img
-                        src="https://i.pravatar.cc/32?img=3"
-                        class="w-6 h-6 rounded-full border-2 border-white"
-                        alt="User 3"
-                      />
-                    </div>
-                  </div>
-                </div>
+            <button class="p-2 hover:bg-gray-100 rounded-lg">
+              <i class="fas fa-bell text-gray-600"></i>
+            </button>
+            <div class="flex items-center space-x-2">
+              <div>
+                <div class="text-sm font-medium text-right">Anima Agrawal</div>
+                <div class="text-xs text-gray-500 text-right">U.P, India</div>
               </div>
-            </div>
-          </div>
-
-          <div
-            class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col"
-            data-status="progress"
-          >
-            <div class="flex justify-between items-center mb-3">
-              <h3 class="font-semibold text-gray-700">In Progress</h3>
-              <button class="text-gray-400 hover:text-gray-600">⋮</button>
-            </div>
-            <div
-              class="border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-blue-500 text-2xl mb-4 cursor-pointer hover:bg-blue-50 h-12"
-            >
-              +
-            </div>
-            <div class="space-y-4 flex-1 min-h-[200px] drop-zone" id="progress">
               <div
-                class="p-4 border rounded-xl shadow-sm hover:shadow-md transition bg-white cursor-move task-card"
-                draggable="true"
-              >
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="font-semibold text-gray-800">UI Design</h4>
-                  <div class="flex items-center text-gray-400 text-xs">
-                    <svg
-                      class="w-3.5 h-3.5 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle cx="12" cy="12" r="10" stroke-width="2" />
-                      <path
-                        d="M12 6v6l4 2"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                    <span>12 Days</span>
-                  </div>
-                </div>
-
-                <p class="text-sm text-gray-500 mb-4">
-                  Design new user interface for food app.
-                </p>
-
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center gap-3 text-gray-500">
-                    <div class="flex items-center gap-1 text-sm">
-                      <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      <span>5</span>
-                    </div>
-                    <div class="flex items-center gap-1 text-sm">
-                      <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      <span>8</span>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-2">
-                    <button
-                      class="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg hover:bg-teal-600 transition"
-                    >
-                      +
-                    </button>
-                    <div class="flex items-center -space-x-2">
-                      <img
-                        src="https://i.pravatar.cc/32?img=3"
-                        class="w-6 h-6 rounded-full border-2 border-white"
-                        alt="User 3"
-                      />
-                      <img
-                        src="https://i.pravatar.cc/32?img=4"
-                        class="w-6 h-6 rounded-full border-2 border-white"
-                        alt="User 4"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col"
-            data-status="completed"
-          >
-            <div class="flex justify-between items-center mb-3">
-              <h3 class="font-semibold text-gray-700">Completed</h3>
-              <button class="text-gray-400 hover:text-gray-600">⋮</button>
-            </div>
-            <div
-              class="border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-blue-500 text-2xl mb-4 cursor-pointer hover:bg-blue-50 h-12"
-            >
-              +
-            </div>
-            <div
-              class="space-y-4 flex-1 min-h-[200px] drop-zone"
-              id="completed"
-            >
-              <div
-                class="p-4 border rounded-xl shadow-sm hover:shadow-md transition bg-white cursor-move task-card"
-                draggable="true"
-              >
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="font-semibold text-gray-800">Mind Mapping</h4>
-                  <div class="flex items-center text-gray-400 text-xs">
-                    <svg
-                      class="w-3.5 h-3.5 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle cx="12" cy="12" r="10" stroke-width="2" />
-                      <path
-                        d="M12 6v6l4 2"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                    <span>12 Days</span>
-                  </div>
-                </div>
-
-                <p class="text-sm text-gray-500 mb-4">
-                  Mind map the app for young users.
-                </p>
-
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center gap-3 text-gray-500">
-                    <div class="flex items-center gap-1 text-sm">
-                      <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      <span>5</span>
-                    </div>
-                    <div class="flex items-center gap-1 text-sm">
-                      <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      <span>8</span>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-2">
-                    <button
-                      class="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-lg hover:bg-teal-600 transition"
-                    >
-                      +
-                    </button>
-                    <div class="flex items-center -space-x-2">
-                      <img
-                        src="https://i.pravatar.cc/32?img=5"
-                        class="w-6 h-6 rounded-full border-2 border-white"
-                        alt="User 5"
-                      />
-                      <img
-                        src="https://i.pravatar.cc/32?img=6"
-                        class="w-6 h-6 rounded-full border-2 border-white"
-                        alt="User 6"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+                class="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full"
+              ></div>
             </div>
           </div>
         </div>
-      </main>
+
+        <!-- Dashboard Content -->
+        <div class="p-6 space-y-6">
+          <div class="grid grid-cols-3 gap-6">
+            <!-- Project Stats -->
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Projects Stats</h2>
+                <span
+                  class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full"
+                  >This Week ▼</span
+                >
+              </div>
+              <div class="relative w-48 h-48 mx-auto">
+                <svg viewBox="0 0 100 100" class="transform -rotate-90">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    stroke-width="10"
+                  ></circle>
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#14b8a6"
+                    stroke-width="10"
+                    stroke-dasharray="80.32 251"
+                  ></circle>
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#8b5cf6"
+                    stroke-width="10"
+                    stroke-dasharray="62.75 251"
+                    stroke-dashoffset="-80.32"
+                  ></circle>
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#3b82f6"
+                    stroke-width="10"
+                    stroke-dasharray="62.75 251"
+                    stroke-dashoffset="-143.07"
+                  ></circle>
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#ef4444"
+                    stroke-width="10"
+                    stroke-dasharray="45.18 251"
+                    stroke-dashoffset="-205.82"
+                  ></circle>
+                </svg>
+              </div>
+              <div class="mt-4 space-y-2">
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-teal-500 rounded-full"></div>
+                    <span>Completed</span>
+                  </div>
+                  <span class="font-semibold">32%</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span>On Hold</span>
+                  </div>
+                  <span class="font-semibold">25%</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span>On Progress</span>
+                  </div>
+                  <span class="font-semibold">25%</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span>Pending</span>
+                  </div>
+                  <span class="font-semibold">18%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Performance</h2>
+                <span
+                  class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full"
+                  >This Week ▼</span
+                >
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center space-x-2 text-sm">
+                  <div class="w-3 h-3 bg-red-400 rounded-full"></div>
+                  <span>Achieved</span>
+                  <span class="ml-auto font-semibold">7 Projects</span>
+                </div>
+                <div class="flex items-center space-x-2 text-sm">
+                  <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span>Target</span>
+                  <span class="ml-auto font-semibold">5 Projects</span>
+                </div>
+              </div>
+              <div
+                class="h-40 flex items-end justify-around border-b border-l border-gray-200 pb-2 pl-2"
+              >
+                <div class="flex flex-col items-center space-y-2">
+                  <div class="flex items-end space-x-1 h-32">
+                    <div
+                      class="w-4 bg-red-400 rounded-t"
+                      style="height: 30px"
+                    ></div>
+                    <div
+                      class="w-4 bg-blue-500 rounded-t"
+                      style="height: 30px"
+                    ></div>
+                  </div>
+                  <span class="text-xs text-gray-600">Oct</span>
+                </div>
+                <div class="flex flex-col items-center space-y-2">
+                  <div class="flex items-end space-x-1 h-32">
+                    <div
+                      class="w-4 bg-red-400 rounded-t"
+                      style="height: 75px"
+                    ></div>
+                    <div
+                      class="w-4 bg-blue-500 rounded-t"
+                      style="height: 60px"
+                    ></div>
+                  </div>
+                  <span class="text-xs text-gray-600">Nov</span>
+                </div>
+                <div class="flex flex-col items-center space-y-2">
+                  <div class="flex items-end space-x-1 h-32">
+                    <div
+                      class="w-4 bg-red-400 rounded-t"
+                      style="height: 45px"
+                    ></div>
+                    <div
+                      class="w-4 bg-blue-500 rounded-t"
+                      style="height: 90px"
+                    ></div>
+                  </div>
+                  <span class="text-xs text-gray-600">Dec</span>
+                </div>
+                <div class="flex flex-col items-center space-y-2">
+                  <div class="flex items-end space-x-1 h-32">
+                    <div
+                      class="w-4 bg-red-400 rounded-t"
+                      style="height: 105px"
+                    ></div>
+                    <div
+                      class="w-4 bg-blue-500 rounded-t"
+                      style="height: 75px"
+                    ></div>
+                  </div>
+                  <span class="text-xs text-gray-600">Jan</span>
+                </div>
+                <div class="flex flex-col items-center space-y-2">
+                  <div class="flex items-end space-x-1 h-32">
+                    <div
+                      class="w-4 bg-red-400 rounded-t"
+                      style="height: 45px"
+                    ></div>
+                    <div
+                      class="w-4 bg-blue-500 rounded-t"
+                      style="height: 60px"
+                    ></div>
+                  </div>
+                  <span class="text-xs text-gray-600">Feb</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Projects</h2>
+                <a href="#" class="text-sm text-blue-600 hover:underline"
+                  >View all</a
+                >
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="text-center">
+                  <div
+                    class="bg-gray-800 rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    🎸
+                  </div>
+                  <p class="text-xs font-medium truncate">Emo stuff</p>
+                </div>
+                <div class="text-center">
+                  <div
+                    class="bg-gray-700 rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    🎭
+                  </div>
+                  <p class="text-xs font-medium truncate">Tim Burton</p>
+                </div>
+                <div class="text-center">
+                  <div
+                    class="bg-orange-600 rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    🎃
+                  </div>
+                  <p class="text-xs font-medium truncate">Halloween</p>
+                </div>
+                <div class="text-center">
+                  <div
+                    class="bg-purple-900 rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    👻
+                  </div>
+                  <p class="text-xs font-medium truncate">Spooky Art</p>
+                </div>
+                <div class="text-center">
+                  <div
+                    class="bg-gray-900 rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    🦇
+                  </div>
+                  <p class="text-xs font-medium truncate">Dark Art</p>
+                </div>
+                <div class="text-center">
+                  <div
+                    class="bg-black rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    🕷️
+                  </div>
+                  <p class="text-xs font-medium truncate">Gothic art</p>
+                </div>
+                <div class="text-center">
+                  <div
+                    class="bg-orange-500 rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    🎃
+                  </div>
+                  <p class="text-xs font-medium truncate">happy :3</p>
+                </div>
+                <div class="text-center">
+                  <div
+                    class="bg-red-900 rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    🧛
+                  </div>
+                  <p class="text-xs font-medium truncate">*VAMPYR*</p>
+                </div>
+                <div class="text-center">
+                  <div
+                    class="bg-gray-600 rounded-xl h-20 flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    🖤
+                  </div>
+                  <p class="text-xs font-medium truncate">I &lt;3 Art</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Members Section -->
+          <div class="bg-white rounded-xl p-6 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold">Members (39)</h2>
+              <a href="#" class="text-sm text-blue-600 hover:underline"
+                >View all</a
+              >
+            </div>
+            <div class="mb-4">
+              <div class="relative">
+                <i
+                  class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                ></i>
+                <input
+                  type="text"
+                  id="memberSearch"
+                  placeholder="Search for anything..."
+                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-7 gap-4 mb-6" id="membersGrid"></div>
+            <div
+              class="flex justify-center items-center space-x-2"
+              id="pagination"
+            ></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-      let draggedElement = null;
+      var members = [];
+      var colors = [
+        "bg-yellow-500",
+        "bg-pink-400",
+        "bg-green-400",
+        "bg-blue-400",
+        "bg-teal-400",
+        "bg-purple-500",
+        "bg-pink-500",
+        "bg-orange-400",
+        "bg-yellow-600",
+        "bg-orange-500",
+        "bg-blue-500",
+        "bg-teal-500",
+        "bg-red-600",
+        "bg-purple-600",
+        "bg-indigo-500",
+        "bg-cyan-500",
+        "bg-rose-500",
+        "bg-amber-500",
+        "bg-lime-500",
+        "bg-sky-500",
+        "bg-violet-500",
+        "bg-fuchsia-500",
+        "bg-emerald-500",
+        "bg-red-400",
+        "bg-green-500",
+        "bg-yellow-400",
+        "bg-purple-400",
+        "bg-pink-600",
+        "bg-indigo-600",
+      ];
 
-      // Initialize drag and drop for all task cards
-      function initDragAndDrop() {
-        const taskCards = document.querySelectorAll(".task-card");
-        const dropZones = document.querySelectorAll(".drop-zone");
-
-        // Add drag event listeners to all task cards
-        taskCards.forEach((card) => {
-          card.addEventListener("dragstart", handleDragStart);
-          card.addEventListener("dragend", handleDragEnd);
+      for (var i = 1; i <= 39; i++) {
+        members.push({
+          name: "Member " + i,
+          color: colors[i % colors.length],
         });
-
-        // Add drop zone event listeners
-        dropZones.forEach((zone) => {
-          zone.addEventListener("dragover", handleDragOver);
-          zone.addEventListener("drop", handleDrop);
-          zone.addEventListener("dragenter", handleDragEnter);
-          zone.addEventListener("dragleave", handleDragLeave);
-        });
       }
 
-      function handleDragStart(e) {
-        draggedElement = this;
-        this.classList.add("dragging");
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/html", this.innerHTML);
-      }
+      var currentPage = 1;
+      var itemsPerPage = 21;
 
-      function handleDragEnd(e) {
-        this.classList.remove("dragging");
+      function renderMembers() {
+        var grid = document.getElementById("membersGrid");
+        grid.innerHTML = "";
 
-        // Remove drag-over class from all drop zones
-        document.querySelectorAll(".drop-zone").forEach((zone) => {
-          zone.classList.remove("drag-over");
-        });
-      }
+        var start = (currentPage - 1) * itemsPerPage;
+        var end = Math.min(start + itemsPerPage, members.length);
 
-      function handleDragOver(e) {
-        if (e.preventDefault) {
-          e.preventDefault();
-        }
-        e.dataTransfer.dropEffect = "move";
-
-        const afterElement = getDragAfterElement(this, e.clientY);
-        const dragging = document.querySelector(".dragging");
-
-        if (afterElement == null) {
-          this.appendChild(dragging);
-        } else {
-          this.insertBefore(dragging, afterElement);
-        }
-
-        return false;
-      }
-
-      function handleDrop(e) {
-        if (e.stopPropagation) {
-          e.stopPropagation();
-        }
-
-        this.classList.remove("drag-over");
-        return false;
-      }
-
-      function handleDragEnter(e) {
-        this.classList.add("drag-over");
-      }
-
-      function handleDragLeave(e) {
-        if (e.target === this) {
-          this.classList.remove("drag-over");
+        for (var i = start; i < end; i++) {
+          var member = members[i];
+          var div = document.createElement("div");
+          div.className = "flex flex-col items-center member-item";
+          div.setAttribute("data-name", member.name);
+          div.innerHTML =
+            '<div class="w-14 h-14 rounded-full hover:scale-110 transition-transform cursor-pointer ' +
+            member.color +
+            '"></div>';
+          grid.appendChild(div);
         }
       }
 
-      function getDragAfterElement(container, y) {
-        const draggableElements = [
-          ...container.querySelectorAll(".task-card:not(.dragging)"),
-        ];
+      function renderPagination() {
+        var totalPages = Math.ceil(members.length / itemsPerPage);
+        var pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
 
-        return draggableElements.reduce(
-          (closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
+        var prevBtn = document.createElement("button");
+        prevBtn.className =
+          "px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded";
+        prevBtn.textContent = "Previous";
+        prevBtn.onclick = function () {
+          changePage(-1);
+        };
+        pagination.appendChild(prevBtn);
 
-            if (offset < 0 && offset > closest.offset) {
-              return { offset: offset, element: child };
+        for (var i = 1; i <= Math.min(3, totalPages); i++) {
+          var btn = document.createElement("button");
+          btn.className = "px-3 py-1 text-sm rounded page-btn";
+          btn.setAttribute("data-page", i);
+          btn.textContent = i;
+
+          if (i === currentPage) {
+            btn.className += " bg-blue-600 text-white";
+          } else {
+            btn.className += " text-gray-600 hover:bg-gray-100";
+          }
+
+          btn.onclick = (function (page) {
+            return function () {
+              goToPage(page);
+            };
+          })(i);
+
+          pagination.appendChild(btn);
+        }
+
+        var nextBtn = document.createElement("button");
+        nextBtn.className =
+          "px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded";
+        nextBtn.textContent = "Next";
+        nextBtn.onclick = function () {
+          changePage(1);
+        };
+        pagination.appendChild(nextBtn);
+      }
+
+      function changePage(direction) {
+        var totalPages = Math.ceil(members.length / itemsPerPage);
+        currentPage += direction;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        renderMembers();
+        renderPagination();
+      }
+
+      function goToPage(page) {
+        currentPage = page;
+        renderMembers();
+        renderPagination();
+      }
+
+      document
+        .getElementById("memberSearch")
+        .addEventListener("input", function (e) {
+          var searchTerm = e.target.value.toLowerCase();
+          var items = document.querySelectorAll(".member-item");
+
+          items.forEach(function (item) {
+            var name = item.getAttribute("data-name").toLowerCase();
+            if (name.includes(searchTerm) || searchTerm === "") {
+              item.style.display = "flex";
             } else {
-              return closest;
+              item.style.display = "none";
             }
-          },
-          { offset: Number.NEGATIVE_INFINITY }
-        ).element;
-      }
+          });
+        });
 
-      // Initialize on page load
-      document.addEventListener("DOMContentLoaded", initDragAndDrop);
+      renderMembers();
+      renderPagination();
     </script>
   </body>
 </html>

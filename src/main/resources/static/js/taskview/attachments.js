@@ -1,5 +1,10 @@
 // ================== 📎 ATTACHMENTS MODULE (SECURE) ==================
-import { escapeHtml, showToast } from "./utils.js";
+import { escapeHtml, showToast, getToken } from "./utils.js";
+import {
+  refreshActivityFeedOnly,
+  showActivitySectionIfHidden,
+  updateCardAttachmentCount,
+} from "./main.js";
 
 // ========== DOM SELECTORS ==========
 const uploadBtn = document.getElementById("upload-attachment-btn");
@@ -43,9 +48,10 @@ function canCurrentUserDelete(attachment = {}) {
 
 async function downloadAttachmentFile(fileUrl, fileName) {
   try {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     const res = await fetch(fileUrl, {
       headers: { Authorization: "Bearer " + token },
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Download failed");
     const blob = await res.blob();
@@ -153,28 +159,63 @@ async function handleFileUpload() {
   formData.append("file", file);
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/tasks/${window.CURRENT_TASK_ID}/attachments`,
       {
         method: "POST",
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
         body: formData,
+        credentials: "include",
       }
     );
-      if (!res.ok) {
-          let errorMsg = "Upload failed";
-          try {
-              const text = await res.text();
-              const json = JSON.parse(text);
-              errorMsg = json.message || json.error || text;
-          } catch (e) {}
-          throw new Error(errorMsg);
-      }
+    if (!res.ok) {
+      let errorMsg = "Upload failed";
+      try {
+        const text = await res.text();
+        const json = JSON.parse(text);
+        errorMsg = json.message || json.error || text;
+      } catch (e) {}
+      throw new Error(errorMsg);
+    }
 
-      // Hide uploading notification
+    // Hide uploading notification
     hideUploadingNotification();
 
     await loadAttachments(window.CURRENT_TASK_ID);
+
+    // Refresh activity feed to show new activity
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(window.CURRENT_TASK_ID);
+
+    // Update attachment count on card
+    try {
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
+      const res = await fetch(
+        `/api/tasks/${window.CURRENT_TASK_ID}/attachments`,
+        {
+          headers,
+          credentials: "include",
+        }
+      );
+      if (res.ok) {
+        const attachments = await res.json();
+        updateCardAttachmentCount(
+          window.CURRENT_TASK_ID,
+          attachments ? attachments.length : 0
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update attachment count:", err);
+    }
   } catch (err) {
     // Hide uploading notification
     hideUploadingNotification();
@@ -188,8 +229,14 @@ async function handleFileUpload() {
 // ================== LOAD & RENDER ==================
 export async function loadAttachments(taskId) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}/attachments`, {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers,
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Load attachments failed");
     const attachments = await res.json();
@@ -619,15 +666,51 @@ function renderAttachments(items) {
 // ================== DELETE ==================
 async function deleteAttachment(id) {
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(
       `/api/tasks/${window.CURRENT_TASK_ID}/attachments/${id}`,
       {
         method: "DELETE",
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       }
     );
     if (!res.ok) throw new Error("Delete failed");
     await loadAttachments(window.CURRENT_TASK_ID);
+
+    // Refresh activity feed to show new activity
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(window.CURRENT_TASK_ID);
+
+    // Update attachment count on card
+    try {
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
+      const res = await fetch(
+        `/api/tasks/${window.CURRENT_TASK_ID}/attachments`,
+        {
+          headers,
+          credentials: "include",
+        }
+      );
+      if (res.ok) {
+        const attachments = await res.json();
+        updateCardAttachmentCount(
+          window.CURRENT_TASK_ID,
+          attachments ? attachments.length : 0
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update attachment count:", err);
+    }
+
     return true;
   } catch (err) {
     console.error(" deleteAttachment error:", err);
@@ -666,12 +749,16 @@ async function openPreviewModal(attachment) {
   }
 
   try {
-    const headers = {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-    };
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
 
     if (mime.startsWith("image/")) {
-      const blob = await fetch(url, { headers }).then((r) => r.blob());
+      const blob = await fetch(url, { headers, credentials: "include" }).then(
+        (r) => r.blob()
+      );
       const blobUrl = URL.createObjectURL(blob);
       previewContent.innerHTML = `
         <div class="relative flex flex-col items-center justify-center">
@@ -679,7 +766,9 @@ async function openPreviewModal(attachment) {
           ${buildFooter(attachment)}
         </div>`;
     } else if (mime === "application/pdf") {
-      const blob = await fetch(url, { headers }).then((r) => r.blob());
+      const blob = await fetch(url, { headers, credentials: "include" }).then(
+        (r) => r.blob()
+      );
       const blobUrl = URL.createObjectURL(blob);
       previewContent.innerHTML = `
         <div class="relative">
@@ -691,7 +780,9 @@ async function openPreviewModal(attachment) {
       url.endsWith(".txt") ||
       url.endsWith(".log")
     ) {
-      const text = await fetch(url, { headers }).then((r) => r.text());
+      const text = await fetch(url, { headers, credentials: "include" }).then(
+        (r) => r.text()
+      );
       previewContent.innerHTML = `
         <div class="relative">
           <pre class="bg-gray-50 text-gray-800 p-4 rounded-md max-h-[70vh] overflow-auto whitespace-pre-wrap font-mono text-sm leading-relaxed">
@@ -810,8 +901,14 @@ async function loadRecentLinks() {
   container.innerHTML = `<p class="text-gray-400 italic text-sm">Loading recent links...</p>`;
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/attachments/recent-links`, {
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers,
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to fetch recent links");
     const items = await res.json();
@@ -897,43 +994,54 @@ async function handlePopupInsert() {
     if (file) {
       const formData = new FormData();
       formData.append("file", file);
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
       const res = await fetch(
         `/api/tasks/${window.CURRENT_TASK_ID}/attachments`,
         {
           method: "POST",
-          headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+          headers,
           body: formData,
+          credentials: "include",
         }
       );
-        if (!res.ok) {
-            let errorMsg = "Upload failed";
+      if (!res.ok) {
+        let errorMsg = "Upload failed";
 
-            try {
-                const text = await res.text();
-                const json = JSON.parse(text);
-                errorMsg = json.message || json.error || text;
-            } catch (e) {
-                // fallback
-            }
-
-            throw new Error(errorMsg);
+        try {
+          const text = await res.text();
+          const json = JSON.parse(text);
+          errorMsg = json.message || json.error || text;
+        } catch (e) {
+          // fallback
         }
 
-        // Hide uploading notification
+        throw new Error(errorMsg);
+      }
+
+      // Hide uploading notification
       hideUploadingNotification();
     } else {
+      const token = getToken();
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
       const res = await fetch(
         `/api/tasks/${window.CURRENT_TASK_ID}/attachments/link`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
+          headers,
           body: JSON.stringify({
             fileUrl: link,
             fileName: displayText || link,
           }),
+          credentials: "include",
         }
       );
       if (!res.ok) throw new Error("Attach link failed");
@@ -942,6 +1050,35 @@ async function handlePopupInsert() {
     showToast(" Uploaded successfully!");
     attachPopup.classList.add("hidden");
     await loadAttachments(window.CURRENT_TASK_ID);
+
+    // Refresh activity feed to show new activity
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(window.CURRENT_TASK_ID);
+
+    // Update attachment count on card
+    try {
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
+      const res = await fetch(
+        `/api/tasks/${window.CURRENT_TASK_ID}/attachments`,
+        {
+          headers,
+          credentials: "include",
+        }
+      );
+      if (res.ok) {
+        const attachments = await res.json();
+        updateCardAttachmentCount(
+          window.CURRENT_TASK_ID,
+          attachments ? attachments.length : 0
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update attachment count:", err);
+    }
   } catch (err) {
     // Hide uploading notification if shown
     hideUploadingNotification();

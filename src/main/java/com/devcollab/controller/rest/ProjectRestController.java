@@ -29,8 +29,7 @@ public class ProjectRestController {
     private final UserService userService;
 
     @PostMapping("/create")
-    public ApiResponse<Project> createProject(
-            @RequestBody ProjectCreateRequestDTO request,
+    public ApiResponse<Project> createProject(@RequestBody ProjectCreateRequestDTO request,
             Authentication authentication) {
 
         String email = null;
@@ -52,10 +51,11 @@ public class ProjectRestController {
             if (creator == null) {
                 return ApiResponse.error("Không tìm thấy người dùng: " + email, 404);
             }
-            System.out.println("Creating project with coverImage:"+ request.getCoverImage());
+            System.out.println("Creating project with coverImage:" + request.getCoverImage());
 
             // ✅ Kiểm tra xem người dùng đã có project cùng tên chưa
-            boolean exists = projectService.existsByNameAndCreatedBy_UserId(request.getName(), creator.getUserId());
+            boolean exists = projectService.existsByNameAndCreatedBy_UserId(request.getName(),
+                    creator.getUserId());
             if (exists) {
                 return ApiResponse.error("Bạn đã tạo project này rồi!", 400);
             }
@@ -66,6 +66,11 @@ public class ProjectRestController {
             project.setDescription(request.getDescription());
             project.setPriority(request.getPriority());
             project.setCoverImage(request.getCoverImage());
+
+            // Set status nếu có, nếu không service sẽ set mặc định là "Active"
+            if (request.getStatus() != null && !request.getStatus().isEmpty()) {
+                project.setStatus(request.getStatus());
+            }
 
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
                 project.setStartDate(LocalDate.parse(request.getStartDate()));
@@ -96,7 +101,8 @@ public class ProjectRestController {
     }
 
     @GetMapping("/{projectId}/role")
-    public ApiResponse<?> getUserRoleInProject(@PathVariable Long projectId, Authentication authentication) {
+    public ApiResponse<?> getUserRoleInProject(@PathVariable Long projectId,
+            Authentication authentication) {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ApiResponse.error("Bạn chưa đăng nhập", 401);
@@ -125,6 +131,7 @@ public class ProjectRestController {
             return ApiResponse.error("Không thể lấy vai trò: " + e.getMessage());
         }
     }
+
     private String getEmailFromAuthentication(Authentication auth) {
         if (auth instanceof OAuth2AuthenticationToken oauthToken) {
             var attributes = oauthToken.getPrincipal().getAttributes();
@@ -132,19 +139,18 @@ public class ProjectRestController {
         }
         return auth.getName(); // Local login
     }
+
     @GetMapping("")
     public Page<ProjectSummaryDTO> getUserProjects(Authentication auth,
-                                                   @RequestParam(defaultValue = "0") int page,
-                                                   @RequestParam(defaultValue = "9") int size) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "9") int size) {
         String email = getEmailFromAuthentication(auth);
         return projectService.getProjectsByUserPaginated(email, page, size);
     }
 
     @PutMapping("/{projectId}")
-    public ApiResponse<ProjectResponseDTO> updateProject(
-            @PathVariable Long projectId,
-            @RequestBody ProjectCreateRequestDTO request,
-            Authentication authentication) {
+    public ApiResponse<ProjectResponseDTO> updateProject(@PathVariable Long projectId,
+            @RequestBody ProjectCreateRequestDTO request, Authentication authentication) {
         String email = getEmailFromAuthentication(authentication);
         if (email == null) {
             return ApiResponse.error("Bạn chưa đăng nhập", 401);
@@ -163,12 +169,25 @@ public class ProjectRestController {
             }
             // ✅ Tạo bản patch object để cập nhật
             Project patch = new Project();
-            patch.setName(request.getName());
-            patch.setDescription(request.getDescription());
-            patch.setBusinessRule(request.getBusinessRule());
-            patch.setPriority(request.getPriority());
-            System.out.println("CverImg: "+request.getCoverImage());
-            patch.setCoverImage(request.getCoverImage());
+            if (request.getName() != null) {
+                patch.setName(request.getName());
+            }
+            if (request.getDescription() != null) {
+                patch.setDescription(request.getDescription());
+            }
+            if (request.getBusinessRule() != null) {
+                patch.setBusinessRule(request.getBusinessRule());
+            }
+            if (request.getPriority() != null) {
+                patch.setPriority(request.getPriority());
+            }
+            if (request.getStatus() != null) {
+                patch.setStatus(request.getStatus());
+            }
+            System.out.println("CverImg: " + request.getCoverImage());
+            if (request.getCoverImage() != null) {
+                patch.setCoverImage(request.getCoverImage());
+            }
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
                 patch.setStartDate(LocalDate.parse(request.getStartDate()));
             }
@@ -177,31 +196,24 @@ public class ProjectRestController {
             }
 
             Project updated = projectService.updateProject(projectId, patch);
-            ProjectResponseDTO dto = new ProjectResponseDTO(
-                    updated.getProjectId(),
-                    updated.getName(),
-                    updated.getDescription(),
-                    updated.getBusinessRule(),
-                    updated.getPriority(),
-                    updated.getStatus(),
-                    updated.getVisibility(),
-                    updated.getStartDate(),
-                    updated.getDueDate(),
+            ProjectResponseDTO dto = new ProjectResponseDTO(updated.getProjectId(),
+                    updated.getName(), updated.getDescription(), updated.getBusinessRule(),
+                    updated.getPriority(), updated.getStatus(), updated.getVisibility(),
+                    updated.getStartDate(), updated.getDueDate(),
                     updated.getCreatedBy() != null ? updated.getCreatedBy().getEmail() : null,
-                    updated.getCoverImage()
-            );
+                    updated.getCoverImage());
             return ApiResponse.success("Cập nhật project thành công", dto);
 
-        } catch (BadRequestException | NotFoundException e ) {
+        } catch (BadRequestException | NotFoundException e) {
             return ApiResponse.error(e.getMessage(), 400);
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("Đã xảy ra lỗi khi cập nhật project: " + e.getMessage());
         }
     }
+
     @DeleteMapping("/{projectId}")
-    public ApiResponse<?> deleteProject(
-            @PathVariable Long projectId,
+    public ApiResponse<?> deleteProject(@PathVariable Long projectId,
             Authentication authentication) {
 
         String email = getEmailFromAuthentication(authentication);

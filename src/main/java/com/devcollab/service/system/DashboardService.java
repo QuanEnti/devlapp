@@ -5,6 +5,6 @@ import com.devcollab.dto.response.ProjectPerformanceDTO;
 
 public interface DashboardService {
     ProjectSummaryDTO getProjectSummary(String range);
-
+    ProjectSummaryDTO getProjectSummaryByPm(String range, String pmEmail);
     ProjectPerformanceDTO getProjectPerformance(String range);
 }

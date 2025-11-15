@@ -1,7 +1,7 @@
 // ============================================================
 // 🏷️ LABELS MODULE – Manage Project Labels for Tasks
 // ============================================================
-import { showToast, safeStop, escapeHtml as escapeHtmlUtil } from "./utils.js"; // ✅ thêm safeStop
+import { showToast, safeStop, escapeHtml as escapeHtmlUtil, getToken } from "./utils.js"; // ✅ thêm safeStop
 import { updateCardLabels } from "./main.js";
 
 const DEFAULT_COLOR = "#94A3B8";
@@ -45,6 +45,95 @@ let currentEditingLabelMeta = null;
 let debounceLabelTimer;
 let lastLabelKeyword = "";
 let savedLabelsPopupPosition = null; // Lưu vị trí labels popup
+
+// ================== POPUP POSITIONING CONFIG ==================
+// Cấu hình dễ chỉnh sửa cho tất cả label popups
+const LABEL_POPUP_CONFIG = {
+  offset: 8, // Khoảng cách từ button/trigger
+  minMargin: 16, // Khoảng cách tối thiểu từ edge viewport
+};
+
+// Helper function để tính toán vị trí thông minh cho popup
+function calculateSmartPosition(popupElement, triggerRect, fallbackPosition = null) {
+  if (!popupElement) return { top: 0, left: 0 };
+
+  // Kích thước popup (từ CSS hoặc ước tính)
+  // Nếu popup bị ẩn, dùng giá trị ước tính dựa trên class
+  let popupWidth = popupElement.offsetWidth;
+  let popupHeight = popupElement.offsetHeight;
+  
+  if (!popupWidth || !popupHeight) {
+    // Ước tính dựa trên class CSS
+    if (popupElement.classList.contains("labels-popup")) {
+      popupWidth = 320; // Từ CSS: width: 320px
+      popupHeight = 400; // Ước tính
+    } else if (popupElement.classList.contains("label-editor")) {
+      popupWidth = 360; // Từ CSS: width: 360px
+      popupHeight = 450; // Ước tính
+    } else {
+      popupWidth = 320;
+      popupHeight = 400;
+    }
+  }
+
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const scrollX = window.scrollX || 0;
+  const scrollY = window.scrollY || 0;
+
+  let top, left;
+
+  if (!triggerRect || triggerRect.width === 0 || triggerRect.height === 0) {
+    // Không có trigger rect → dùng fallback hoặc tọa độ chuột
+    if (fallbackPosition) {
+      left = fallbackPosition.left;
+      top = fallbackPosition.top;
+    } else {
+      const mouseX = window.contextMenuX || viewportWidth / 2;
+      const mouseY = window.contextMenuY || viewportHeight / 2;
+      left = mouseX + scrollX + LABEL_POPUP_CONFIG.offset;
+      top = mouseY + scrollY + LABEL_POPUP_CONFIG.offset;
+    }
+  } else {
+    // Có trigger rect → tính toán dựa trên vị trí button
+    const buttonBottom = triggerRect.bottom + scrollY;
+    const buttonLeft = triggerRect.left + scrollX;
+    const buttonRight = triggerRect.right + scrollX;
+    const buttonTop = triggerRect.top + scrollY;
+
+    // Ưu tiên hiển thị bên dưới và bên phải button
+    left = buttonLeft;
+    top = buttonBottom + LABEL_POPUP_CONFIG.offset;
+
+    // Kiểm tra không gian xung quanh
+    const spaceBelow = viewportHeight + scrollY - buttonBottom;
+    const spaceAbove = buttonTop - scrollY;
+    const spaceRight = viewportWidth + scrollX - buttonLeft;
+    const spaceLeft = buttonLeft - scrollX;
+
+    // Nếu không đủ chỗ bên dưới, hiển thị bên trên
+    if (spaceBelow < popupHeight + LABEL_POPUP_CONFIG.minMargin && spaceAbove > spaceBelow) {
+      top = buttonTop - popupHeight - LABEL_POPUP_CONFIG.offset;
+    }
+
+    // Nếu không đủ chỗ bên phải, hiển thị bên trái
+    if (spaceRight < popupWidth + LABEL_POPUP_CONFIG.minMargin && spaceLeft > spaceRight) {
+      left = buttonRight - popupWidth;
+    }
+  }
+
+  // Đảm bảo không vượt quá viewport
+  left = Math.max(
+    scrollX + LABEL_POPUP_CONFIG.minMargin,
+    Math.min(left, viewportWidth + scrollX - popupWidth - LABEL_POPUP_CONFIG.minMargin)
+  );
+  top = Math.max(
+    scrollY + LABEL_POPUP_CONFIG.minMargin,
+    Math.min(top, viewportHeight + scrollY - popupHeight - LABEL_POPUP_CONFIG.minMargin)
+  );
+
+  return { top, left };
+}
 
 function parseNumericId(value) {
   const parsed = Number(value);
@@ -284,11 +373,11 @@ export function initLabelEvents() {
     }
     if (!createLabelPopup) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
+    const triggerRect = e.currentTarget.getBoundingClientRect();
     const labelsPopupRect = labelsPopup?.getBoundingClientRect();
     createLabelPopup.style.position = "fixed";
 
-    // Lưu vị trí labels popup trước khi ẩn
+    // Lưu vị trí labels popup trước khi ẩn (để có thể quay lại sau)
     if (labelsPopupRect) {
       savedLabelsPopupPosition = {
         top: labelsPopupRect.top + window.scrollY,
@@ -296,20 +385,43 @@ export function initLabelEvents() {
       };
     }
 
-    // Đặt popup lên trên labels popup
-    if (savedLabelsPopupPosition) {
-      createLabelPopup.style.top = `${savedLabelsPopupPosition.top}px`;
-      createLabelPopup.style.left = `${savedLabelsPopupPosition.left}px`;
-    } else {
-      // Fallback nếu không có labels popup
-      createLabelPopup.style.top = `${
-        rect.top + window.scrollY - createLabelPopup.offsetHeight - 8
-      }px`;
-      createLabelPopup.style.left = `${Math.min(
-        rect.left + window.scrollX,
-        window.innerWidth - createLabelPopup.offsetWidth - 24
-      )}px`;
-    }
+    // Tính toán vị trí thông minh - ưu tiên dùng vị trí labels popup nếu có
+    const fallbackPosition = savedLabelsPopupPosition || null;
+    const position = calculateSmartPosition(createLabelPopup, triggerRect, fallbackPosition);
+    createLabelPopup.style.top = `${position.top}px`;
+    createLabelPopup.style.left = `${position.left}px`;
+
+    // Điều chỉnh lại sau khi render
+    requestAnimationFrame(() => {
+      const actualRect = createLabelPopup.getBoundingClientRect();
+      const actualWidth = actualRect.width;
+      const actualHeight = actualRect.height;
+      const currentTop = parseFloat(createLabelPopup.style.top) || position.top;
+      const currentLeft = parseFloat(createLabelPopup.style.left) || position.left;
+
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const scrollX = window.scrollX || 0;
+      const scrollY = window.scrollY || 0;
+
+      let adjustedLeft = currentLeft;
+      let adjustedTop = currentTop;
+
+      if (currentLeft + actualWidth > viewportWidth + scrollX - LABEL_POPUP_CONFIG.minMargin) {
+        adjustedLeft = viewportWidth + scrollX - actualWidth - LABEL_POPUP_CONFIG.minMargin;
+      }
+      if (currentTop + actualHeight > viewportHeight + scrollY - LABEL_POPUP_CONFIG.minMargin) {
+        adjustedTop = viewportHeight + scrollY - actualHeight - LABEL_POPUP_CONFIG.minMargin;
+      }
+
+      adjustedLeft = Math.max(scrollX + LABEL_POPUP_CONFIG.minMargin, adjustedLeft);
+      adjustedTop = Math.max(scrollY + LABEL_POPUP_CONFIG.minMargin, adjustedTop);
+
+      if (adjustedLeft !== currentLeft || adjustedTop !== currentTop) {
+        createLabelPopup.style.left = `${adjustedLeft}px`;
+        createLabelPopup.style.top = `${adjustedTop}px`;
+      }
+    });
 
     selectedColor = COLOR_PALETTE[0];
     newLabelName.value = "";
@@ -390,22 +502,52 @@ export function openLabelsPopup(e) {
     createLabelBtn.disabled = !canCreate;
   }
 
-  let rect = e?.currentTarget?.getBoundingClientRect?.() ?? null;
-  const isValidRect = rect && rect.width > 0 && rect.height > 0;
+  // Lấy trigger rect
+  let triggerRect = e?.currentTarget?.getBoundingClientRect?.() ?? null;
+  const isValidRect = triggerRect && triggerRect.width > 0 && triggerRect.height > 0;
+  if (!isValidRect) triggerRect = null;
 
-  const top = isValidRect
-    ? rect.bottom + window.scrollY + 6
-    : (window.contextMenuY || e?.clientY || 100) + 8;
-  const left = isValidRect
-    ? rect.left + window.scrollX
-    : (window.contextMenuX || e?.clientX || 100) + 8;
-
+  // Tính toán vị trí thông minh
   labelsPopup.style.position = "fixed";
-  labelsPopup.style.top = `${top}px`;
-  labelsPopup.style.left = `${left}px`;
+  const position = calculateSmartPosition(labelsPopup, triggerRect);
+  labelsPopup.style.top = `${position.top}px`;
+  labelsPopup.style.left = `${position.left}px`;
   labelsPopup.classList.remove("hidden");
   createLabelPopup?.classList.add("hidden");
   editLabelPopupWrapper?.classList.add("hidden");
+
+  // Điều chỉnh lại sau khi render để lấy kích thước thực tế
+  requestAnimationFrame(() => {
+    const actualRect = labelsPopup.getBoundingClientRect();
+    const actualWidth = actualRect.width;
+    const actualHeight = actualRect.height;
+    const currentTop = parseFloat(labelsPopup.style.top) || position.top;
+    const currentLeft = parseFloat(labelsPopup.style.left) || position.left;
+
+    // Kiểm tra lại và điều chỉnh nếu cần
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const scrollX = window.scrollX || 0;
+    const scrollY = window.scrollY || 0;
+
+    let adjustedLeft = currentLeft;
+    let adjustedTop = currentTop;
+
+    if (currentLeft + actualWidth > viewportWidth + scrollX - LABEL_POPUP_CONFIG.minMargin) {
+      adjustedLeft = viewportWidth + scrollX - actualWidth - LABEL_POPUP_CONFIG.minMargin;
+    }
+    if (currentTop + actualHeight > viewportHeight + scrollY - LABEL_POPUP_CONFIG.minMargin) {
+      adjustedTop = viewportHeight + scrollY - actualHeight - LABEL_POPUP_CONFIG.minMargin;
+    }
+
+    adjustedLeft = Math.max(scrollX + LABEL_POPUP_CONFIG.minMargin, adjustedLeft);
+    adjustedTop = Math.max(scrollY + LABEL_POPUP_CONFIG.minMargin, adjustedTop);
+
+    if (adjustedLeft !== currentLeft || adjustedTop !== currentTop) {
+      labelsPopup.style.left = `${adjustedLeft}px`;
+      labelsPopup.style.top = `${adjustedTop}px`;
+    }
+  });
 
   const searchInput = document.getElementById("search-label-input");
   if (searchInput) {
@@ -414,7 +556,7 @@ export function openLabelsPopup(e) {
     searchInput.focus();
   }
 
-  console.log(`📍 Labels popup opened at top=${top}, left=${left}`);
+  console.log(`✅ Labels popup opened at top=${position.top}, left=${position.left}`);
   loadLabels();
 }
 
@@ -810,7 +952,7 @@ async function openEditLabel(labelId, e) {
     });
     updateEditLabelPreview();
 
-    // Lưu vị trí labels popup trước khi ẩn
+    // Lưu vị trí labels popup trước khi ẩn (để có thể quay lại sau)
     const labelsPopupRect = labelsPopup?.getBoundingClientRect();
     if (labelsPopupRect) {
       savedLabelsPopupPosition = {
@@ -819,20 +961,51 @@ async function openEditLabel(labelId, e) {
       };
     }
 
-    // Đặt vị trí edit popup lên trên labels popup
+    // Đặt vị trí edit popup
     popupWrapper.style.position = "fixed";
     popupWrapper.style.inset = "0";
     editPopup.style.position = "fixed";
-    if (savedLabelsPopupPosition) {
-      editPopup.style.top = `${savedLabelsPopupPosition.top}px`;
-      editPopup.style.left = `${savedLabelsPopupPosition.left}px`;
-      editPopup.style.transform = "none";
-    } else {
-      // Fallback: center màn hình
-      editPopup.style.top = "50%";
-      editPopup.style.left = "50%";
-      editPopup.style.transform = "translate(-50%, -50%)";
-    }
+
+    // Tính toán vị trí thông minh - ưu tiên dùng vị trí labels popup nếu có
+    const fallbackPosition = savedLabelsPopupPosition || null;
+    const triggerRect = e?.currentTarget?.getBoundingClientRect?.() ?? null;
+    const position = calculateSmartPosition(editPopup, triggerRect, fallbackPosition);
+    
+    editPopup.style.top = `${position.top}px`;
+    editPopup.style.left = `${position.left}px`;
+    editPopup.style.transform = "none";
+
+    // Điều chỉnh lại sau khi render
+    requestAnimationFrame(() => {
+      const actualRect = editPopup.getBoundingClientRect();
+      const actualWidth = actualRect.width;
+      const actualHeight = actualRect.height;
+      const currentTop = parseFloat(editPopup.style.top) || position.top;
+      const currentLeft = parseFloat(editPopup.style.left) || position.left;
+
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const scrollX = window.scrollX || 0;
+      const scrollY = window.scrollY || 0;
+
+      let adjustedLeft = currentLeft;
+      let adjustedTop = currentTop;
+
+      if (currentLeft + actualWidth > viewportWidth + scrollX - LABEL_POPUP_CONFIG.minMargin) {
+        adjustedLeft = viewportWidth + scrollX - actualWidth - LABEL_POPUP_CONFIG.minMargin;
+      }
+      if (currentTop + actualHeight > viewportHeight + scrollY - LABEL_POPUP_CONFIG.minMargin) {
+        adjustedTop = viewportHeight + scrollY - actualHeight - LABEL_POPUP_CONFIG.minMargin;
+      }
+
+      adjustedLeft = Math.max(scrollX + LABEL_POPUP_CONFIG.minMargin, adjustedLeft);
+      adjustedTop = Math.max(scrollY + LABEL_POPUP_CONFIG.minMargin, adjustedTop);
+
+      if (adjustedLeft !== currentLeft || adjustedTop !== currentTop) {
+        editPopup.style.left = `${adjustedLeft}px`;
+        editPopup.style.top = `${adjustedTop}px`;
+      }
+    });
 
     labelsPopup?.classList.add("hidden");
     popupWrapper.classList.remove("hidden");
@@ -942,10 +1115,12 @@ async function deleteEditedLabel() {
 }
 
 function getAuthHeaders(additional = {}) {
-  return {
-    Authorization: "Bearer " + localStorage.getItem("token"),
-    ...additional,
-  };
+  const token = getToken();
+  const headers = { ...additional };
+  if (token) {
+    headers.Authorization = "Bearer " + token;
+  }
+  return headers;
 }
 
 // ✅ Expose global cho context menu hoặc inline script gọi được

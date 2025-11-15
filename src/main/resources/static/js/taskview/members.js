@@ -4,10 +4,120 @@ import {
   getColorForId,
   getInitials,
   escapeHtml,
+  getToken,
 } from "./utils.js";
-import { updateCardMembers } from "./main.js";
+import {
+  updateCardMembers,
+  refreshActivityFeedOnly,
+  showActivitySectionIfHidden,
+} from "./main.js";
 
 let debounceTimer;
+
+// ================== POPUP POSITIONING CONFIG ==================
+const MEMBERS_POPUP_CONFIG = {
+  offset: 8, // Khoảng cách từ button/trigger
+  minMargin: 16, // Khoảng cách tối thiểu từ edge viewport
+};
+
+// Helper function để tính toán vị trí thông minh cho members popup
+function calculateMembersPopupPosition(popupElement, triggerRect) {
+  if (!popupElement) return { top: 0, left: 0 };
+
+  // Kích thước popup (từ CSS hoặc ước tính)
+  let popupWidth = popupElement.offsetWidth;
+  let popupHeight = popupElement.offsetHeight;
+
+  if (!popupWidth || !popupHeight) {
+    popupWidth = 340; // Từ CSS: w-[340px]
+    popupHeight = 400; // Ước tính
+  }
+
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const scrollX = window.scrollX || 0;
+  const scrollY = window.scrollY || 0;
+
+  let top, left;
+
+  if (!triggerRect || triggerRect.width === 0 || triggerRect.height === 0) {
+    // Gọi từ context menu (chuột phải) hoặc overview
+    const mouseX = window.contextMenuX || viewportWidth / 2;
+    const mouseY = window.contextMenuY || viewportHeight / 2;
+
+    // Tính toán vị trí ưu tiên bottom-right
+    left = mouseX + scrollX + MEMBERS_POPUP_CONFIG.offset;
+    top = mouseY + scrollY + MEMBERS_POPUP_CONFIG.offset;
+
+    // Kiểm tra và điều chỉnh nếu vượt quá viewport
+    if (
+      left + popupWidth >
+      viewportWidth + scrollX - MEMBERS_POPUP_CONFIG.minMargin
+    ) {
+      left = mouseX + scrollX - popupWidth - MEMBERS_POPUP_CONFIG.offset;
+    }
+    if (
+      top + popupHeight >
+      viewportHeight + scrollY - MEMBERS_POPUP_CONFIG.minMargin
+    ) {
+      top = mouseY + scrollY - popupHeight - MEMBERS_POPUP_CONFIG.offset;
+    }
+
+    // Đảm bảo không vượt quá biên trái/trên
+    left = Math.max(scrollX + MEMBERS_POPUP_CONFIG.minMargin, left);
+    top = Math.max(scrollY + MEMBERS_POPUP_CONFIG.minMargin, top);
+  } else {
+    // Gọi từ nút "Members" trong modal
+    const buttonBottom = triggerRect.bottom + scrollY;
+    const buttonLeft = triggerRect.left + scrollX;
+    const buttonRight = triggerRect.right + scrollX;
+    const buttonTop = triggerRect.top + scrollY;
+
+    // Ưu tiên hiển thị bên dưới và bên phải button
+    left = buttonLeft;
+    top = buttonBottom + MEMBERS_POPUP_CONFIG.offset;
+
+    // Kiểm tra không gian xung quanh
+    const spaceBelow = viewportHeight + scrollY - buttonBottom;
+    const spaceAbove = buttonTop - scrollY;
+    const spaceRight = viewportWidth + scrollX - buttonLeft;
+    const spaceLeft = buttonLeft - scrollX;
+
+    // Nếu không đủ chỗ bên dưới, hiển thị bên trên
+    if (
+      spaceBelow < popupHeight + MEMBERS_POPUP_CONFIG.minMargin &&
+      spaceAbove > spaceBelow
+    ) {
+      top = buttonTop - popupHeight - MEMBERS_POPUP_CONFIG.offset;
+    }
+
+    // Nếu không đủ chỗ bên phải, hiển thị bên trái
+    if (
+      spaceRight < popupWidth + MEMBERS_POPUP_CONFIG.minMargin &&
+      spaceLeft > spaceRight
+    ) {
+      left = buttonRight - popupWidth;
+    }
+
+    // Đảm bảo không vượt quá viewport
+    left = Math.max(
+      scrollX + MEMBERS_POPUP_CONFIG.minMargin,
+      Math.min(
+        left,
+        viewportWidth + scrollX - popupWidth - MEMBERS_POPUP_CONFIG.minMargin
+      )
+    );
+    top = Math.max(
+      scrollY + MEMBERS_POPUP_CONFIG.minMargin,
+      Math.min(
+        top,
+        viewportHeight + scrollY - popupHeight - MEMBERS_POPUP_CONFIG.minMargin
+      )
+    );
+  }
+
+  return { top, left };
+}
 
 // 🔹 Mở popup (hỗ trợ click thường + chuột phải)
 export function openMembersPopup(e) {
@@ -15,43 +125,84 @@ export function openMembersPopup(e) {
   if (!popup) {
     console.error(" #members-popup not found");
     return;
-  } // Ngăn chặn việc đóng popup ngay lập tức nếu click vào nút mở
+  }
 
-  e?.stopPropagation(); // Tính toạ độ
+  e?.stopPropagation();
 
-  let top = 0;
-  let left = 0;
-
-  const rect =
+  // Lấy trigger rect
+  let triggerRect = null;
+  if (
     e &&
     e.currentTarget &&
     typeof e.currentTarget.getBoundingClientRect === "function"
-      ? e.currentTarget.getBoundingClientRect()
-      : null;
-
-  const hasValidRect =
-    rect &&
-    rect.top >= 0 &&
-    rect.left >= 0 &&
-    rect.width > 0 &&
-    rect.height > 0;
-
-  if (hasValidRect) {
-    // 👉 Gọi từ nút "Members" trong modal
-    top = rect.bottom + window.scrollY + 6;
-    left = rect.left + window.scrollX;
-  } else {
-    // 👉 Gọi từ context menu (chuột phải)
-    top = (window.contextMenuY || e?.clientY || 100) + window.scrollY + 8;
-    left = (window.contextMenuX || e?.clientX || 100) + window.scrollX + 8;
+  ) {
+    triggerRect = e.currentTarget.getBoundingClientRect();
+    const hasValidRect =
+      triggerRect &&
+      triggerRect.top >= 0 &&
+      triggerRect.left >= 0 &&
+      triggerRect.width > 0 &&
+      triggerRect.height > 0;
+    if (!hasValidRect) triggerRect = null;
   }
 
-  popup.style.position = "absolute";
-  popup.style.top = `${top}px`;
-  popup.style.left = `${left}px`;
+  // Tính toán vị trí thông minh
+  popup.style.position = "fixed";
+  const position = calculateMembersPopupPosition(popup, triggerRect);
+  popup.style.top = `${position.top}px`;
+  popup.style.left = `${position.left}px`;
   popup.classList.remove("hidden");
 
-  document.getElementById("search-member-input").focus();
+  // Điều chỉnh lại sau khi render để lấy kích thước thực tế
+  requestAnimationFrame(() => {
+    const actualRect = popup.getBoundingClientRect();
+    const actualWidth = actualRect.width;
+    const actualHeight = actualRect.height;
+    const currentTop = parseFloat(popup.style.top) || position.top;
+    const currentLeft = parseFloat(popup.style.left) || position.left;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const scrollX = window.scrollX || 0;
+    const scrollY = window.scrollY || 0;
+
+    let adjustedLeft = currentLeft;
+    let adjustedTop = currentTop;
+
+    if (
+      currentLeft + actualWidth >
+      viewportWidth + scrollX - MEMBERS_POPUP_CONFIG.minMargin
+    ) {
+      adjustedLeft =
+        viewportWidth + scrollX - actualWidth - MEMBERS_POPUP_CONFIG.minMargin;
+    }
+    if (
+      currentTop + actualHeight >
+      viewportHeight + scrollY - MEMBERS_POPUP_CONFIG.minMargin
+    ) {
+      adjustedTop =
+        viewportHeight +
+        scrollY -
+        actualHeight -
+        MEMBERS_POPUP_CONFIG.minMargin;
+    }
+
+    adjustedLeft = Math.max(
+      scrollX + MEMBERS_POPUP_CONFIG.minMargin,
+      adjustedLeft
+    );
+    adjustedTop = Math.max(
+      scrollY + MEMBERS_POPUP_CONFIG.minMargin,
+      adjustedTop
+    );
+
+    if (adjustedLeft !== currentLeft || adjustedTop !== currentTop) {
+      popup.style.left = `${adjustedLeft}px`;
+      popup.style.top = `${adjustedTop}px`;
+    }
+  });
+
+  document.getElementById("search-member-input")?.focus();
   loadMembers();
 }
 
@@ -94,15 +245,17 @@ export async function loadMembers(keyword = "") {
   listContainer.innerHTML = `<p class="members-empty muted">Loading…</p>`;
 
   try {
-    const headers = {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-    }; // 1. Lấy TẤT CẢ thành viên dự án (có lọc theo keyword)
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    } // 1. Lấy TẤT CẢ thành viên dự án (có lọc theo keyword)
 
     const resAll = await fetch(
       `/api/pm/members?projectId=${
         window.PROJECT_ID
       }&keyword=${encodeURIComponent(keyword)}`,
-      { headers }
+      { headers, credentials: "include" }
     );
     if (!resAll.ok) throw new Error("Failed to load project members");
     const allPayload = await resAll.json();
@@ -110,7 +263,10 @@ export async function loadMembers(keyword = "") {
       ? allPayload.content
       : allPayload; // 2. Lấy thành viên ĐÃ ĐƯỢC GÁN vào task này
 
-    const resTask = await fetch(`/api/tasks/${taskId}/members`, { headers });
+    const resTask = await fetch(`/api/tasks/${taskId}/members`, {
+      headers,
+      credentials: "include",
+    });
     if (!resTask.ok) throw new Error("Failed to load task members");
     const taskMembers = await resTask.json();
     const assignedIds = new Set((taskMembers || []).map((m) => m.userId)); // 3. Phân loại thành 2 nhóm
@@ -355,9 +511,15 @@ export async function assignMember(userId, rowElement) {
   row?.classList.add("is-loading");
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}/assign/${userId}`, {
       method: "PUT",
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers,
+      credentials: "include",
     });
 
     if (res.status === 403) {
@@ -387,8 +549,14 @@ export async function assignMember(userId, rowElement) {
 
     // Cập nhật card bên ngoài
     try {
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
       const res = await fetch(`/api/tasks/${taskId}`, {
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       });
       if (res.ok) {
         const updatedTask = await res.json();
@@ -399,6 +567,10 @@ export async function assignMember(userId, rowElement) {
     } catch (err) {
       console.error("Error reloading task for card update:", err);
     }
+
+    // Refresh activity feed to show new activity
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
   } catch (err) {
     console.error("assignMember error:", err);
     showToast("Failed to assign member", "error");
@@ -416,9 +588,15 @@ export async function unassignMember(userId, button) {
   const meta = extractMemberMeta(row);
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/tasks/${taskId}/unassign/${userId}`, {
       method: "PUT",
-      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+      headers,
+      credentials: "include",
     });
 
     if (res.status === 403) {
@@ -447,8 +625,14 @@ export async function unassignMember(userId, button) {
 
     // Cập nhật card bên ngoài
     try {
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
       const res = await fetch(`/api/tasks/${taskId}`, {
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        headers,
+        credentials: "include",
       });
       if (res.ok) {
         const updatedTask = await res.json();
@@ -457,6 +641,10 @@ export async function unassignMember(userId, button) {
     } catch (err) {
       console.error("Error reloading task for card update:", err);
     }
+
+    // Refresh activity feed to show new activity
+    showActivitySectionIfHidden();
+    await refreshActivityFeedOnly(taskId);
   } catch (err) {
     console.error("unassignMember error:", err);
     showToast("Failed to unassign member", "error");

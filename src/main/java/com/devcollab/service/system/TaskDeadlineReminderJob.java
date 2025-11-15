@@ -90,8 +90,8 @@ public class TaskDeadlineReminderJob {
             default -> "Công việc \"" + task.getTitle() + "\" sắp đến hạn!";
         };
 
-        String link =
-                "/projects/" + task.getProject().getProjectId() + "/tasks/" + task.getTaskId();
+        String link = "/view/pm/project/board?projectId=" + task.getProject().getProjectId()
+                + "&taskId=" + task.getTaskId();
 
         List<User> receivers = new ArrayList<>();
 

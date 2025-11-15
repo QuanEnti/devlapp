@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script th:src="@{/js/toast.js}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -332,7 +333,7 @@
         const year = new Date().getFullYear();
 
         if (!month || !targetCount) {
-            alert(" Vui lòng chọn tháng và nhập số lượng target!");
+            showToast("Vui lòng chọn tháng và nhập số lượng target!", "warning");
             return;
         }
 
@@ -350,15 +351,15 @@
 
 
             if (res.ok) {
-                alert(" Đã lưu target thành công!");
+                showToast("Đã lưu target thành công!", "success");
                 closeTargetModal();
                 loadOverview();
             } else {
-                alert(" Lỗi khi lưu target!");
+                showToast("Lỗi khi lưu target!", "error");
             }
         } catch (err) {
             console.error("Lỗi khi gọi API:", err);
-            alert(" Không thể kết nối đến server!");
+            showToast("Không thể kết nối đến server!", "error");
         }
     }
 
@@ -433,7 +434,7 @@
 
             // ⚠️ Nếu không phải PM → redirect
             if (!roles.includes("ROLE_PM")) {
-                alert("⚠️ Bạn không có quyền truy cập trang này!");
+                showToast("Bạn không có quyền truy cập trang này!", "error");
                 window.location.href = "/view/member/overview";
                 return false;
             }

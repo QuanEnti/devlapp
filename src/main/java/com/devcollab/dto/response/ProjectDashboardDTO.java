@@ -16,5 +16,8 @@ public class ProjectDashboardDTO {
     private long doneTasks;
     private long inProgress;
     private long overdueTasks;
-    private BigDecimal percentDone; 
+    private BigDecimal percentDone;
+    
+    // Project status
+    private String projectStatus; // Active | Archived
 }

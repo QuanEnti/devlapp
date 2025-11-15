@@ -1,7 +1,7 @@
 // ============================================================
 // ✅ CHECKLIST MODULE – Manage Checklists for Tasks
 // ============================================================
-import { showToast } from "./utils.js";
+import { showToast, getToken } from "./utils.js";
 
 const checklistPopup = document.getElementById("checklist-popup");
 const openChecklistBtn = document.getElementById("open-checklist-btn");
@@ -92,10 +92,14 @@ async function loadChecklistItems() {
   }
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/checklists/task/${taskId}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers,
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -361,13 +365,18 @@ function updateHideCheckedButton(items) {
 // Toggle checklist item
 async function toggleChecklistItem(checklistId, isDone) {
   try {
+    const token = getToken();
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/checklists/${checklistId}/toggle`, {
       method: "PUT",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ isDone }),
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -399,11 +408,15 @@ async function deleteChecklistItem(checklistId) {
   if (menu) menu.classList.add("hidden");
 
   try {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/checklists/${checklistId}`, {
       method: "DELETE",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers,
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -442,10 +455,14 @@ async function convertChecklistItemToCard(checklistId) {
 
   try {
     // 1. Lấy thông tin checklist item
+    const token = getToken();
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const checklistRes = await fetch(`/api/checklists/task/${taskId}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers,
+      credentials: "include",
     });
 
     if (!checklistRes.ok) {
@@ -461,10 +478,14 @@ async function convertChecklistItemToCard(checklistId) {
     }
 
     // 2. Lấy thông tin task để có columnId
+    const taskToken = getToken();
+    const taskHeaders = {};
+    if (taskToken) {
+      taskHeaders.Authorization = "Bearer " + taskToken;
+    }
     const taskRes = await fetch(`/api/tasks/${taskId}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers: taskHeaders,
+      credentials: "include",
     });
 
     if (!taskRes.ok) {
@@ -489,17 +510,22 @@ async function convertChecklistItemToCard(checklistId) {
     }
 
     // 3. Tạo task mới từ checklist item
+    const createToken = getToken();
+    const createHeaders = {
+      "Content-Type": "application/json",
+    };
+    if (createToken) {
+      createHeaders.Authorization = "Bearer " + createToken;
+    }
     const createRes = await fetch("/api/tasks/quick", {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers: createHeaders,
       body: JSON.stringify({
         title: item.item,
         projectId: projectId,
         columnId: columnId,
       }),
+      credentials: "include",
     });
 
     if (!createRes.ok) {
@@ -512,11 +538,15 @@ async function convertChecklistItemToCard(checklistId) {
     console.log(" Card created:", newTask);
 
     // 4. Xóa checklist item sau khi convert thành công
+    const deleteToken = getToken();
+    const deleteHeaders = {};
+    if (deleteToken) {
+      deleteHeaders.Authorization = "Bearer " + deleteToken;
+    }
     const deleteRes = await fetch(`/api/checklists/${checklistId}`, {
       method: "DELETE",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers: deleteHeaders,
+      credentials: "include",
     });
 
     if (!deleteRes.ok) {
@@ -602,13 +632,18 @@ async function addChecklistItem() {
   }
 
   try {
+    const token = getToken();
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
     const res = await fetch(`/api/checklists/task/${taskId}`, {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ item: title }),
+      credentials: "include",
     });
 
     // Kiểm tra status code - có thể là 200, 201, hoặc các status khác
