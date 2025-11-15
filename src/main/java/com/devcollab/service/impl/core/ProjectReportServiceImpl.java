@@ -133,7 +133,7 @@ public class ProjectReportServiceImpl implements ProjectReportService {
                         n.setUser(pm.getUser());
                         n.setType("WARNING");
                         n.setReferenceId(id);
-                        n.setMessage("🚫 Project \"" + project.getName() + "\" has been removed due to violations.");
+                        n.setMessage("⚠️ Warning: Project \"" + project.getName() + "\" has received a warning. " + (message != null ? message : "Please review the project report."));
                         n.setStatus("unread");
                         n.setCreatedAt(java.time.LocalDateTime.now());
                         n.setLink("/view/project-report/" + id);

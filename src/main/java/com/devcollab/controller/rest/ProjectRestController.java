@@ -35,6 +35,7 @@ public class ProjectRestController {
     public ApiResponse<Project> createProject(@RequestBody ProjectCreateRequestDTO request,
             Authentication authentication) {
 
+        // ==================== AUTHENTICATION ====================
         String email = null;
         if (authentication != null) {
             Object principal = authentication.getPrincipal();
@@ -50,47 +51,66 @@ public class ProjectRestController {
         }
 
         try {
+            // ==================== FETCH CREATOR ====================
             User creator = userService.getByEmail(email).orElse(null);
             if (creator == null) {
                 return ApiResponse.error("Không tìm thấy người dùng: " + email, 404);
             }
-            System.out.println("Creating project with coverImage:" + request.getCoverImage());
 
-            // ✅ Kiểm tra xem người dùng đã có project cùng tên chưa
+            System.out.println("Creating project with coverImage = " + request.getCoverImage());
+
+            // ==================== VALIDATE DUPLICATE NAME ====================
             boolean exists = projectService.existsByNameAndCreatedBy_UserId(request.getName(),
                     creator.getUserId());
+
             if (exists) {
                 return ApiResponse.error("Bạn đã tạo project này rồi!", 400);
             }
 
-            // ✅ Nếu chưa có, tiếp tục tạo mới
+            // ==================== BUILD PROJECT ENTITY ====================
             Project project = new Project();
             project.setName(request.getName());
             project.setDescription(request.getDescription());
             project.setPriority(request.getPriority());
             project.setCoverImage(request.getCoverImage());
+            project.setBusinessRule(request.getBusinessRule());
 
-            // Set status nếu có, nếu không service sẽ set mặc định là "Active"
+            // Status (nếu null → service set mặc định)
             if (request.getStatus() != null && !request.getStatus().isEmpty()) {
                 project.setStatus(request.getStatus());
             }
 
+            // Parse startDate
             if (request.getStartDate() != null && !request.getStartDate().isEmpty()) {
-                project.setStartDate(LocalDate.parse(request.getStartDate()));
+                try {
+                    project.setStartDate(LocalDate.parse(request.getStartDate()));
+                } catch (Exception ex) {
+                    return ApiResponse.error("Ngày bắt đầu không hợp lệ (yyyy-MM-dd)", 400);
+                }
             }
+
+            // Parse dueDate
             if (request.getEndDate() != null && !request.getEndDate().isEmpty()) {
-                project.setDueDate(LocalDate.parse(request.getEndDate()));
+                try {
+                    project.setDueDate(LocalDate.parse(request.getEndDate()));
+                } catch (Exception ex) {
+                    return ApiResponse.error("Ngày kết thúc không hợp lệ (yyyy-MM-dd)", 400);
+                }
             }
 
             project.setCreatedBy(creator);
 
+            // ==================== CREATE PROJECT ====================
             Project saved = projectService.createProject(project, creator.getUserId());
-            return ApiResponse.success("Tạo project thành công", saved);
+
+            return ApiResponse.success("Tạo project thành công!", saved);
+
         } catch (Exception e) {
             e.printStackTrace();
-            return ApiResponse.error("Đã xảy ra lỗi khi tạo project: " + e.getMessage());
+            return ApiResponse.error("Đã xảy ra lỗi khi tạo dự án: " + e.getMessage());
         }
     }
+
 
     @GetMapping("/search")
     public ApiResponse<?> searchProjects(@RequestParam String query) {
@@ -167,9 +187,11 @@ public class ProjectRestController {
 
             Project existing = projectService.getById(projectId);
             // ✅ Kiểm tra quyền: chỉ creator hoặc PM/ADMIN của project mới được chỉnh sửa
-            boolean isOwner = Objects.equals(existing.getCreatedBy().getUserId(), editor.getUserId());
-            boolean isManager = projectMemberRepository.existsByProject_ProjectIdAndUser_EmailAndRoleInProjectIn(
-                    projectId, email, List.of("PM", "ADMIN"));
+            boolean isOwner =
+                    Objects.equals(existing.getCreatedBy().getUserId(), editor.getUserId());
+            boolean isManager = projectMemberRepository
+                    .existsByProject_ProjectIdAndUser_EmailAndRoleInProjectIn(projectId, email,
+                            List.of("PM", "ADMIN"));
             if (!isOwner && !isManager) {
                 return ApiResponse.error("Bạn không có quyền chỉnh sửa project này!", 403);
             }

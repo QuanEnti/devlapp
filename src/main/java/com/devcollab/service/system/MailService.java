@@ -33,9 +33,6 @@ public class MailService {
     @Value("${app.base-url:http://localhost:8082}")
     private String baseUrl;
 
-    // ======================================================
-    // 🔑 Gửi OTP xác thực (text)
-    // ======================================================
     @Async("mailExecutor")
     public void sendOtpMail(String to, String otp) {
         try {

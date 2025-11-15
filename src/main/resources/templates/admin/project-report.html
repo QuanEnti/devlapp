@@ -349,42 +349,83 @@
     }
 
     async function saveChanges() {
+        if (!selectedReportId) {
+            showToast("No report selected.", "error");
+            return;
+        }
+
         const action = document.getElementById("actionTaken").value;
         const msg = document.getElementById("warningMessage").value.trim();
+        
+        if (!action || action === "") {
+            showToast("Please choose an action.", "warning");
+            return;
+        }
+
         if (action === "Ban") {
             if (!confirm("⚠️ Are you sure you want to remove this project?")) return;
-            const res = await fetch(`/api/admin/project-reports/${selectedReportId}/ban`, { method: "PUT" });
-            if (res.ok) { 
-                showToast("Project removed successfully.", "success"); 
-                bootstrapModal.hide(); 
-                await loadAllReports(); 
-            } else {
-                showToast("Failed to remove project.", "error");
+            try {
+                const res = await fetch(`/api/admin/project-reports/${selectedReportId}/ban`, { 
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                if (res.ok) { 
+                    showToast("Project removed successfully.", "success"); 
+                    bootstrapModal.hide(); 
+                    await loadAllReports(); 
+                } else {
+                    const errorData = await res.json().catch(() => ({}));
+                    const errorMsg = errorData.message || `Failed to remove project. Status: ${res.status}`;
+                    console.error("❌ Remove project error:", errorMsg);
+                    showToast(errorMsg, "error");
+                }
+            } catch (err) {
+                console.error("❌ Network error:", err);
+                showToast("Failed to connect to server.", "error");
             }
             return;
         }
+        
         if (action === "Warning") {
-            if (!msg) return showToast("Please enter a warning message.", "warning");
-            const res = await fetch(`/api/admin/project-reports/${selectedReportId}/warn`, {
-                method: "POST", headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({ message: msg })
-            });
-            if (res.ok) { 
-                showToast("Warning sent to project owner.", "success"); 
-                bootstrapModal.hide(); 
-                await loadAllReports(); 
-            } else {
-                showToast("Failed to send warning.", "error");
+            if (!msg) {
+                showToast("Please enter a warning message.", "warning");
+                return;
+            }
+            try {
+                const res = await fetch(`/api/admin/project-reports/${selectedReportId}/warn`, {
+                    method: "POST", 
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ message: msg })
+                });
+                if (res.ok) { 
+                    showToast("Warning sent to project owner.", "success"); 
+                    bootstrapModal.hide(); 
+                    await loadAllReports(); 
+                } else {
+                    const errorData = await res.json().catch(() => ({}));
+                    const errorMsg = errorData.message || `Failed to send warning. Status: ${res.status}`;
+                    console.error("❌ Send warning error:", errorMsg);
+                    showToast(errorMsg, "error");
+                }
+            } catch (err) {
+                console.error("❌ Network error:", err);
+                showToast("Failed to connect to server.", "error");
             }
             return;
         }
-        showToast("Please choose an action.", "warning");
+        
+        showToast("Invalid action selected.", "warning");
     }
 
     document.getElementById("saveChangesBtn").addEventListener("click", saveChanges);
     document.addEventListener("DOMContentLoaded", () => loadAllReports());
 </script>
 
+<script src="/js/toast.js"></script>
 <script src="/js/logout.js"></script>
 </body>
 </html>

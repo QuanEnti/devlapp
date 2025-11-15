@@ -2,8 +2,6 @@ package com.devcollab.controller.view;
 
 import com.devcollab.domain.*;
 import com.devcollab.dto.MemberDTO;
-import com.devcollab.dto.TaskDTO;
-import com.devcollab.dto.TaskStatisticsDTO;
 import com.devcollab.dto.UserTaskViewDTO;
 import com.devcollab.repository.ProjectMemberRepository;
 import com.devcollab.repository.ProjectRepository;
@@ -14,15 +12,12 @@ import com.devcollab.service.core.TaskService;
 import com.devcollab.service.feature.MessageService;
 import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.core.UserService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -258,10 +253,10 @@ public class UserViewController {
                 isPremium = user.isPremium();
                 System.out.println("User is premium: " + isPremium);
             } else {
-                System.out.println("❌ User not found in database");
+                System.out.println(" User not found in database");
             }
         } else {
-            System.out.println("❌ User not authenticated");
+            System.out.println(" User not authenticated");
         }
         model.addAttribute("isPremium", isPremium);
         return "user/user-createproject";
@@ -301,8 +296,6 @@ public class UserViewController {
 
         return "user/user-viewallprojects";
     }
-
-
 
     // ✉️ Danh sách lời mời
     @GetMapping("/view-invitation")

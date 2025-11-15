@@ -55,16 +55,20 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public Project createProject(Project project, Long creatorId) {
+
         if (project == null || project.getName() == null || project.getName().isBlank()) {
             throw new BadRequestException("Tên dự án không được để trống");
         }
+
         String projectName = project.getName().trim();
 
         boolean exists =
                 projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserId(projectName, creatorId);
+
         if (exists) {
             throw new BadRequestException("Tên dự án bị trùng");
         }
+
         if (project.getStartDate() != null && project.getDueDate() != null
                 && project.getDueDate().isBefore(project.getStartDate())) {
             throw new BadRequestException("Ngày kết thúc phải sau ngày bắt đầu");
@@ -73,9 +77,11 @@ public class ProjectServiceImpl implements ProjectService {
         User creator = userRepository.findById(creatorId)
                 .orElseThrow(() -> new NotFoundException("User không tồn tại"));
 
+        project.setName(projectName);
         project.setCreatedBy(creator);
         project.setCreatedAt(LocalDateTime.now());
         project.setUpdatedAt(LocalDateTime.now());
+
         System.out.println("CvIMG" + project.getCoverImage());
         project.setCoverImage(project.getCoverImage());
 
@@ -86,10 +92,22 @@ public class ProjectServiceImpl implements ProjectService {
         if (project.getVisibility() == null)
             project.setVisibility("private");
 
+        if (project.getBusinessRule() != null) {
+            String rule = project.getBusinessRule().trim();
+            if (rule.isBlank()) {
+                project.setBusinessRule(null);
+            } else {
+                if (rule.length() > 5000) {
+                    throw new BadRequestException("Business rule quá dài (tối đa 5000 ký tự)");
+                }
+                project.setBusinessRule(rule);
+            }
+        }
 
         Project saved = projectRepository.save(project);
 
         String inviteCode = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+
         saved.setInviteLink(inviteCode);
         saved.setInviteCreatedAt(LocalDateTime.now());
         saved.setInviteExpiredAt(LocalDateTime.now().plusDays(7));
@@ -97,7 +115,9 @@ public class ProjectServiceImpl implements ProjectService {
         saved.setInviteMaxUses(10);
         saved.setInviteCreatedBy(creator.getEmail());
         saved.setAllowLinkJoin(false);
+
         saved = projectRepository.save(saved);
+
 
         ProjectMember pm = new ProjectMember();
         pm.setProject(saved);
@@ -108,8 +128,10 @@ public class ProjectServiceImpl implements ProjectService {
 
         Role pmRole = roleRepository.findByName("ROLE_PM")
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy ROLE_PM trong hệ thống"));
+
         boolean hasPmRole =
                 creator.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_PM"));
+
         if (!hasPmRole) {
             creator.getRoles().add(pmRole);
             userRepository.save(creator);
@@ -124,18 +146,22 @@ public class ProjectServiceImpl implements ProjectService {
             col.setName(defaultCols[i]);
             col.setOrderIndex(i + 1);
             col.setIsDefault(true);
+
             try {
                 BoardColumn.class.getDeclaredField("statusCode");
                 col.getClass().getMethod("setStatusCode", String.class).invoke(col,
                         defaultStatusCodes[i]);
             } catch (Exception ignored) {
             }
+
             boardColumnRepository.save(col);
         }
+
         appEventService.publishProjectCreated(saved);
 
         return saved;
     }
+
 
 
     @Override
@@ -179,6 +205,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
         existing.setCoverImage(patch.getCoverImage());
         existing.setUpdatedAt(LocalDateTime.now());
+
         Project saved = projectRepository.save(existing);
 
         activityService.log("PROJECT", saved.getProjectId(), "UPDATE", saved.getName());

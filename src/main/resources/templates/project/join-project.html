@@ -67,17 +67,93 @@
         }, 3000);
       }
 
-      // ✅ Đọc cookie
+      // ✅ Hàm đọc cookie - xử lý decode đúng cách
       function getCookie(name) {
-        const value = document.cookie.match(
-          "(^|;)\\s*" + name + "\\s*=\\s*([^;]+)"
-        );
-        return value ? value.pop() : null;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+          try {
+            return decodeURIComponent(parts.pop().split(";").shift());
+          } catch (e) {
+            return parts.pop().split(";").shift();
+          }
+        }
+        return null;
+      }
+
+      // ✅ Hàm lấy token - giống hệt getToken() trong utils.js
+      // Hỗ trợ cả Google OAuth và local account
+      function getToken() {
+        // 1. Thử localStorage trước (thường dùng cho local account)
+        let token = localStorage.getItem("token");
+        if (
+          token &&
+          token !== "null" &&
+          token !== "undefined" &&
+          token.trim().length > 0
+        ) {
+          return token.trim();
+        }
+
+        // 2. Thử localStorage với key AUTH_TOKEN (fallback)
+        token = localStorage.getItem("AUTH_TOKEN");
+        if (
+          token &&
+          token !== "null" &&
+          token !== "undefined" &&
+          token.trim().length > 0
+        ) {
+          // Đồng bộ sang key "token" để nhất quán
+          localStorage.setItem("token", token.trim());
+          return token.trim();
+        }
+
+        // 3. Fallback to cookie AUTH_TOKEN (thường dùng cho Google OAuth và local account)
+        // ✅ Dùng hàm getCookie để decode đúng cách
+        const cookieToken = getCookie("AUTH_TOKEN");
+        if (
+          cookieToken &&
+          cookieToken !== "null" &&
+          cookieToken !== "undefined" &&
+          cookieToken.trim().length > 0
+        ) {
+          // Lưu vào localStorage để dùng lần sau (giống như trong main.js)
+          localStorage.setItem("token", cookieToken.trim());
+          return cookieToken.trim();
+        }
+
+        // 4. Thử đọc cookie trực tiếp (fallback nếu getCookie không hoạt động)
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+          const [name, value] = cookie.trim().split("=");
+          if (
+            name === "AUTH_TOKEN" &&
+            value &&
+            value !== "null" &&
+            value !== "undefined"
+          ) {
+            try {
+              const decoded = decodeURIComponent(value);
+              if (decoded && decoded.trim().length > 0) {
+                localStorage.setItem("token", decoded.trim());
+                return decoded.trim();
+              }
+            } catch (e) {
+              // Nếu decode lỗi, thử dùng giá trị gốc
+              if (value.trim().length > 0) {
+                localStorage.setItem("token", value.trim());
+                return value.trim();
+              }
+            }
+          }
+        }
+
+        return null;
       }
 
       // ✅ Hàm kiểm tra token có tồn tại chưa
       function hasToken() {
-        return localStorage.getItem("token") || getCookie("AUTH_TOKEN");
+        return getToken() !== null;
       }
 
       document.addEventListener("DOMContentLoaded", async () => {
@@ -85,25 +161,133 @@
         const inviteLink = path.split("/join/")[1];
         const joinBtn = document.getElementById("join-btn");
 
-        // Prevent reload loop after login
-        if (sessionStorage.getItem("redirectedOnce") === "true") {
-          sessionStorage.removeItem("redirectedOnce");
-        } else if (!hasToken()) {
+        // ✅ Kiểm tra token ngay từ đầu
+        let token = getToken();
+
+        // ✅ Kiểm tra xem có phải redirect từ login không
+        const urlParams = new URLSearchParams(window.location.search);
+        const isFromLogin =
+          urlParams.get("from") === "login" ||
+          sessionStorage.getItem("redirectedOnce") === "true" ||
+          document.referrer.includes("/signin") ||
+          document.referrer.includes("/login") ||
+          document.referrer.includes("/verify-otp");
+
+        // ✅ Nếu không có token và không phải từ login → redirect đến login ngay
+        if (!token && !isFromLogin) {
+          console.log("🔍 No token found, redirecting to login...");
           sessionStorage.setItem("redirectedOnce", "true");
           const redirectUrl = encodeURIComponent(window.location.pathname);
           window.location.href = `/view/signin?redirect=${redirectUrl}`;
           return;
         }
 
-        // Wait for token cookie to stabilize (especially after OAuth2 redirect)
-        await new Promise((r) => setTimeout(r, 300));
+        // ✅ Nếu đang redirect từ login (OAuth2 hoặc local) → đợi token được set trong cookie
+        if (!token && isFromLogin) {
+          console.log(
+            "🔍 Redirected from login, waiting for token in cookie..."
+          );
+          console.log("🔍 Referrer:", document.referrer);
+          console.log("🔍 Current cookies:", document.cookie);
+
+          // ✅ Đợi cookie được set (backend set cookie sau khi login)
+          let attempts = 0;
+          const maxAttempts = 20; // Tăng số lần thử
+          while (!token && attempts < maxAttempts) {
+            const delay = 100 + attempts * 50; // 100ms, 150ms, 200ms... (nhanh hơn)
+            await new Promise((r) => setTimeout(r, delay));
+
+            // ✅ Kiểm tra lại cookie và đồng bộ vào localStorage
+            const cookies = document.cookie.split(";");
+            for (let cookie of cookies) {
+              const [name, value] = cookie.trim().split("=");
+              if (
+                name === "AUTH_TOKEN" &&
+                value &&
+                value !== "null" &&
+                value !== "undefined"
+              ) {
+                // ✅ Lưu vào localStorage ngay khi tìm thấy
+                localStorage.setItem("token", value);
+                console.log("✅ Found token in cookie, saved to localStorage");
+                token = value;
+                break;
+              }
+            }
+
+            // ✅ Nếu vẫn chưa có, thử getToken() lại
+            if (!token) {
+              token = getToken();
+            }
+
+            attempts++;
+
+            if (token) {
+              console.log(`✅ Token found after ${attempts} attempts`);
+              break;
+            } else if (attempts % 5 === 0) {
+              console.log(
+                `⏳ Still waiting... (attempt ${attempts}/${maxAttempts})`
+              );
+            }
+          }
+
+          // ✅ Nếu vẫn không có token sau khi đợi
+          if (!token) {
+            console.error("❌ Token not found after waiting");
+            console.error(
+              "🔍 Final check - localStorage.token:",
+              localStorage.getItem("token")
+            );
+            console.error("🔍 Final check - Cookies:", document.cookie);
+            console.error(
+              "🔍 Final check - All cookies:",
+              document.cookie.split(";")
+            );
+
+            // ✅ Thử đợi thêm 2 giây (có thể cookie đang được set)
+            await new Promise((r) => setTimeout(r, 2000));
+            token = getToken();
+
+            if (!token) {
+              console.warn(
+                "⚠️ Token not found after final wait, redirecting to login"
+              );
+              sessionStorage.removeItem("redirectedOnce");
+              const redirectUrl = encodeURIComponent(window.location.pathname);
+              window.location.href = `/view/signin?redirect=${redirectUrl}`;
+              return;
+            }
+          }
+        }
+
+        // ✅ Clear redirect flag nếu đã có token
+        if (token) {
+          sessionStorage.removeItem("redirectedOnce");
+          console.log("✅ Token ready:", token.substring(0, 20) + "...");
+        }
 
         joinBtn.addEventListener("click", async () => {
           joinBtn.disabled = true;
           joinBtn.textContent = "Processing...";
 
-          const token =
-            localStorage.getItem("token") || getCookie("AUTH_TOKEN");
+          // ✅ Lấy token lại (có thể đã được cập nhật)
+          let token = getToken();
+
+          // ✅ Kiểm tra token có tồn tại và hợp lệ không
+          if (!token) {
+            console.error("❌ Token không tồn tại khi click");
+            showToast("Invalid token. Please login again.", "error");
+            setTimeout(() => {
+              const redirectUrl = encodeURIComponent(window.location.pathname);
+              window.location.href = `/view/signin?redirect=${redirectUrl}`;
+            }, 2000);
+            joinBtn.disabled = false;
+            joinBtn.textContent = "Join Project";
+            return;
+          }
+
+          console.log("🔑 Using token:", token.substring(0, 20) + "...");
 
           try {
             const res = await fetch(`/api/pm/invite/join/${inviteLink}`, {
@@ -119,6 +303,27 @@
 
             // 🟢 If backend returns error
             if (!res.ok) {
+              // ✅ Xử lý lỗi 401 (Unauthorized) - token không hợp lệ
+              if (res.status === 401) {
+                console.error(
+                  "❌ 401 Unauthorized - Token không hợp lệ hoặc đã hết hạn"
+                );
+                showToast("Invalid token. Please login again.", "error");
+                setTimeout(() => {
+                  // Clear tokens
+                  localStorage.removeItem("token");
+                  localStorage.removeItem("AUTH_TOKEN");
+                  document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/;";
+                  const redirectUrl = encodeURIComponent(
+                    window.location.pathname
+                  );
+                  window.location.href = `/view/signin?redirect=${redirectUrl}`;
+                }, 2000);
+                joinBtn.disabled = false;
+                joinBtn.textContent = "Join Project";
+                return;
+              }
+
               let errorMessage = "Unable to join project";
 
               // ✅ Parse JSON error if available
@@ -238,35 +443,57 @@
         if (logoutLink) {
           logoutLink.addEventListener("click", async (e) => {
             e.preventDefault();
-            try {
-              // Call logout API
-              await fetch("/api/auth/logout", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                  Authorization:
-                    "Bearer " +
-                    (localStorage.getItem("token") || getCookie("AUTH_TOKEN")),
-                },
-              });
+            e.stopPropagation();
 
-              // Clear cookies and localStorage
-              document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/;";
-              document.cookie = "REFRESH_TOKEN=; Max-Age=0; path=/;";
+            try {
+              // ✅ Call logout API (không cần token trong header, dùng credentials)
+              try {
+                await fetch("/api/auth/logout", {
+                  method: "POST",
+                  credentials: "include",
+                });
+              } catch (apiErr) {
+                console.warn(
+                  "⚠️ Logout API call failed (continuing anyway):",
+                  apiErr
+                );
+              }
+
+              // ✅ Clear cookies (cả Google OAuth và local account)
+              document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/; domain=;";
+              document.cookie = "REFRESH_TOKEN=; Max-Age=0; path=/; domain=;";
+
+              // ✅ Clear localStorage
               localStorage.removeItem("token");
               localStorage.removeItem("AUTH_TOKEN");
               localStorage.removeItem("REFRESH_TOKEN");
+              localStorage.removeItem("currentUserId");
+              localStorage.removeItem("currentUserName");
+              localStorage.removeItem("currentUserEmail");
+              localStorage.removeItem("currentUserAvatar");
 
-              // Redirect to login page
+              // ✅ Clear sessionStorage
+              sessionStorage.clear();
+
+              // ✅ Redirect to login page
               window.location.href = "/view/signin";
             } catch (err) {
-              console.error("Logout error:", err);
-              // Still redirect to signin if there's an error
-              document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/;";
-              localStorage.clear();
+              console.error("❌ Logout error:", err);
+              // ✅ Vẫn clear và redirect ngay cả khi có lỗi
+              try {
+                document.cookie = "AUTH_TOKEN=; Max-Age=0; path=/; domain=;";
+                document.cookie = "REFRESH_TOKEN=; Max-Age=0; path=/; domain=;";
+                localStorage.clear();
+                sessionStorage.clear();
+              } catch (clearErr) {
+                console.error("❌ Error clearing storage:", clearErr);
+              }
+              // ✅ Redirect đến login page
               window.location.href = "/view/signin";
             }
           });
+        } else {
+          console.warn("⚠️ Logout link not found in DOM");
         }
       });
     </script>

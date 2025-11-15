@@ -29,13 +29,14 @@ public class SecurityConfig {
                                                 SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/auth/**", "/api/users/**",
-                                                                "api/payment/webhook")
+                                                                "/api/payment/webhook")
                                                 .permitAll().requestMatchers("/api/admin/**")
                                                 .hasRole("ADMIN")
 
                                                 .requestMatchers("/api/tasks/**").authenticated()
-                                        .requestMatchers("/api/notifications/**").authenticated()
-                                        .requestMatchers("/api/columns/**").authenticated()
+                                                .requestMatchers("/api/notifications/**")
+                                                .authenticated().requestMatchers("/api/columns/**")
+                                                .authenticated()
                                                 .requestMatchers("/api/pm/invite/join/**")
                                                 .authenticated().anyRequest().authenticated())
                                 .addFilterBefore(jwtFilter,

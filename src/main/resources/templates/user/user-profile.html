@@ -392,13 +392,10 @@
                   class="text-sm text-gray-700 text-left mb-4 list-disc list-inside"
                 >
                   <li>Access to smart AI Assistant</li>
-                  <li>Advanced project analytics</li>
-                  <li>Unlimited storage</li>
-                  <li>Increase project members to 20+</li>
+                  <li>Upload limit from 10 mb to 100 mb</li>
                 </ul>
-                <p class="text-gray-600 mb-4">
-                  Price: <b>2,000 VND / month</b>
-                </p>
+                <p class="text-gray-600 mb-4">Price: <b>$1 / month</b></p>
+
                 <div class="flex justify-center space-x-4">
                   <button
                     id="confirmBuyBtn"
@@ -623,7 +620,7 @@
           const res = await fetch("/api/payment/create", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ total: 2000, plan: "Pro" }),
+            body: JSON.stringify({ total: 25000, plan: "Pro" }),
           });
 
           const data = await res.json();
