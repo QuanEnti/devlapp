@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -37,7 +37,7 @@
       .responsive-img-rounded {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
         border-radius: 0.75rem; /* rounded-xl */
       } /* Vòng tròn phần trăm */
       .progress-circle {
@@ -62,20 +62,16 @@
   <body class="dark-bg text-gray-100">
     <header class="header-bg p-4 shadow-lg sticky top-0 z-10">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <!-- Logo -->
-        <div class="text-xl font-bold text-white">DevCollab</div>
+        <a href="/" class="flex items-center space-x-4">
+          <img
+            th:src="@{/photo/logo1.png}"
+            alt="DevCollab Logo"
+            class="w-12 h-12 rounded-xl object-cover"
+          />
+          <span class="text-2xl font-bold text-white">DevCollab</span>
+        </a>
 
-        <!-- Menu -->
-        <nav class="hidden md:flex space-x-6 text-sm text-gray-300">
-          <a href="#" class="hover:text-white">Features</a>
-          <a href="#" class="hover:text-white">Pricing</a>
-          <a href="#" class="hover:text-white">About Us</a>
-          <a href="#" class="hover:text-white">Contact</a>
-        </nav>
-
-        <!-- Nút bên phải -->
         <div class="flex items-center space-x-3">
-          <!-- Nút Login -->
           <a
             href="/view/signin"
             class="text-sm font-semibold text-white border border-blue-400 px-4 py-2 rounded-full hover:bg-blue-600 hover:border-blue-600 transition duration-300"
@@ -83,7 +79,6 @@
             Login
           </a>
 
-          <!-- Nút Register -->
           <a
             href="/view/register"
             class="primary-btn-bg hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-full font-semibold transition duration-300"
@@ -131,7 +126,7 @@
               class="card-bg-light rounded-xl custom-shadow-for-mockup h-[450px] flex items-center justify-center overflow-hidden"
             >
               <img
-                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop"
+                th:src="@{/photo/pic1.png}"
                 alt="Project Management Mockup"
                 class="responsive-img-rounded"
               />
@@ -140,6 +135,7 @@
         </div>
       </div>
     </section>
+
     <section class="max-w-7xl mx-auto py-4 px-4 md:px-0">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div
@@ -158,12 +154,13 @@
             class="inner-feature-bg flex-grow rounded-xl border border-gray-300 flex justify-center items-center overflow-hidden min-h-[180px]"
           >
             <img
-              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop"
+              th:src="@{/photo/pic2.jpg}"
               alt="Analytics Chart"
               class="w-full h-full object-cover rounded-lg"
             />
           </div>
         </div>
+
         <div
           class="card-bg-light text-black p-5 rounded-2xl shadow-md border border-gray-200 flex flex-col"
         >
@@ -171,7 +168,7 @@
             class="inner-feature-bg flex-grow rounded-xl border border-gray-300 overflow-hidden mb-3 min-h-[180px]"
           >
             <img
-              src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=200&fit=crop"
+              th:src="@{/photo/pic3.png}"
               alt="Calendar View"
               class="w-full h-full object-cover rounded-lg"
             />
@@ -187,6 +184,7 @@
             </p>
           </div>
         </div>
+
         <div
           class="card-bg-light text-black p-5 rounded-2xl shadow-md border border-gray-200 flex flex-col"
         >
@@ -202,7 +200,7 @@
             class="inner-feature-bg flex-grow rounded-xl border border-gray-300 overflow-hidden min-h-[140px]"
           >
             <img
-              src="https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=400&fit=crop"
+              th:src="@{/photo/pic4.png}"
               alt="Task Timeline"
               class="w-full h-full object-cover rounded-xl"
             />
@@ -210,23 +208,7 @@
         </div>
       </div>
     </section>
-    <section class="max-w-7xl mx-auto py-6 px-4 md:px-0">
-      <div
-        class="large-block-bg text-black rounded-3xl p-8 md:p-12 custom-shadow-lg text-center"
-      >
-        <p
-          class="text-gray-500 mb-8 font-semibold text-sm uppercase tracking-wider"
-        >
-          Trusted By Industry Leaders
-        </p>
-        <div
-          class="flex flex-wrap justify-center items-center gap-x-12 gap-y-6 text-4xl text-gray-700"
-        >
-          <p class="font-bold">Apple</p>
-          <p class="font-bold">Google</p>
-        </div>
-      </div>
-    </section>
+
     <section class="max-w-7xl mx-auto py-6 px-4 md:px-0">
       <div
         class="large-block-bg text-black rounded-3xl p-8 md:p-12 custom-shadow-lg"
@@ -244,21 +226,21 @@
             Communicate and collaborate with your manage team.
           </p>
         </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div
             class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
           >
             <div
-              class="h-56 overflow-hidden rounded-xl mb-4"
-              style="
-                background: linear-gradient(
-                  135deg,
-                  #667eea 0%,
-                  #764ba2 50%,
-                  #f093fb 100%
-                );
-              "
-            ></div>
+              class="h-56 overflow-hidden rounded-xl mb-4 bg-gray-100 flex items-center justify-center"
+            >
+              <img
+                th:src="@{/photo/pic5.png}"
+                alt="Efficient Task Management"
+                class="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+
             <div class="text-left">
               <h4 class="text-xl font-bold mb-3">
                 Efficiently Manage Every Task
@@ -269,20 +251,20 @@
               </p>
             </div>
           </div>
+
           <div
             class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
           >
             <div
-              class="h-56 overflow-hidden rounded-xl mb-4"
-              style="
-                background: linear-gradient(
-                  135deg,
-                  #1e3c72 0%,
-                  #2a5298 50%,
-                  #7e8ba3 100%
-                );
-              "
-            ></div>
+              class="h-56 overflow-hidden rounded-xl mb-4 bg-gray-100 flex items-center justify-center"
+            >
+              <img
+                th:src="@{/photo/pic6.jpg}"
+                alt="Efficient Task Management"
+                class="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+
             <div class="text-left">
               <h4 class="text-xl font-bold mb-3">Streamline Your Workflow</h4>
               <p class="text-gray-600 text-sm leading-relaxed">
@@ -291,20 +273,20 @@
               </p>
             </div>
           </div>
+
           <div
             class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
           >
             <div
-              class="h-56 overflow-hidden rounded-xl mb-4"
-              style="
-                background: linear-gradient(
-                  135deg,
-                  #a8edea 0%,
-                  #fed6e3 50%,
-                  #d299c2 100%
-                );
-              "
-            ></div>
+              class="h-56 overflow-hidden rounded-xl mb-4 bg-gray-100 flex items-center justify-center"
+            >
+              <img
+                th:src="@{/photo/pic9.png}"
+                alt="Efficient Task Management"
+                class="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+
             <div class="text-left">
               <h4 class="text-xl font-bold mb-3">Collaborate Seamlessly</h4>
               <p class="text-gray-600 text-sm leading-relaxed">
@@ -314,16 +296,21 @@
             </div>
           </div>
         </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div
             class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
           >
             <div
-              class="h-56 overflow-hidden rounded-xl mb-4"
-              style="
-                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-              "
-            ></div>
+              class="h-56 overflow-hidden rounded-xl mb-4 bg-gray-100 flex items-center justify-center"
+            >
+              <img
+                th:src="@{/photo/pic7.jpg}"
+                alt="Efficient Task Management"
+                class="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+
             <div class="text-left">
               <h4 class="text-xl font-bold mb-3">Streamline Your Workflow</h4>
               <p class="text-gray-600 text-sm leading-relaxed">
@@ -332,15 +319,20 @@
               </p>
             </div>
           </div>
+
           <div
             class="bg-white text-black rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-300"
           >
             <div
-              class="h-56 overflow-hidden rounded-xl mb-4"
-              style="
-                background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-              "
-            ></div>
+              class="h-56 overflow-hidden rounded-xl mb-4 bg-gray-100 flex items-center justify-center"
+            >
+              <img
+                th:src="@{/photo/pic8.png}"
+                alt="Efficient Task Management"
+                class="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+
             <div class="text-left">
               <h4 class="text-xl font-bold mb-3">Enhance Team Performance</h4>
               <p class="text-gray-600 text-sm leading-relaxed">
@@ -352,8 +344,9 @@
         </div>
       </div>
     </section>
+
     <footer class="header-bg py-12 px-4 md:px-0 mt-12 border-t border-gray-800">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-1 gap-8">
         <div>
           <div class="text-xl font-bold text-white mb-4">DevCollab</div>
           <p class="text-gray-400 text-sm mb-4">
@@ -363,27 +356,6 @@
           <p class="text-gray-500 text-xs">
             © 2025 DevCollab. All rights reserved.
           </p>
-        </div>
-        <div>
-          <h5 class="text-white font-semibold mb-4">
-            Subscribe to our Newsletter
-          </h5>
-          <p class="text-gray-400 text-sm mb-4">
-            Subscribe to receive the latest updates, news, and exclusive tips
-            right to your inbox.
-          </p>
-          <form class="flex">
-            <input
-              type="email"
-              placeholder="Email address"
-              class="bg-gray-700 text-white p-2 rounded-l-lg w-full focus:outline-none"
-            />
-            <button
-              class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-r-lg"
-            >
-              →
-            </button>
-          </form>
         </div>
       </div>
     </footer>
