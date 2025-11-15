@@ -142,7 +142,7 @@ public class MailService {
 
             helper.setFrom(senderAddress);
             helper.setTo(to);
-            helper.setSubject("🚀 DevCollab – Lời mời tham gia dự án " + project.getName());
+            helper.setSubject(" DevCollab – Lời mời tham gia dự án " + project.getName());
 
             Context ctx = new Context();
             ctx.setVariable("inviterName", inviter.getName());

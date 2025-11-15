@@ -991,7 +991,8 @@
             if (res.ok) {
               showToast("Project deleted successfully!", "success");
               setTimeout(() => {
-                window.location.href = "/user/view/dashboard"; // Redirect to dashboard
+                // ✅ Redirect về trang View All Projects sau khi xóa project
+                window.location.href = "/user/view/view-all-projects";
               }, 1000);
             } else {
               const result = await res.json();

@@ -18,7 +18,7 @@ import {
   closeMembersPopup,
 } from "./members.js";
 
-import { openDatePopup, updateDateStatus } from "./dates.js";
+import { openDatePopup, updateDateStatus, updateStartDateStatus } from "./dates.js";
 
 import { initLabelEvents, openLabelsPopup } from "./labels.js";
 import { openChecklistPopup, loadChecklistItems } from "./checklist.js";
@@ -701,6 +701,7 @@ async function openModal(taskId) {
 
     renderDescription(task);
     updateDateStatus(task.deadline);
+    updateStartDateStatus(task.startDate);
     // Show/hide due date section based on whether dates are set
     const dueDateSection = document.getElementById("due-date-section");
     if (dueDateSection) {
@@ -711,11 +712,20 @@ async function openModal(taskId) {
       }
     }
     window.CURRENT_TASK_ID = taskId;
+    
+    // ✅ Đảm bảo modal tồn tại trong DOM trước khi load data
+    if (!modal) {
+      console.error("❌ Modal task-detail-modal not found in DOM");
+      throw new Error("Modal not found");
+    }
+    
+    // ✅ Hiển thị modal trước để đảm bảo DOM elements đã sẵn sàng
+    modal.classList.remove("hidden");
+    
+    // ✅ Load data sau khi modal đã hiển thị
     await loadAttachments(taskId);
     await loadActivityFeed(taskId);
     await loadChecklistItems();
-
-    modal.classList.remove("hidden");
 
     // Ensure description UI is updated after modal is shown
     // Use setTimeout to ensure DOM is fully rendered
@@ -3990,6 +4000,102 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 3️⃣ Nếu không phải join link → hiển thị Kanban board
     await renderDashboard(PROJECT_ID);
+    
+    // 4️⃣ Kiểm tra taskId trong URL và tự động mở modal task
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskIdFromUrl = urlParams.get("taskId");
+    if (taskIdFromUrl) {
+      console.log("🔍 Found taskId in URL, will auto-open modal:", taskIdFromUrl);
+      
+      // ✅ Hàm helper để đợi modal xuất hiện trong DOM
+      const waitForModal = (maxAttempts = 30, interval = 150) => {
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const checkModal = () => {
+            attempts++;
+            const modal = document.getElementById("task-detail-modal");
+            if (modal) {
+              console.log("✅ Modal found in DOM after", attempts, "attempts");
+              resolve(modal);
+            } else if (attempts >= maxAttempts) {
+              console.warn("⚠️ Modal not found after", maxAttempts, "attempts");
+              // ✅ Thử lại sau khi DOM hoàn toàn load
+              if (document.readyState === "complete") {
+                reject(new Error("Modal not found"));
+              } else {
+                // Đợi DOM load xong rồi thử lại
+                window.addEventListener("load", () => {
+                  setTimeout(() => {
+                    const modalRetry = document.getElementById("task-detail-modal");
+                    if (modalRetry) {
+                      console.log("✅ Modal found after page load");
+                      resolve(modalRetry);
+                    } else {
+                      reject(new Error("Modal not found even after page load"));
+                    }
+                  }, 500);
+                });
+              }
+            } else {
+              setTimeout(checkModal, interval);
+            }
+          };
+          checkModal();
+        });
+      };
+      
+      // ✅ Đợi modal xuất hiện và mở
+      waitForModal()
+        .then(async (modal) => {
+          console.log("✅ Modal element found:", modal);
+          
+          // ✅ Đợi thêm một chút để đảm bảo mọi thứ đã sẵn sàng
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // ✅ Đảm bảo openModal đã được gán vào window
+          if (!window.openModal && typeof openModal === "function") {
+            window.openModal = openModal;
+            console.log("✅ Assigned openModal to window");
+          }
+          
+          // ✅ Gọi openModal từ window hoặc local scope
+          const openModalFunc = window.openModal || openModal;
+          if (typeof openModalFunc === "function") {
+            console.log("🚀 Calling openModal with taskId:", taskIdFromUrl);
+            try {
+              await openModalFunc(taskIdFromUrl);
+              console.log("✅ Successfully auto-opened task modal from URL");
+              
+              // ✅ Kiểm tra lại xem modal có được hiển thị không
+              setTimeout(() => {
+                const modalCheck = document.getElementById("task-detail-modal");
+                if (modalCheck) {
+                  const isHidden = modalCheck.classList.contains("hidden");
+                  if (!isHidden) {
+                    console.log("✅ Modal is now visible");
+                  } else {
+                    console.warn("⚠️ Modal is still hidden after openModal call, trying to show it manually");
+                    // ✅ Thử hiển thị modal thủ công
+                    modalCheck.classList.remove("hidden");
+                  }
+                } else {
+                  console.error("❌ Modal element disappeared!");
+                }
+              }, 500);
+            } catch (openErr) {
+              console.error("❌ Error in openModal function:", openErr);
+              console.error("Error stack:", openErr.stack);
+              throw openErr;
+            }
+          } else {
+            console.error("❌ openModal function not available. window.openModal:", typeof window.openModal, "local openModal:", typeof openModal);
+          }
+        })
+        .catch((err) => {
+          console.error("❌ Failed to auto-open task modal from URL:", err);
+          console.error("Error details:", err.message, err.stack);
+        });
+    }
   } catch (err) {
     console.error("🚨 Init failed:", err);
     showToast(
@@ -4971,6 +5077,7 @@ async function fetchProjectRole(projectId) {
 }
 
 Object.assign(window, {
+  openModal,
   editComment,
   deleteComment,
   postReply,

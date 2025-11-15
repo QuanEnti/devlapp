@@ -39,12 +39,15 @@ public class DashboardRestController {
     /**
      * Trả dữ liệu biểu đồ Performance (Achieved vs Target)
      * Hỗ trợ filter qua query param ?range=week|month|6months|year
+     * ✅ Chỉ trả về dữ liệu của PM hiện tại
      */
     @PreAuthorize("hasAnyRole('PM','ADMIN')")
     @GetMapping("/performance")
     public ApiResponse<ProjectPerformanceDTO> getPerformance(
-            @RequestParam(defaultValue = "6months") String range) {
-
-        return ApiResponse.success(dashboardService.getProjectPerformance(range));
+            @RequestParam(defaultValue = "6months") String range,
+            Authentication auth) {
+        
+        String email = extractEmail(auth);
+        return ApiResponse.success(dashboardService.getProjectPerformanceByPm(range, email));
     }
 }

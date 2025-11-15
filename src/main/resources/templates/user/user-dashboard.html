@@ -253,10 +253,19 @@
     async function loadMembers(page = 0) {
         try {
             const token = localStorage.getItem("token");
+            const headers = {};
+            if (token) {
+                headers.Authorization = "Bearer " + token;
+            }
             const res = await fetch(`/api/pm/members/all?page=${page}&size=20&keyword=${encodeURIComponent(searchKeyword)}`, {
-                headers: { "Authorization": "Bearer " + token },
+                headers,
                 credentials: "include"
             });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: "Failed to load members" }));
+                throw new Error(errorData.message || `HTTP ${res.status}: Failed to load members`);
+            }
 
             const data = await res.json();
 
@@ -284,7 +293,11 @@
 
             renderPagination();
         } catch (err) {
-            console.error("⚠️ Lỗi tải danh sách thành viên:", err);
+            console.error("❌ Error loading members:", err);
+            const grid = document.getElementById("members-grid");
+            grid.innerHTML = `<p class="text-sm text-red-500 italic">
+                <i class="fa-solid fa-exclamation-triangle"></i> ${err.message || "Lỗi khi tải danh sách thành viên"}
+            </p>`;
         }
     }
 

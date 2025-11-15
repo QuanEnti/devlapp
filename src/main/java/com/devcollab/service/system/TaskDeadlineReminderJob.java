@@ -114,7 +114,7 @@ public class TaskDeadlineReminderJob {
                                 m -> new ArrayList<>(m.values())));
 
         if (uniqueReceivers.isEmpty()) {
-            log.debug("ℹ️ Không có người nhận nhắc hạn cho task '{}'", task.getTitle());
+            log.debug("ℹ Không có người nhận nhắc hạn cho task '{}'", task.getTitle());
             return;
         }
 

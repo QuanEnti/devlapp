@@ -69,6 +69,31 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             """, nativeQuery = true)
     List<Object[]> countCompletedProjectsSince(@Param("startDate") LocalDateTime startDate);
 
+    // ✅ Đếm completed projects theo PM (creator hoặc có role PM/ADMIN)
+    @Query(value = """
+            SELECT
+                FORMAT(p.updated_at, 'MMMM') AS month_name,
+                COUNT(*) AS total
+            FROM project p
+            WHERE
+                UPPER(p.status) = 'COMPLETED'
+                AND p.updated_at IS NOT NULL
+                AND p.updated_at >= :startDate
+                AND (
+                    p.created_by = (SELECT user_id FROM [User] WHERE email = :email)
+                    OR EXISTS (
+                        SELECT 1 FROM [ProjectMember] pm
+                        WHERE pm.project_id = p.project_id
+                          AND pm.user_id = (SELECT user_id FROM [User] WHERE email = :email)
+                          AND pm.role_in_project IN ('PM', 'ADMIN')
+                    )
+                )
+            GROUP BY FORMAT(p.updated_at, 'MMMM'), MONTH(p.updated_at)
+            ORDER BY MONTH(p.updated_at)
+            """, nativeQuery = true)
+    List<Object[]> countCompletedProjectsSinceAndPm(@Param("email") String email,
+            @Param("startDate") LocalDateTime startDate);
+
     @Query(value = """
                 SELECT
                     p.status, COUNT(*)
@@ -88,7 +113,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 GROUP BY p.status
                 ORDER BY p.status
             """, nativeQuery = true)
-    List<Object[]> countProjectsByStatusSinceAndPm(@Param("email") String email, @Param("startDate") LocalDateTime startDate);
+    List<Object[]> countProjectsByStatusSinceAndPm(@Param("email") String email,
+            @Param("startDate") LocalDateTime startDate);
 
     @Query("""
                 SELECT new com.devcollab.dto.ProjectDTO(
@@ -204,6 +230,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 ORDER BY pm.joinedAt DESC
             """)
     Page<Project> findByUserEmail(@Param("email") String email, Pageable pageable);
+
     @Query("""
             SELECT p
             FROM Project p

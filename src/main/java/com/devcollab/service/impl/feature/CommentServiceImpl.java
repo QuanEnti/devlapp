@@ -10,6 +10,7 @@ import com.devcollab.repository.UserRepository;
 import com.devcollab.service.feature.CommentService;
 import com.devcollab.service.system.ActivityService;
 import com.devcollab.service.system.NotificationService;
+import com.devcollab.service.system.ProjectAuthorizationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class CommentServiceImpl implements CommentService {
         private final UserRepository userRepo;
         private final ActivityService activityService;
         private final NotificationService notificationService;
+        private final ProjectAuthorizationService projectAuthorizationService;
 
         private final ObjectMapper mapper = new ObjectMapper();
 
@@ -39,12 +41,19 @@ public class CommentServiceImpl implements CommentService {
         // ✅ Thêm mới comment
         // =========================================================
         @Override
-        public CommentDTO addComment(Long taskId, Long userId, String content, String mentionsJson) {
-                Task task = taskRepo.findById(taskId)
-                                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
+        public CommentDTO addComment(Long taskId, Long userId, String content,
+                        String mentionsJson) {
+                Task task = taskRepo.findById(taskId).orElseThrow(
+                                () -> new IllegalArgumentException("Task not found: " + taskId));
 
-                User user = userRepo.findById(userId)
-                                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+                User user = userRepo.findById(userId).orElseThrow(
+                                () -> new IllegalArgumentException("User not found: " + userId));
+
+                // ✅ Kiểm tra quyền: chỉ member của project mới được comment
+                Long projectId = task.getProject().getProjectId();
+                if (!projectAuthorizationService.isMemberOfProject(user.getEmail(), projectId)) {
+                        throw new SecurityException("Bạn không có quyền comment trong dự án này!");
+                }
 
                 // 🧩 Parse mentions nếu null → tự nhận diện từ content
                 if (mentionsJson == null || mentionsJson.isBlank()) {
@@ -60,12 +69,9 @@ public class CommentServiceImpl implements CommentService {
                 Comment saved = commentRepo.save(comment);
 
                 // 📝 Log activity
-                activityService.log(
-                                "TASK",
-                                taskId,
-                                "COMMENT_ADD",
-                                "{\"commentId\":" + saved.getCommentId() +
-                                                ",\"content\":\"" + escapeJson(content) + "\"}",
+                activityService.log("TASK", taskId, "COMMENT_ADD",
+                                "{\"commentId\":" + saved.getCommentId() + ",\"content\":\""
+                                                + escapeJson(content) + "\"}",
                                 user);
 
                 // 🔔 Gửi thông báo mention (nếu có)
@@ -86,11 +92,18 @@ public class CommentServiceImpl implements CommentService {
         // =========================================================
         @Override
         public CommentDTO replyToComment(Long parentId, Long userId, String content) {
-                Comment parent = commentRepo.findById(parentId)
-                                .orElseThrow(() -> new IllegalArgumentException("Parent comment not found"));
+                Comment parent = commentRepo.findById(parentId).orElseThrow(
+                                () -> new IllegalArgumentException("Parent comment not found"));
 
-                User user = userRepo.findById(userId)
-                                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+                User user = userRepo.findById(userId).orElseThrow(
+                                () -> new IllegalArgumentException("User not found: " + userId));
+
+                // ✅ Kiểm tra quyền: chỉ member của project mới được reply
+                Long projectId = parent.getTask().getProject().getProjectId();
+                if (!projectAuthorizationService.isMemberOfProject(user.getEmail(), projectId)) {
+                        throw new SecurityException(
+                                        "Bạn không có quyền reply comment trong dự án này!");
+                }
 
                 Comment reply = new Comment();
                 reply.setParent(parent);
@@ -101,13 +114,9 @@ public class CommentServiceImpl implements CommentService {
                 Comment saved = commentRepo.save(reply);
 
                 // 📝 Log activity
-                activityService.log(
-                                "TASK",
-                                parent.getTask().getTaskId(),
-                                "COMMENT_REPLY",
-                                "{\"replyId\":" + saved.getCommentId() +
-                                                ",\"parentId\":" + parentId +
-                                                ",\"content\":\"" + escapeJson(content) + "\"}",
+                activityService.log("TASK", parent.getTask().getTaskId(), "COMMENT_REPLY",
+                                "{\"replyId\":" + saved.getCommentId() + ",\"parentId\":" + parentId
+                                                + ",\"content\":\"" + escapeJson(content) + "\"}",
                                 user);
 
                 return toDTO(saved);
@@ -118,10 +127,9 @@ public class CommentServiceImpl implements CommentService {
         // =========================================================
         @Override
         public List<CommentDTO> getCommentsByTask(Long taskId) {
-                List<Comment> roots = commentRepo.findByTask_TaskIdAndParentIsNullOrderByCreatedAtDesc(taskId);
-                return roots.stream()
-                                .map(this::toTreeDTO)
-                                .collect(Collectors.toList());
+                List<Comment> roots = commentRepo
+                                .findByTask_TaskIdAndParentIsNullOrderByCreatedAtDesc(taskId);
+                return roots.stream().map(this::toTreeDTO).collect(Collectors.toList());
         }
 
         // =========================================================
@@ -129,21 +137,28 @@ public class CommentServiceImpl implements CommentService {
         // =========================================================
         @Override
         public void deleteComment(Long commentId, Long userId) {
-                Comment comment = commentRepo.findById(commentId)
-                                .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
+                Comment comment = commentRepo.findById(commentId).orElseThrow(
+                                () -> new IllegalArgumentException("Comment not found"));
 
+                User user = userRepo.findById(userId).orElseThrow(
+                                () -> new IllegalArgumentException("User not found: " + userId));
+
+                // ✅ Kiểm tra quyền: chỉ member của project mới được xóa comment
+                Long projectId = comment.getTask().getProject().getProjectId();
+                if (!projectAuthorizationService.isMemberOfProject(user.getEmail(), projectId)) {
+                        throw new SecurityException(
+                                        "Bạn không có quyền xóa comment trong dự án này!");
+                }
+
+                // ✅ Chỉ chủ sở hữu comment mới được xóa
                 if (!comment.getUser().getUserId().equals(userId)) {
-                        throw new SecurityException("You can only delete your own comments");
+                        throw new SecurityException("Bạn chỉ có thể xóa comment của chính mình!");
                 }
 
                 commentRepo.delete(comment);
 
-                activityService.log(
-                                "TASK",
-                                comment.getTask().getTaskId(),
-                                "COMMENT_DELETE",
-                                "{\"commentId\":" + commentId + "}",
-                                comment.getUser());
+                activityService.log("TASK", comment.getTask().getTaskId(), "COMMENT_DELETE",
+                                "{\"commentId\":" + commentId + "}", comment.getUser());
         }
 
         // =========================================================
@@ -151,22 +166,30 @@ public class CommentServiceImpl implements CommentService {
         // =========================================================
         @Override
         public CommentDTO updateComment(Long commentId, Long userId, String newContent) {
-                Comment comment = commentRepo.findById(commentId)
-                                .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
+                Comment comment = commentRepo.findById(commentId).orElseThrow(
+                                () -> new IllegalArgumentException("Comment not found"));
 
+                User user = userRepo.findById(userId).orElseThrow(
+                                () -> new IllegalArgumentException("User not found: " + userId));
+
+                // ✅ Kiểm tra quyền: chỉ member của project mới được sửa comment
+                Long projectId = comment.getTask().getProject().getProjectId();
+                if (!projectAuthorizationService.isMemberOfProject(user.getEmail(), projectId)) {
+                        throw new SecurityException(
+                                        "Bạn không có quyền sửa comment trong dự án này!");
+                }
+
+                // ✅ Chỉ chủ sở hữu comment mới được sửa
                 if (!comment.getUser().getUserId().equals(userId)) {
-                        throw new SecurityException("You can only edit your own comments");
+                        throw new SecurityException("Bạn chỉ có thể sửa comment của chính mình!");
                 }
 
                 comment.setContent(newContent);
                 Comment updated = commentRepo.save(comment);
 
-                activityService.log(
-                                "TASK",
-                                comment.getTask().getTaskId(),
-                                "COMMENT_EDIT",
-                                "{\"commentId\":" + commentId +
-                                                ",\"content\":\"" + escapeJson(newContent) + "\"}",
+                activityService.log("TASK", comment.getTask().getTaskId(), "COMMENT_EDIT",
+                                "{\"commentId\":" + commentId + ",\"content\":\""
+                                                + escapeJson(newContent) + "\"}",
                                 comment.getUser());
 
                 return toDTO(updated);
@@ -177,23 +200,16 @@ public class CommentServiceImpl implements CommentService {
         // =========================================================
         private CommentDTO toTreeDTO(Comment c) {
                 CommentDTO dto = toDTO(c);
-                dto.setReplies(
-                                c.getReplies().stream()
-                                                .map(this::toTreeDTO)
-                                                .collect(Collectors.toList()));
+                dto.setReplies(c.getReplies().stream().map(this::toTreeDTO)
+                                .collect(Collectors.toList()));
                 return dto;
         }
 
         private CommentDTO toDTO(Comment c) {
-                return new CommentDTO(
-                                c.getCommentId(),
-                                c.getTask().getTaskId(),
+                return new CommentDTO(c.getCommentId(), c.getTask().getTaskId(),
                                 c.getParent() != null ? c.getParent().getCommentId() : null,
-                                c.getContent(),
-                                c.getUser().getUserId(),
-                                c.getUser().getName(),
-                                c.getUser().getEmail(),
-                                c.getUser().getAvatarUrl(),
+                                c.getContent(), c.getUser().getUserId(), c.getUser().getName(),
+                                c.getUser().getEmail(), c.getUser().getAvatarUrl(),
                                 c.getCreatedAt());
         }
 
@@ -213,7 +229,8 @@ public class CommentServiceImpl implements CommentService {
                         mentions.add(Map.of("name", "@board", "email", "@board"));
                 }
 
-                Matcher m = Pattern.compile("([\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,6})").matcher(content);
+                Matcher m = Pattern.compile("([\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,6})")
+                                .matcher(content);
                 while (m.find()) {
                         String email = m.group(1);
                         mentions.add(Map.of("name", email, "email", email));
@@ -234,18 +251,16 @@ public class CommentServiceImpl implements CommentService {
                 try {
                         if (mentionsJson == null || mentionsJson.isBlank())
                                 return List.of();
-                        List<Map<String, String>> raw = mapper.readValue(
-                                        mentionsJson,
-                                        mapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+                        List<Map<String, String>> raw = mapper.readValue(mentionsJson,
+                                        mapper.getTypeFactory().constructCollectionType(List.class,
+                                                        Map.class));
 
-                        return raw.stream()
-                                        .map(m -> {
-                                                String email = m.get("email");
-                                                String name = m.get("name");
-                                                return new CommentDTO(null, null, null, null, null, name, email, null,
-                                                                null);
-                                        })
-                                        .toList();
+                        return raw.stream().map(m -> {
+                                String email = m.get("email");
+                                String name = m.get("name");
+                                return new CommentDTO(null, null, null, null, null, name, email,
+                                                null, null);
+                        }).toList();
                 } catch (Exception e) {
                         log.error("⚠️ parseMentions() failed: {}", e.getMessage());
                         return List.of();
@@ -254,8 +269,6 @@ public class CommentServiceImpl implements CommentService {
 
         private String escapeJson(String text) {
                 return text == null ? ""
-                                : text.replace("\"", "\\\"")
-                                                .replace("\n", "\\n")
-                                                .replace("\r", "");
+                                : text.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
         }
 }

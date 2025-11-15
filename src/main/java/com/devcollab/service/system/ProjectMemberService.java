@@ -12,6 +12,8 @@ public interface ProjectMemberService {
     
     Page<MemberDTO> getAllMembers(int page, int size, String keyword);
     
+    Page<MemberDTO> getAllMembersByPmEmailPaged(String pmEmail, int page, int size, String keyword);
+    
     boolean removeMember(Long userId); 
 
     boolean removeMemberFromProject(Long projectId, Long userId);

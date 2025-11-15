@@ -85,12 +85,21 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         return projectMemberRepo.findAllMembersByPmEmail(email);
     }
 
-    // 🧭 Phân trang danh sách thành viên
+    // 🧭 Phân trang danh sách thành viên (TẤT CẢ - không dùng nữa, dùng getAllMembersByPmEmailPaged)
     @Transactional(readOnly = true)
     @Override
     public Page<MemberDTO> getAllMembers(int page, int size, String keyword) {
         Pageable pageable = PageRequest.of(page, size);
         return projectMemberRepo.findAllMembers(keyword, pageable);
+    }
+    
+    // 🧭 Phân trang danh sách thành viên của PM (chỉ members trong các project mà PM quản lý)
+    @Transactional(readOnly = true)
+    @Override
+    public Page<MemberDTO> getAllMembersByPmEmailPaged(String pmEmail, int page, int size, String keyword) {
+        Pageable pageable = PageRequest.of(page, size);
+        String searchKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        return projectMemberRepo.findAllMembersByPmEmailPaged(pmEmail, searchKeyword, pageable);
     }
 
     // 🧹 Xóa toàn bộ membership của user (Admin)

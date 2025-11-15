@@ -310,7 +310,10 @@
             }
           );
 
-          if (!res.ok) throw new Error("Failed to load members");
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ message: "Failed to load members" }));
+            throw new Error(errorData.message || `HTTP ${res.status}: Failed to load members`);
+          }
           const data = await res.json();
 
           const members = data.content || [];
@@ -321,7 +324,7 @@
             data.totalElements || 0;
 
           if (!members.length) {
-            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-500 italic">No members found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-slate-500 italic">Không tìm thấy thành viên nào.</td></tr>`;
             document.getElementById("pagination").innerHTML = "";
             return;
           }
@@ -364,7 +367,12 @@
             .join("");
           renderPagination();
         } catch (err) {
-          showToast(err.message, "error");
+          console.error("❌ Error loading members:", err);
+          const tbody = document.getElementById("member-table");
+          tbody.innerHTML = `<tr><td colspan="3" class="text-center py-6 text-red-500 italic">
+            <i class="fa-solid fa-exclamation-triangle"></i> ${err.message || "Lỗi khi tải danh sách thành viên"}
+          </td></tr>`;
+          showToast(err.message || "Lỗi khi tải danh sách thành viên", "error");
         }
       }
 

@@ -4,6 +4,7 @@ import com.devcollab.dto.MemberDTO;
 import com.devcollab.exception.NotFoundException;
 import com.devcollab.repository.ProjectMemberRepository;
 import com.devcollab.service.system.ProjectMemberService;
+import com.devcollab.service.system.ProjectAuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +24,19 @@ public class ProjectMemberRestController {
 
     private final ProjectMemberService projectMemberService;
     private final ProjectMemberRepository projectMemberRepo;
+    private final ProjectAuthorizationService projectAuthorizationService;
 
-    // 🟢 Lấy danh sách thành viên trong 1 project (ai cũng xem được nếu là member)
+    // 🟢 Lấy danh sách thành viên trong 1 project (chỉ member của project mới xem được)
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public List<MemberDTO> getMembers(@RequestParam Long projectId,
             @RequestParam(defaultValue = "200") int limit,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword, Authentication auth) {
+        String email = extractEmail(auth);
+        // ✅ Kiểm tra xem user có phải là member của project không
+        if (!projectAuthorizationService.isMemberOfProject(email, projectId)) {
+            throw new IllegalStateException("Bạn không có quyền xem thành viên của dự án này!");
+        }
         return projectMemberService.getMembersByProject(projectId, limit, keyword);
     }
 
@@ -41,14 +48,16 @@ public class ProjectMemberRestController {
         return projectMemberService.getAllMembersByPmEmail(email);
     }
 
-    // 🧩 Danh sách tất cả members có trong các project (phân trang)
+    // 🧩 Danh sách tất cả members có trong các project mà PM quản lý (phân trang)
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole('PM','ADMIN')")
     public ResponseEntity<?> getAllMembers(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String keyword) {
-
-        Page<MemberDTO> members = projectMemberService.getAllMembers(page, size, keyword);
+            @RequestParam(required = false) String keyword, Authentication auth) {
+        String pmEmail = extractEmail(auth);
+        // ✅ Chỉ trả về members của các project mà PM này quản lý
+        Page<MemberDTO> members =
+                projectMemberService.getAllMembersByPmEmailPaged(pmEmail, page, size, keyword);
         return ResponseEntity.ok(Map.of("content", members.getContent(), "totalPages",
                 members.getTotalPages(), "totalElements", members.getTotalElements(), "currentPage",
                 members.getNumber()));

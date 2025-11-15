@@ -218,7 +218,7 @@
                 Members (<span id="totalMembers">0</span>)
               </h2>
               <a
-                th:href="@{/view/pm/project/members(projectId=${projectId})}"
+                href="/view/pm/teams"
                 class="text-sm text-blue-600 hover:underline"
                 >View all</a
               >
@@ -624,56 +624,30 @@
           // Use project-specific members if projectId exists, otherwise use general API
           let membersUrl;
           if (projectId) {
-            // Try to use Thymeleaf data first
-            const membersFromThymeleaf = /*[[${members}]]*/ null;
-            if (
-              membersFromThymeleaf &&
-              Array.isArray(membersFromThymeleaf) &&
-              membersFromThymeleaf.length > 0
-            ) {
-              console.log(
-                "Using Thymeleaf members data:",
-                membersFromThymeleaf.length
-              );
-              // Use Thymeleaf data
-              allMembers = membersFromThymeleaf
-                .filter((m) => m != null) // Filter out null/undefined
-                .map((m, i) => {
-                  const user = m.user || m;
-                  return {
-                    name: user?.name || "Member",
-                    avatarUrl: user?.avatarUrl || null,
-                    color: colors[i % colors.length],
-                    id: user?.userId || user?.id || i,
-                  };
-                });
-              filteredMembers = [...allMembers];
-              document.getElementById("totalMembers").textContent =
-                allMembers.length;
-              currentPage = page; // Set current page
-              renderMembers();
-              renderPagination();
-              return;
-            }
-            // Fallback to API - project members API doesn't use pagination, returns list
+            // ✅ Luôn dùng API để đảm bảo kiểm tra quyền đúng
             membersUrl = `/api/pm/members?projectId=${projectId}&limit=200&keyword=${encodeURIComponent(
               searchKeyword
             )}`;
             console.log("Loading project members from API:", membersUrl);
           } else {
-            // Load all members at once (use large size to get all)
+            // ✅ Load members của PM (chỉ các project mà PM quản lý)
             // Convert 1-based page to 0-based for backend API
             const backendPage = Math.max(0, page - 1);
-            // Load all members at once with large size
-            // If there are more than 200 members, we'll need to load multiple times
-            membersUrl = `/api/pm/members/all?page=0&size=500&keyword=${encodeURIComponent(
+            membersUrl = `/api/pm/members/all?page=${backendPage}&size=500&keyword=${encodeURIComponent(
               searchKeyword
             )}`;
-            console.log("Loading all members from API:", membersUrl);
+            console.log(
+              "Loading all members from API (PM's projects only):",
+              membersUrl
+            );
           }
 
+          const headers = {};
+          if (token) {
+            headers.Authorization = "Bearer " + token;
+          }
           const res = await fetch(membersUrl, {
-            headers: { Authorization: "Bearer " + token },
+            headers,
             credentials: "include",
           });
 

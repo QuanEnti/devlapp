@@ -8,6 +8,7 @@ import com.devcollab.dto.response.ApiResponse;
 import com.devcollab.dto.response.ProjectResponseDTO;
 import com.devcollab.exception.BadRequestException;
 import com.devcollab.exception.NotFoundException;
+import com.devcollab.repository.ProjectMemberRepository;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.UserService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -27,6 +29,7 @@ public class ProjectRestController {
 
     private final ProjectService projectService;
     private final UserService userService;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @PostMapping("/create")
     public ApiResponse<Project> createProject(@RequestBody ProjectCreateRequestDTO request,
@@ -163,8 +166,11 @@ public class ProjectRestController {
             }
 
             Project existing = projectService.getById(projectId);
-            // ✅ Chỉ người tạo project được phép chỉnh sửa
-            if (!Objects.equals(existing.getCreatedBy().getUserId(), editor.getUserId())) {
+            // ✅ Kiểm tra quyền: chỉ creator hoặc PM/ADMIN của project mới được chỉnh sửa
+            boolean isOwner = Objects.equals(existing.getCreatedBy().getUserId(), editor.getUserId());
+            boolean isManager = projectMemberRepository.existsByProject_ProjectIdAndUser_EmailAndRoleInProjectIn(
+                    projectId, email, List.of("PM", "ADMIN"));
+            if (!isOwner && !isManager) {
                 return ApiResponse.error("Bạn không có quyền chỉnh sửa project này!", 403);
             }
             // ✅ Tạo bản patch object để cập nhật

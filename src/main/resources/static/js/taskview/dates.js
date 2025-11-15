@@ -108,6 +108,40 @@ function readTimeValue(input) {
 }
 
 // ================== STATUS BADGE ==================
+// ✅ Hàm hiển thị start date - Ẩn bên ngoài, chỉ hiển thị trong popup dates
+export function updateStartDateStatus(startDateStr) {
+  // ✅ Không hiển thị start date bên ngoài overview, chỉ trong popup dates
+  // const textEl = document.getElementById("start-date-text");
+  // const startDateSection = document.getElementById("start-date-section");
+
+  // if (!textEl || !startDateSection) return;
+
+  // if (!startDateStr) {
+  //   startDateSection.classList.add("hidden");
+  //   return;
+  // }
+
+  // const start = new Date(startDateStr);
+  // const formatted = start.toLocaleString("en-US", {
+  //   month: "short",
+  //   day: "numeric",
+  //   hour: "numeric",
+  //   minute: "2-digit",
+  // });
+
+  // textEl.textContent = formatted;
+  // startDateSection.classList.remove("hidden");
+
+  // ✅ Chỉ log để debug, không hiển thị UI
+  if (startDateStr) {
+    console.log(
+      "📅 Start date exists:",
+      startDateStr,
+      "(hidden from overview)"
+    );
+  }
+}
+
 export function updateDateStatus(dueDateStr) {
   const textEl = document.getElementById("due-date-text");
   const statusEl = document.getElementById("due-date-status");
@@ -150,8 +184,10 @@ export function updateDateStatus(dueDateStr) {
 }
 
 // Helper function để cập nhật UI date section
-function updateDateSectionUI(deadline) {
+function updateDateSectionUI(deadline, startDate) {
   updateDateStatus(deadline || null);
+  updateStartDateStatus(startDate || null);
+
   const dueDateSection = document.getElementById("due-date-section");
   if (dueDateSection) {
     if (deadline) {
@@ -203,14 +239,31 @@ async function loadTaskDatesIntoPopup() {
     if (!res.ok) return;
     const task = await res.json();
 
-    // Load start date
-    if (task.startDate) {
-      const { date, time } = parseDateTime(task.startDate);
-      startCheck.checked = true;
-      toggleStartFields(true);
-      setDateValue(startDateInput, date);
-      setTimeValue(startTimeInput, time);
+    // ✅ Load start date - kiểm tra cả startDate và start_date, loại bỏ empty string
+    const startDateValue =
+      task.startDate && task.startDate.trim() !== ""
+        ? task.startDate
+        : task.start_date && task.start_date.trim() !== ""
+        ? task.start_date
+        : null;
+    if (startDateValue) {
+      console.log("📅 Loading start date:", startDateValue);
+      const { date, time } = parseDateTime(startDateValue);
+      if (date && time) {
+        startCheck.checked = true;
+        toggleStartFields(true);
+        setDateValue(startDateInput, date);
+        setTimeValue(startTimeInput, time);
+        console.log("✅ Start date loaded:", date, time);
+      } else {
+        console.warn("⚠️ Failed to parse start date:", startDateValue);
+        startCheck.checked = false;
+        toggleStartFields(false);
+        setDateValue(startDateInput, "");
+        setTimeValue(startTimeInput, "");
+      }
     } else {
+      console.log("ℹ️ No start date found in task data");
       startCheck.checked = false;
       toggleStartFields(false);
       setDateValue(startDateInput, "");
@@ -578,7 +631,23 @@ saveDateBtn?.addEventListener("click", async () => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Failed to save date");
+      let errorMessage = errorData.message || "Failed to save date";
+      // ✅ Làm gọn error message về deadline
+      if (
+        errorMessage.includes("Deadline") &&
+        errorMessage.includes("StartDate")
+      ) {
+        errorMessage = "Deadline không thể trước StartDate của Project";
+      } else if (errorMessage.includes("could not execute statement")) {
+        // Extract Vietnamese message if available
+        const match = errorMessage.match(/\[Lỗi: ([^\]]+)\]/);
+        if (match) {
+          errorMessage = match[1];
+        } else {
+          errorMessage = "Lỗi khi lưu ngày tháng";
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     const updated = await res.json();
@@ -597,18 +666,18 @@ saveDateBtn?.addEventListener("click", async () => {
       if (taskRes.ok) {
         const task = await taskRes.json();
         // Cập nhật UI modal với dữ liệu mới nhất từ server
-        updateDateSectionUI(task.deadline);
+        updateDateSectionUI(task.deadline, task.startDate);
         // Cập nhật card bên ngoài column
         updateCardDate(taskId, task.deadline);
       } else {
         // Nếu reload thất bại, dùng dữ liệu từ response ban đầu
-        updateDateSectionUI(updated.deadline);
+        updateDateSectionUI(updated.deadline, updated.startDate);
         updateCardDate(taskId, updated.deadline);
       }
     } catch (reloadErr) {
       console.warn(" Could not reload task data:", reloadErr);
       // Fallback: dùng dữ liệu từ response ban đầu
-      updateDateSectionUI(updated.deadline);
+      updateDateSectionUI(updated.deadline, updated.startDate);
       updateCardDate(taskId, updated.deadline);
     }
 

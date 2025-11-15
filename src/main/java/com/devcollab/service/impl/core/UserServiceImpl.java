@@ -9,6 +9,7 @@ import com.devcollab.service.core.UserService;
 import com.devcollab.service.event.AppEventService;
 // import com.devcollab.service.system.NotificationService;
 import com.devcollab.service.system.AuthService;
+import com.devcollab.service.system.UserRoleService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final AppEventService appEventService;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final UserRoleService userRoleService;
     // private final NotificationService notificationService;
 
     @Override
@@ -57,7 +59,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (existingOpt.isPresent()) {
             User existing = existingOpt.get();
 
-            if ("google".equalsIgnoreCase(existing.getProvider()) && user.getPasswordHash() != null) {
+            if ("google".equalsIgnoreCase(existing.getProvider())
+                    && user.getPasswordHash() != null) {
                 existing.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
                 existing.setProvider("local_google");
                 existing.setUpdatedAt(LocalDateTime.now());
@@ -65,8 +68,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                 return userRepository.save(existing);
             }
 
-            if ("local".equalsIgnoreCase(existing.getProvider()) ||
-                    "local_google".equalsIgnoreCase(existing.getProvider())) {
+            if ("local".equalsIgnoreCase(existing.getProvider())
+                    || "local_google".equalsIgnoreCase(existing.getProvider())) {
                 throw new BadRequestException("Email này đã có tài khoản mật khẩu");
             }
 
@@ -91,6 +94,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setUpdatedAt(LocalDateTime.now());
         user.setLastSeen(LocalDateTime.now());
         User saved = userRepository.save(user);
+
+        // 🔐 Gán role mặc định ROLE_USER cho user mới
+        userRoleService.assignDefaultRole(saved);
 
         appEventService.publishUserCreated(saved);
         return saved;
@@ -188,14 +194,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public boolean checkPassword(String email, String rawPassword) {
         return userRepository.findByEmail(email)
-                .map(u -> passwordEncoder.matches(rawPassword, u.getPasswordHash()))
-                .orElse(false);
+                .map(u -> passwordEncoder.matches(rawPassword, u.getPasswordHash())).orElse(false);
     }
 
     @Override
     public void markVerified(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
-            String currentStatus = user.getStatus() != null ? user.getStatus().toLowerCase() : "unknown";
+            String currentStatus =
+                    user.getStatus() != null ? user.getStatus().toLowerCase() : "unknown";
             System.out.println("User Status: " + currentStatus);
             // 🚫 Do NOT overwrite banned or suspended users
             if ("banned".equals(currentStatus) || "suspended".equals(currentStatus)) {
@@ -220,8 +226,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         userRepository.findByEmail(email).ifPresent(user -> {
             user.setPasswordHash(passwordEncoder.encode(newPassword));
             user.setUpdatedAt(LocalDateTime.now());
-            if (!"local".equalsIgnoreCase(user.getProvider()) &&
-                    !"local_google".equalsIgnoreCase(user.getProvider())) {
+            if (!"local".equalsIgnoreCase(user.getProvider())
+                    && !"local_google".equalsIgnoreCase(user.getProvider())) {
                 user.setProvider("local");
             }
             userRepository.save(user);
@@ -234,24 +240,22 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Transactional
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         // 🔍 Dùng query có JOIN FETCH để load roles cùng lúc
-        User user = userRepository.findByEmailFetchRoles(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + email));
+        User user = userRepository.findByEmailFetchRoles(email).orElseThrow(
+                () -> new UsernameNotFoundException("Không tìm thấy người dùng: " + email));
 
         // ✅ Convert roles trong DB sang GrantedAuthority
         var authorities = user.getRoles().stream()
-                .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(role.getName()))
+                .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                        role.getName()))
                 .toList();
 
         // 🧠 Logging để kiểm tra roles thực tế
         System.out.println("🎯 Loaded user: " + email + " | Roles: " + authorities);
 
         // ✅ Tạo UserDetails với roles thật từ DB
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
+        return org.springframework.security.core.userdetails.User.withUsername(user.getEmail())
                 .password(user.getPasswordHash() != null ? user.getPasswordHash() : "")
-                .authorities(authorities)
-                .accountExpired(false)
-                .accountLocked(false)
+                .authorities(authorities).accountExpired(false).accountLocked(false)
                 .credentialsExpired(false)
                 .disabled(!("active".equalsIgnoreCase(user.getStatus())
                         || "verified".equalsIgnoreCase(user.getStatus())))

@@ -60,7 +60,6 @@ public class ProjectServiceImpl implements ProjectService {
         }
         String projectName = project.getName().trim();
 
-        // ✅ Check for duplicate (case-insensitive)
         boolean exists =
                 projectRepository.existsByNameIgnoreCaseAndCreatedBy_UserId(projectName, creatorId);
         if (exists) {
@@ -90,7 +89,6 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project saved = projectRepository.save(project);
 
-        // 🔗 Tự động tạo invite link khi tạo project mới
         String inviteCode = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         saved.setInviteLink(inviteCode);
         saved.setInviteCreatedAt(LocalDateTime.now());
@@ -98,20 +96,25 @@ public class ProjectServiceImpl implements ProjectService {
         saved.setInviteUsageCount(0);
         saved.setInviteMaxUses(10);
         saved.setInviteCreatedBy(creator.getEmail());
-        saved.setAllowLinkJoin(false); // Link được tạo nhưng chưa bật, PM cần bật nếu muốn
+        saved.setAllowLinkJoin(false);
         saved = projectRepository.save(saved);
 
-        // 🧑‍💼 Gán người tạo làm PM
         ProjectMember pm = new ProjectMember();
         pm.setProject(saved);
         pm.setUser(creator);
         pm.setRoleInProject("PM");
         pm.setJoinedAt(LocalDateTime.now());
         projectMemberRepository.save(pm);
+
         Role pmRole = roleRepository.findByName("ROLE_PM")
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy ROLE_PM trong hệ thống"));
+        boolean hasPmRole =
+                creator.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_PM"));
+        if (!hasPmRole) {
+            creator.getRoles().add(pmRole);
+            userRepository.save(creator);
+        }
 
-        // 🧱 Danh sách cột mặc định (thêm Backlog ở đầu)
         String[] defaultCols = {"Backlog", "To-do", "In Progress", "Review", "Done"};
         String[] defaultStatusCodes = {"BACKLOG", "OPEN", "IN_PROGRESS", "REVIEW", "DONE"};
 
@@ -121,9 +124,7 @@ public class ProjectServiceImpl implements ProjectService {
             col.setName(defaultCols[i]);
             col.setOrderIndex(i + 1);
             col.setIsDefault(true);
-            // ⚡ Nếu bạn đã thêm cột `status_code` trong bảng BoardColumn:
             try {
-                // phản xạ an toàn — chỉ set nếu entity có cột này
                 BoardColumn.class.getDeclaredField("statusCode");
                 col.getClass().getMethod("setStatusCode", String.class).invoke(col,
                         defaultStatusCodes[i]);
@@ -131,8 +132,6 @@ public class ProjectServiceImpl implements ProjectService {
             }
             boardColumnRepository.save(col);
         }
-
-        // 🪶 Gửi sự kiện sau khi tạo project
         appEventService.publishProjectCreated(saved);
 
         return saved;
@@ -294,15 +293,9 @@ public class ProjectServiceImpl implements ProjectService {
                 : BigDecimal.valueOf(done).multiply(BigDecimal.valueOf(100))
                         .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
 
-        return ProjectDashboardDTO.builder()
-                .projectId(projectId)
-                .totalTasks(total)
-                .openTasks(open)
-                .inProgressTasks(inProgress)
-                .reviewTasks(review)
-                .doneTasks(done)
-                .overdueTasks(overdue)
-                .percentDone(percentDone)
+        return ProjectDashboardDTO.builder().projectId(projectId).totalTasks(total).openTasks(open)
+                .inProgressTasks(inProgress).reviewTasks(review).doneTasks(done)
+                .overdueTasks(overdue).percentDone(percentDone)
                 .projectStatus(project.getStatus() != null ? project.getStatus() : "Active")
                 .build();
     }

@@ -41,7 +41,11 @@
         </a>
       </li>
 
-      <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+      <!-- Overview - Only for PM (system role or project PM) -->
+      <li
+        th:if="${isProjectManager != null && isProjectManager == true}"
+        class="flex items-center px-6 py-3 cursor-pointer sidebar-item"
+      >
         <a
           href="/view/pm/dashboard"
           class="flex items-center w-full hover:text-blue-600 transition"
@@ -61,29 +65,12 @@
       </li>
 
       <!-- 📁 Projects List -->
-      <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
-        <a
-          href="/view/pm/projects"
-          class="flex items-center w-full hover:text-blue-600 transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 mr-3 text-gray-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V7l-4-4H4zm3 7a1 1 0 100 2h6a1 1 0 100-2H7z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          Projects List
-        </a>
-      </li>
 
-      <!-- 👥 Teams List -->
-      <li class="flex items-center px-6 py-3 cursor-pointer sidebar-item">
+      <!-- 👥 Teams List - Only for PM (system role or project PM) -->
+      <li
+        th:if="${isProjectManager != null && isProjectManager == true}"
+        class="flex items-center px-6 py-3 cursor-pointer sidebar-item"
+      >
         <a
           href="/view/pm/teams"
           class="flex items-center w-full hover:text-blue-600 transition"

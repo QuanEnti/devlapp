@@ -229,6 +229,15 @@ async function handleFileUpload() {
 // ================== LOAD & RENDER ==================
 export async function loadAttachments(taskId) {
   try {
+    // ✅ Kiểm tra xem modal và attachments list có tồn tại trong DOM không
+    const modal = document.getElementById("task-detail-modal");
+    const attachmentsListEl = document.getElementById("attachments-list");
+    
+    if (!modal || !attachmentsListEl) {
+      console.warn("⚠️ Modal or attachments list not found in DOM, skipping loadAttachments");
+      return;
+    }
+    
     const token = getToken();
     const headers = {};
     if (token) {
@@ -242,7 +251,11 @@ export async function loadAttachments(taskId) {
     const attachments = await res.json();
     renderAttachments(attachments);
   } catch (err) {
-    attachmentsList.innerHTML = `<p class="text-red-500 text-sm">Failed to load attachments</p>`;
+    const attachmentsListEl = document.getElementById("attachments-list");
+    if (attachmentsListEl) {
+      attachmentsListEl.innerHTML = `<p class="text-red-500 text-sm">Failed to load attachments</p>`;
+    }
+    console.error("❌ loadAttachments failed:", err);
   }
 }
 
@@ -316,6 +329,13 @@ function getWebsiteIcon(url) {
 }
 
 function renderAttachments(items) {
+  // ✅ Lấy attachmentsList từ DOM mỗi lần gọi (thay vì dùng biến global có thể null)
+  const attachmentsListEl = document.getElementById("attachments-list");
+  if (!attachmentsListEl) {
+    console.warn("⚠️ attachments-list element not found in DOM");
+    return;
+  }
+  
   // Separate links and files
   const links = items.filter(
     (a) => a.mimeType === "link/url" || /^https?:\/\//.test(a.fileUrl || "")
@@ -464,7 +484,12 @@ function renderAttachments(items) {
     html += `</div></div>`;
   }
 
-  attachmentsList.innerHTML = html;
+  // ✅ Nếu không có links và files, hiển thị message
+  if (html === "") {
+    html = `<p class="text-gray-400 italic">No attachments yet.</p>`;
+  }
+
+  attachmentsListEl.innerHTML = html;
 
   // 🟦 Events
   document.querySelectorAll(".attachment-row, .link-row").forEach((row) => {

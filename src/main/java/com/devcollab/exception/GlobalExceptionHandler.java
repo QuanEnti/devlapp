@@ -43,11 +43,27 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+        String message = ex.getMessage();
+        
+        // ✅ Làm gọn error message về deadline
+        if (message != null && message.contains("Deadline") && message.contains("StartDate")) {
+            message = "Deadline không thể trước StartDate của Project";
+        } else if (message != null && message.contains("could not execute statement")) {
+            // Extract Vietnamese message if available
+            int startIdx = message.indexOf("[Lỗi: ");
+            int endIdx = message.indexOf("]", startIdx);
+            if (startIdx >= 0 && endIdx > startIdx) {
+                message = message.substring(startIdx + 6, endIdx);
+            } else {
+                message = "Lỗi khi cập nhật dữ liệu";
+            }
+        }
+        
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
                         "timestamp", LocalDateTime.now(),
                         "status", 500,
                         "error", "Internal Server Error",
-                        "message", ex.getMessage()));
+                        "message", message != null ? message : "Đã xảy ra lỗi"));
     }
 }

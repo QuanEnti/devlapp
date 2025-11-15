@@ -522,8 +522,13 @@
               const avatarBgColor =
                 avatarBgColors[Math.abs(hash) % avatarBgColors.length];
 
+              // ✅ Escape link để tránh lỗi khi có dấu nháy đơn
+              const escapedLink = link
+                .replace(/'/g, "\\'")
+                .replace(/"/g, "&quot;");
+
               return `
-            <div onclick="handleNotificationClick(${id}, '${link}')"
+            <div onclick="handleNotificationClick(${id}, '${escapedLink}')"
                 class="px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0 ${
                   isRead ? "bg-white" : "bg-blue-50/50"
                 }">
@@ -630,12 +635,67 @@
           return;
         }
 
-        // 🧩 Trường hợp task notification
-        if (link.includes("/tasks/")) {
-          const taskId = link.split("taskId=")[1] || link.split("/tasks/")[1];
-          if (taskId) {
-            await openTaskDetailFromApi(taskId);
+        // 🧩 Trường hợp task notification - kiểm tra taskId trong query string
+        const taskIdMatch = link.match(/[?&]taskId=(\d+)/);
+        if (taskIdMatch) {
+          const taskId = taskIdMatch[1];
+
+          // ✅ Kiểm tra xem modal có tồn tại trong DOM không (chỉ có ở trang board)
+          const modal = document.getElementById("task-detail-modal");
+          if (!modal) {
+            // ✅ Nếu không có modal, redirect đến trang board với taskId
+            window.location.href = link;
             return;
+          }
+
+          // ✅ Nếu có modal, cố gắng mở modal task detail
+          if (typeof openTaskDetailFromApi === "function") {
+            try {
+              await openTaskDetailFromApi(taskId);
+              return;
+            } catch (err) {
+              console.warn("⚠️ Failed to open task modal, redirecting:", err);
+              window.location.href = link;
+              return;
+            }
+          }
+
+          // ✅ Fallback: redirect đến trang board với taskId
+          window.location.href = link;
+          return;
+        }
+
+        // 🧩 Trường hợp task notification với format /tasks/{taskId}
+        if (link.includes("/tasks/")) {
+          const taskId =
+            link.split("taskId=")[1] ||
+            link.split("/tasks/")[1]?.split("?")[0] ||
+            link.split("/tasks/")[1];
+          if (taskId) {
+            // ✅ Kiểm tra xem modal có tồn tại trong DOM không
+            const modal = document.getElementById("task-detail-modal");
+            if (!modal) {
+              // ✅ Nếu không có modal, redirect đến trang board
+              window.location.href = link.includes("projectId")
+                ? link
+                : `/view/pm/project/board?projectId=${
+                    new URLSearchParams(window.location.search).get(
+                      "projectId"
+                    ) || ""
+                  }&taskId=${taskId}`;
+              return;
+            }
+
+            if (typeof openTaskDetailFromApi === "function") {
+              try {
+                await openTaskDetailFromApi(taskId);
+                return;
+              } catch (err) {
+                console.warn("⚠️ Failed to open task modal, redirecting:", err);
+                window.location.href = link;
+                return;
+              }
+            }
           }
         }
 
@@ -652,17 +712,67 @@
 
       async function openTaskDetailFromApi(taskId) {
         try {
-          const token = localStorage.getItem("token");
+          // ✅ Kiểm tra xem modal có tồn tại trong DOM không
+          const modal = document.getElementById("task-detail-modal");
+          if (!modal) {
+            throw new Error(
+              "Modal not found in DOM - redirecting to board page"
+            );
+          }
+
+          // ✅ Helper function để lấy token
+          function getToken() {
+            return (
+              localStorage.getItem("token") || getCookie("AUTH_TOKEN") || ""
+            );
+          }
+          function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(";").shift();
+            return "";
+          }
+
+          const token = getToken();
           const headers = {};
           if (token) {
             headers.Authorization = "Bearer " + token;
           }
           const res = await fetch(`/api/tasks/${taskId}`, {
             headers,
+            credentials: "include",
           });
           if (!res.ok) throw new Error("Failed to load task");
           const task = await res.json();
-          openTaskModal(task);
+
+          // ✅ Nếu có function openModal từ main.js thì dùng nó (load đầy đủ)
+          if (typeof window.openModal === "function") {
+            await window.openModal(taskId);
+            return;
+          }
+
+          // ✅ Fallback: dùng openTaskModal cơ bản
+          openTaskModal(task, taskId);
+
+          // ✅ Đợi một chút để đảm bảo modal đã được hiển thị và DOM đã sẵn sàng
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          // ✅ Load thêm dữ liệu nếu có các function (sau khi modal đã hiển thị)
+          if (typeof loadAttachments === "function") {
+            await loadAttachments(taskId);
+          }
+          if (typeof loadActivityFeed === "function") {
+            await loadActivityFeed(taskId);
+          }
+          if (typeof loadChecklistItems === "function") {
+            await loadChecklistItems();
+          }
+          if (typeof renderMembersInModal === "function") {
+            renderMembersInModal(task);
+          }
+          if (typeof renderLabelsInModal === "function") {
+            renderLabelsInModal(task);
+          }
         } catch (err) {
           console.error("❌ openTaskDetailFromApi:", err);
           showToast("Failed to load task information.", "error");
@@ -670,12 +780,15 @@
       }
 
       // ================== 🪟 Render Task Detail into Modal ==================
-      function openTaskModal(task) {
+      function openTaskModal(task, taskId) {
         const modal = document.getElementById("task-detail-modal");
         if (!modal) {
           console.error("❌ Modal task-detail-modal not found in DOM");
           return;
         }
+
+        // ✅ Lấy taskId từ parameter hoặc từ task object
+        const finalTaskId = taskId || task.id || task.taskId;
 
         const titleEl = modal.querySelector("h2.text-2xl");
         if (titleEl) titleEl.textContent = task.title || "(Untitled Task)";
@@ -732,8 +845,8 @@
           }
         }
 
-        if (typeof loadActivityFeed === "function") {
-          loadActivityFeed(task.taskId);
+        if (typeof loadActivityFeed === "function" && finalTaskId) {
+          loadActivityFeed(finalTaskId);
         }
 
         modal.classList.remove("hidden");

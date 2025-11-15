@@ -176,10 +176,9 @@ public class NotificationServiceImpl implements NotificationService {
                             + "\".",
                     "/view/pm/project/board?projectId=" + project.getProjectId(), sender);
 
-            log.info("📨 [Notification] Sent PROJECT_MEMBER_ROLE_UPDATED to {}",
-                    receiver.getEmail());
+            log.info("[Notification] Sent PROJECT_MEMBER_ROLE_UPDATED to {}", receiver.getEmail());
         } catch (Exception e) {
-            log.error("❌ notifyMemberRoleUpdated(): {}", e.getMessage(), e);
+            log.error(" notifyMemberRoleUpdated(): {}", e.getMessage(), e);
         }
     }
 
@@ -248,7 +247,7 @@ public class NotificationServiceImpl implements NotificationService {
                 "/view/pm/project/board?projectId=" + project.getProjectId(),
                 project.getCreatedBy());
 
-        log.info("✅ [Notification] JOIN_REQUEST_APPROVED for {}", requester.getEmail());
+        log.info("[Notification] JOIN_REQUEST_APPROVED for {}", requester.getEmail());
     }
 
     @Override
@@ -278,7 +277,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void notifyTaskEvent(Task task, User actor, String eventType, String message,
             User specificReceiver) {
         if (task == null) {
-            log.warn("⚠️ notifyTaskEvent(): Task is null");
+            log.warn("notifyTaskEvent(): Task is null");
             return;
         }
 
@@ -313,9 +312,9 @@ public class NotificationServiceImpl implements NotificationService {
                         msg, link, actor);
             }
 
-            log.info("✅ [Notification] Sent '{}' to {} follower(s)", eventType, receivers.size());
+            log.info("[Notification] Sent '{}' to {} follower(s)", eventType, receivers.size());
         } catch (Exception e) {
-            log.error("❌ notifyTaskEvent() failed: {}", e.getMessage(), e);
+            log.error("notifyTaskEvent() failed: {}", e.getMessage(), e);
         }
     }
 

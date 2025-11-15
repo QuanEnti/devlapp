@@ -40,9 +40,9 @@
         </a>
       </li>
 
-      <!-- Overview - Only for PM -->
+      <!-- Overview - Only for PM (system role or project PM) -->
       <li
-        th:if="${user != null && user.roles != null && user.roles.?[name == 'ROLE_PM'].size() > 0}"
+        th:if="${isProjectManager != null && isProjectManager == true}"
         class="flex items-center px-6 py-3 cursor-pointer sidebar-item"
       >
         <a
@@ -103,9 +103,9 @@
         </a>
       </li>
 
-      <!-- Teams List - Only for PM -->
+      <!-- Teams List - Only for PM (system role or project PM) -->
       <li
-        th:if="${user != null && user.roles != null && user.roles.?[name == 'ROLE_PM'].size() > 0}"
+        th:if="${isProjectManager != null && isProjectManager == true}"
         class="flex items-center px-6 py-3 cursor-pointer sidebar-item"
       >
         <a
