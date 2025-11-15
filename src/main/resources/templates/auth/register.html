@@ -7,59 +7,96 @@
   <style>
     body {
       font-family: "Inter", Arial, sans-serif;
-      background: #f5f7fa;
+      background: transparent;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       margin: 0;
+      position: relative;
+      min-height: 100vh;
+    }
+    
+    /* Background image với blur effect */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('/photo/signin-background.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: blur(8px);
+      z-index: -2;
+      transform: scale(1.1);
+    }
+    
+    /* Overlay để đảm bảo content dễ đọc */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.3);
+      z-index: -1;
     }
     .container {
       background: #fff;
-      padding: 40px 50px;
+      padding: 35px 45px;
       border-radius: 16px;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-      width: 400px;
+      width: 480px;
       text-align: center;
       animation: fadeIn 0.4s ease;
+      position: relative;
+      z-index: 1;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    h2 { margin-bottom: 10px; }
-    p { color: #666; margin-bottom: 25px; }
+    h2 { margin-bottom: 12px; font-size: 26px; font-weight: 600; }
+    p { color: #666; margin-bottom: 25px; font-size: 16px; }
     input {
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       border-radius: 30px;
       border: 1px solid #ccc;
       margin-bottom: 14px;
-      font-size: 15px;
+      font-size: 16px;
       box-sizing: border-box;
     }
     button {
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       border-radius: 30px;
       border: none;
       background: #000;
       color: #fff;
-      font-size: 15px;
+      font-size: 16px;
       cursor: pointer;
       transition: 0.2s;
+      margin-top: 10px;
     }
     button:hover { background: #222; }
+    #registerBtn {
+      margin-top: 18px !important;
+    }
     #msg {
       margin-top: 10px;
-      font-size: 14px;
+      font-size: 15px;
       color: #444;
       min-height: 20px;
     }
     a {
       text-decoration: none;
       color: #555;
-      font-size: 13px;
+      font-size: 14px;
       margin-top: 12px;
       display: inline-block;
     }

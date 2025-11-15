@@ -155,16 +155,7 @@
             <groupId>org.springframework</groupId>            <!-- ✅ CHỈ “org.springframework” -->
             <artifactId>spring-messaging</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>sockjs-client</artifactId>
-            <version>1.5.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>stomp-websocket</artifactId>
-            <version>2.3.4</version>
-        </dependency>
+
 
         <!-- (Tùy chọn) Mockito tích hợp với JUnit 5 -->
         <dependency>
@@ -181,6 +172,7 @@
             <version>3.24.2</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>com.cloudinary</groupId>
             <artifactId>cloudinary-http44</artifactId>
@@ -193,9 +185,23 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
         </dependency>
 
 
@@ -270,28 +276,24 @@
                 </configuration>
             </plugin>
 
-
-        <plugin>
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>exec-maven-plugin</artifactId>
-    <version>3.1.0</version>
-    <executions>
-        <execution>
-            <id>run-katalon</id>
-            <phase>verify</phase>
-            <goals>
-                <goal>exec</goal>
-            </goals>
-            <configuration>
-                <executable>cmd</executable>
-                <arguments>
-                    <argument>/c</argument>
-                    <argument>katalonc -noSplash -runMode=console -projectPath="E:\DEVLLAP\devlapp-katalon\DevCollab.prj" -retry=0 -testSuitePath="Test Suites/User_Flow" -executionProfile="default" -browserType="Chrome (headless)"</argument>
-                </arguments>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version> <executions>
+                <execution>
+                    <goals>
+                        <goal>prepare-agent</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>report</id>
+                    <phase>prepare-package</phase>
+                    <goals>
+                        <goal>report</goal>
+                    </goals>
+                </execution>
+            </executions>
+            </plugin>
 
         </plugins>
     </build>
