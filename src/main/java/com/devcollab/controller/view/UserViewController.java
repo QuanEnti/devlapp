@@ -98,7 +98,9 @@ public class UserViewController {
             // Get user's projects
             List<Project> projects = Collections.emptyList();
             try {
-                projects = projectService.getTop5ProjectsByUser(user.getUserId());
+                projects = projectService.getTop5ProjectsByUser(user.getUserId()).stream()
+                        .filter(p -> p != null && !"Archived".equalsIgnoreCase(p.getStatus()))
+                        .toList();
                 projects = projects.stream().filter(Objects::nonNull).collect(Collectors.toList());
             } catch (Exception e) {
                 System.err.println("Error loading projects: " + e.getMessage());
@@ -275,17 +277,17 @@ public class UserViewController {
         User currentUser = userService.getByEmail(email).orElseThrow();
 
         Pageable pageable = PageRequest.of(page, 9);
-        Page<ProjectMember> memberPage =
-                projectService.getProjectsByUserSorted(currentUser, role, pageable);
+        Page<ProjectMember> memberPage = projectService.getProjectsByUserSorted(currentUser, role, pageable);
 
         // Build a wrapper list to send to UI
         List<Map<String, Object>> projectCards = new ArrayList<>();
 
-        for (ProjectMember pm : memberPage.getContent()) {
+        for (ProjectMember pm : memberPage.getContent().stream()
+                .filter(pm -> !"Archived".equalsIgnoreCase(pm.getProject().getStatus()))
+                .toList()) {
             Project project = pm.getProject();
 
-            List<MemberDTO> members =
-                    projectMemberRepository.findMembersByProject(project.getProjectId());
+            List<MemberDTO> members = projectMemberRepository.findMembersByProject(project.getProjectId());
 
             Map<String, Object> card = new HashMap<>();
             card.put("project", project);
@@ -302,8 +304,6 @@ public class UserViewController {
         return "user/user-viewallprojects";
     }
 
-
-
     // ✉️ Danh sách lời mời
     @GetMapping("/view-invitation")
     public String userViewInvitationPage() {
@@ -317,7 +317,9 @@ public class UserViewController {
             Authentication auth) {
 
         String email = getEmailFromAuthentication(auth);
-        var projects = projectService.getProjectsByUsername(email);
+        var projects = projectService.getProjectsByUsername(email).stream()
+                .filter(p -> p != null && !"Archived".equalsIgnoreCase(p.getStatus()))
+                .toList();
         model.addAttribute("projects", projects);
 
         if (projectId != null) {

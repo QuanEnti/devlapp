@@ -531,7 +531,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Transactional(readOnly = true)
     public String getUserRoleInProject(Long projectId, Long userId) {
-        return projectMemberRepository.findRoleInProject(projectId, userId).orElse("Member");
+        return projectMemberRepository.findRoleInProject(projectId, userId).orElse(null);
     }
 
     @Transactional(readOnly = true)
