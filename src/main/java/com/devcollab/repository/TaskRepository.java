@@ -38,6 +38,18 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     long countOverdue(Long projectId, LocalDateTime now);
 
     @Query("""
+            SELECT DISTINCT t FROM Task t
+            LEFT JOIN FETCH t.assignee
+            WHERE t.project.projectId = :projectId
+              AND t.deadline IS NOT NULL
+              AND t.deadline < :now
+              AND UPPER(t.status) <> 'CLOSED'
+              AND t.archived = false
+            ORDER BY t.deadline ASC
+            """)
+    List<Task> findOverdueTasksWithAssignee(@Param("projectId") Long projectId, @Param("now") LocalDateTime now);
+
+    @Query("""
                 SELECT
                     FORMAT(t.closedAt, 'ddd') AS dayOfWeek,
                     COUNT(t)
@@ -226,6 +238,16 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     Page<Task> findByProject_ProjectIdAndStatusAndTitleContainingIgnoreCase(Long projectId,
             String status, String title, Pageable pageable);
+
+    @Query("""
+            SELECT t FROM Task t
+            LEFT JOIN FETCH t.project p
+            WHERE t.assignee.userId = :userId
+              AND t.deadline IS NOT NULL
+              AND t.archived = false
+            ORDER BY t.deadline ASC
+            """)
+    List<Task> findTasksWithDeadlineByAssignee(@Param("userId") Long userId);
 
 }
 

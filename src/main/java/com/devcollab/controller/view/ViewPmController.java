@@ -7,9 +7,7 @@ import com.devcollab.dto.MemberPerformanceDTO;
 import com.devcollab.service.core.ProjectService;
 import com.devcollab.service.core.TaskService;
 import com.devcollab.service.core.UserService;
-import com.devcollab.service.system.ActivityService;
 import com.devcollab.service.system.NotificationService;
-import com.devcollab.service.system.ProjectMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -18,7 +16,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequestMapping("/view/pm")
@@ -185,6 +182,33 @@ public class ViewPmController {
         model.addAttribute("scores", scores);
 
         return "pm/project-performance.html";
+    }
+
+    @GetMapping("/project/statistical")
+    public String viewStatistical(@RequestParam("projectId") Long projectId, Model model, Authentication auth) {
+        Project checkStatusProject = projectService.getById(projectId);
+        if (checkStatusProject == null
+                || "Archived".equalsIgnoreCase(checkStatusProject.getStatus())) {
+            return "redirect:/view/pm/project-archived?projectId=" + projectId;
+        }
+
+        // Kiểm tra quyền PM
+        String email = getEmailFromAuthentication(auth);
+        String roleInProject = projectService.getUserRoleInProjectByEmail(projectId, email);
+        
+        if (roleInProject == null || 
+            (!roleInProject.equalsIgnoreCase("PM") && !roleInProject.equalsIgnoreCase("Project Manager"))) {
+            return "redirect:/view/pm/project/detail?projectId=" + projectId;
+        }
+
+        Project project = projectService.getById(projectId);
+        var statistics = taskService.getProjectStatistics(projectId);
+
+        model.addAttribute("project", project);
+        model.addAttribute("statistics", statistics);
+        model.addAttribute("roleInProject", roleInProject);
+
+        return "pm/project-statistical.html";
     }
 
     @GetMapping("/project-archived")

@@ -121,6 +121,18 @@
               View Performance
             </button>
           </a>
+
+          <a
+            th:if="${#strings.equalsIgnoreCase(roleInProject, 'PM')
+           or #strings.equalsIgnoreCase(roleInProject, 'Project Manager')}"
+            th:href="@{'/view/pm/project/statistical?projectId=' + ${project.projectId}}"
+          >
+            <button
+              class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-sm"
+            >
+              Statistical
+            </button>
+          </a>
           <button
             th:if="${currentUser != null and project.createdBy != null
                     and currentUser.userId == project.createdBy.userId}"

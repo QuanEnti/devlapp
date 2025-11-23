@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Schedule / Timeline – DevCollab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        /* FullCalendar custom styling */
+        .fc {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Event styling - rounded pills */
+        .fc-event {
+            border-radius: 6px;
+            border: none;
+            padding: 2px 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .fc-event:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Toolbar button styling */
+        .fc-button {
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .fc-button-primary:not(:disabled):active,
+        .fc-button-primary:not(:disabled).fc-button-active {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .fc-button-primary:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        /* Calendar height adjustment */
+        .fc-view-harness {
+            min-height: 600px;
+        }
+        
+        /* Week/Day view time slot styling */
+        .fc-timeGridWeek-view .fc-event,
+        .fc-timeGridDay-view .fc-event {
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-[Inter]">
+
+<!-- ✅ Header -->
+<div th:replace="fragments/header :: header"></div>
+
+<!-- ✅ Layout -->
+<div class="flex min-h-[calc(100vh-4rem)]">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+
+    <!-- ✅ Main Content -->
+    <main class="flex-1 p-8">
+        <!-- ===== Page Header ===== -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-semibold text-gray-800 mb-2">My Schedule / Timeline</h1>
+            <p class="text-gray-600">Your task deadlines are shown on the calendar.</p>
+        </div>
+
+        <!-- ===== Calendar Container ===== -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <div id="calendar"></div>
+        </div>
+    </main>
+</div>
+
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            // Default view: Month
+            initialView: 'dayGridMonth',
+            
+            // Toolbar configuration
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            
+            // View-specific configurations
+            views: {
+                dayGridMonth: {
+                    dayMaxEvents: 3, // Show max 3 events per day, then "+X more"
+                    moreLinkClick: 'popover'
+                },
+                timeGridWeek: {
+                    slotMinTime: '00:00:00',
+                    slotMaxTime: '24:00:00',
+                    allDaySlot: true
+                },
+                timeGridDay: {
+                    slotMinTime: '00:00:00',
+                    slotMaxTime: '24:00:00',
+                    allDaySlot: true
+                }
+            },
+            
+            // Event loading function
+            events: function(fetchInfo, successCallback, failureCallback) {
+                // Fetch tasks from API
+                fetch('/api/timeline/tasks', {
+                    credentials: 'include'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch tasks');
+                    }
+                    return response.json();
+                })
+                .then(tasks => {
+                    // Map tasks to FullCalendar events
+                    const events = tasks.map(task => {
+                        // Parse deadline (ISO format: "2025-12-03T18:00:00")
+                        let dateStr = task.deadline;
+                        if (!dateStr) {
+                            return null;
+                        }
+                        
+                        // Extract date part (YYYY-MM-DD)
+                        const dateMatch = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+                        if (!dateMatch) {
+                            return null;
+                        }
+                        
+                        const date = dateMatch[1];
+                        
+                        // Format title: [ProjectName] TaskTitle
+                        const projectName = task.projectName || 'Unknown Project';
+                        const title = `[${projectName}] ${task.title}`;
+                        
+                        // Build URL to project detail
+                        const url = task.projectId 
+                            ? `/view/pm/project/detail?projectId=${task.projectId}`
+                            : null;
+                        
+                        // Create event object - all-day event works in all views
+                        return {
+                            title: title,
+                            date: date,
+                            allDay: true, // All-day events work in month, week, and day views
+                            url: url,
+                            backgroundColor: '#3b82f6', // Uniform blue color for all tasks
+                            borderColor: '#2563eb',
+                            textColor: '#ffffff',
+                            classNames: ['timeline-event'] // For custom styling
+                        };
+                    }).filter(event => event !== null);
+                    
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('Error loading tasks:', error);
+                    failureCallback(error);
+                });
+            },
+            
+            // Event click handler
+            eventClick: function(info) {
+                // Redirect to project detail page
+                if (info.event.url) {
+                    info.jsEvent.preventDefault();
+                    window.location.href = info.event.url;
+                }
+            },
+            
+            // Display settings
+            eventDisplay: 'block',
+            
+            // Height settings - auto-adjust based on view
+            height: 'auto',
+            contentHeight: 'auto',
+            
+            // Smooth transitions
+            duration: { days: 1 },
+            
+            // Locale and formatting
+            firstDay: 1, // Start week on Monday
+            weekNumbers: false,
+            navLinks: true, // Make day/week numbers clickable
+            
+            // Event rendering
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                meridiem: 'short'
+            },
+            
+            // Responsive behavior
+            windowResize: function(view) {
+                calendar.updateSize();
+            }
+        });
+        
+        calendar.render();
+    });
+</script>
+
+</body>
+</html>
+

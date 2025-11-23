@@ -74,4 +74,6 @@ public interface TaskService {
 
     public Page<TaskReviewDTO> getTasksForReviewPaged(Long projectId, int page, int size,
             String status, String search);
+
+    ProjectStatisticsDTO getProjectStatistics(Long projectId);
 }

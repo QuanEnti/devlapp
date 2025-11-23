@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${project.name} + ' – Statistical'">Project Statistical</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:src="@{/js/toast.js}"></script>
+  </head>
+
+  <body class="bg-[#FAFAFA] font-sans">
+    <!-- Header & Sidebar -->
+    <div th:replace="fragments/header :: header"></div>
+
+    <div class="flex min-h-[calc(100vh-4rem)]">
+      <div th:replace="fragments/sidebar :: sidebar"></div>
+
+      <!-- MAIN -->
+      <main class="flex-1 overflow-y-auto">
+        <!-- HEADER WITH COVER -->
+        <div class="relative h-56 w-full overflow-hidden">
+          <!-- Cover image -->
+          <img
+            th:if="${project.coverImage != null}"
+            th:src="${project.coverImage}"
+            class="w-full h-full object-cover"
+          />
+
+          <!-- Gradient fallback -->
+          <div
+            th:if="${project.coverImage == null}"
+            class="w-full h-full bg-gradient-to-r from-blue-400 to-indigo-500"
+          ></div>
+
+          <!-- Dark overlay -->
+          <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+          <!-- Project title & meta -->
+          <div class="absolute bottom-6 left-10">
+            <h1
+              class="text-4xl font-semibold text-white tracking-tight drop-shadow-md"
+              th:text="${project.name}"
+            >
+              Project Name
+            </h1>
+            <p class="text-white/90 mt-1 text-sm">Statistical Overview</p>
+          </div>
+
+          <!-- Back button -->
+          <a
+            th:href="@{'/view/pm/project/detail?projectId=' + ${project.projectId}}"
+            class="absolute top-6 right-6 bg-white/70 hover:bg-white px-4 py-2 rounded-lg text-gray-900 font-medium text-sm shadow-sm border border-white/70 backdrop-blur-lg"
+          >
+            ← Back to Project
+          </a>
+        </div>
+
+        <!-- FLOATING ACTION BAR -->
+        <div
+          class="sticky top-[4.5rem] z-20 bg-white/80 backdrop-blur-md border-b border-gray-200 px-10 py-3 flex items-center gap-3"
+        >
+          <a
+            th:href="@{'/view/pm/project/board?projectId=' + ${project.projectId}}"
+          >
+            <button
+              class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700"
+            >
+              Kanban Board
+            </button>
+          </a>
+
+          <a
+            th:href="@{'/view/pm/project/members?projectId=' + ${project.projectId}}"
+          >
+            <button
+              class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-sm"
+            >
+              Members
+            </button>
+          </a>
+
+          <a
+            th:href="@{'/view/pm/project/schedule/calendar?projectId=' + ${project.projectId}}"
+          >
+            <button
+              class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-sm"
+            >
+              Calendar
+            </button>
+          </a>
+
+          <a
+            th:href="@{'/view/pm/project/review?projectId=' + ${project.projectId}}"
+          >
+            <button
+              class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-sm"
+            >
+              Review Tasks
+            </button>
+          </a>
+
+          <a
+            th:href="@{'/view/pm/project/performance?projectId=' + ${project.projectId}}"
+          >
+            <button
+              class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-sm"
+            >
+              View Performance
+            </button>
+          </a>
+
+          <a
+            th:href="@{'/view/pm/project/statistical?projectId=' + ${project.projectId}}"
+          >
+            <button
+              class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700"
+            >
+              Statistical
+            </button>
+          </a>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="px-10 py-10">
+          <!-- GRID LAYOUT: 2 COLUMNS -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- LEFT COLUMN: STATISTICS CARDS -->
+            <div class="h-full flex flex-col">
+              <div class="grid grid-cols-2 gap-4 h-full">
+                <!-- Total Tasks -->
+                <div class="bg-gradient-to-br from-slate-50 to-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                  <div class="flex items-start justify-between relative z-10">
+                    <div class="flex-1">
+                      <p class="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Total Tasks</p>
+                      <p class="text-3xl font-bold text-gray-900 mb-1" th:text="${statistics.totalTasks}">
+                        0
+                      </p>
+                      <p class="text-xs text-gray-600 mb-2">
+                        <span th:text="|+${statistics.totalTasks > 0 ? statistics.totalTasks : 0} tasks created this week|">+5 tasks created this week</span>
+                      </p>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-medium text-green-600">🔼 +12% this week</span>
+                      </div>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span class="text-2xl">📋</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 h-12 relative">
+                    <canvas id="sparklineTotalTasks" class="w-full h-full"></canvas>
+                  </div>
+                </div>
+
+                <!-- Total Hours -->
+                <div class="bg-gradient-to-br from-slate-50 to-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                  <div class="flex items-start justify-between relative z-10">
+                    <div class="flex-1">
+                      <p class="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Total Hours</p>
+                      <p
+                        class="text-3xl font-bold text-gray-900 mb-1"
+                        th:text="${#numbers.formatDecimal(statistics.totalHours, 0, 1)}"
+                      >
+                        0
+                      </p>
+                      <p class="text-xs text-gray-600 mb-2">
+                        <span th:text="|${#numbers.formatDecimal(statistics.totalHours / 8, 0, 1)} work days|">8.2 work days</span>
+                      </p>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-medium text-green-600">🔼 +8% this week</span>
+                      </div>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span class="text-2xl">⏱️</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 h-12 relative">
+                    <canvas id="sparklineTotalHours" class="w-full h-full"></canvas>
+                  </div>
+                </div>
+
+                <!-- Completed Tasks -->
+                <div class="bg-gradient-to-br from-slate-50 to-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                  <div class="flex items-start justify-between relative z-10">
+                    <div class="flex-1">
+                      <p class="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Completed</p>
+                      <p
+                        class="text-3xl font-bold text-green-600 mb-1"
+                        th:text="${statistics.completedTasks}"
+                      >
+                        0
+                      </p>
+                      <p class="text-xs text-gray-600 mb-2">
+                        <span th:text="|${statistics.totalTasks > 0 ? #numbers.formatDecimal((statistics.completedTasks * 100.0 / statistics.totalTasks), 0, 0) : 0}% of all tasks|">40% of all tasks</span>
+                      </p>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-medium text-green-600">🔼 +15% this week</span>
+                      </div>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span class="text-2xl">✅</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 h-12 relative">
+                    <canvas id="sparklineCompleted" class="w-full h-full"></canvas>
+                  </div>
+                </div>
+
+                <!-- Incomplete Tasks -->
+                <div class="bg-gradient-to-br from-slate-50 to-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                  <div class="flex items-start justify-between relative z-10">
+                    <div class="flex-1">
+                      <p class="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Incomplete</p>
+                      <p
+                        class="text-3xl font-bold text-yellow-600 mb-1"
+                        th:text="${statistics.incompleteTasks}"
+                      >
+                        0
+                      </p>
+                      <p class="text-xs text-gray-600 mb-2">
+                        <span th:text="|${statistics.totalTasks > 0 ? #numbers.formatDecimal((statistics.incompleteTasks * 100.0 / statistics.totalTasks), 0, 0) : 0}% remaining|">60% remaining</span>
+                      </p>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-medium text-red-600">🔽 -5% this week</span>
+                      </div>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span class="text-2xl">⏳</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 h-12 relative">
+                    <canvas id="sparklineIncomplete" class="w-full h-full"></canvas>
+                  </div>
+                </div>
+
+                <!-- Overdue Tasks (Full width) -->
+                <div class="bg-gradient-to-br from-slate-50 to-white border border-gray-200 rounded-xl p-4 shadow-sm col-span-2 flex flex-col justify-between relative overflow-hidden">
+                  <div class="flex items-start justify-between relative z-10">
+                    <div class="flex-1">
+                      <p class="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Overdue Tasks</p>
+                      <p class="text-3xl font-bold text-red-600 mb-1" th:text="${statistics.overdueTasks}">
+                        0
+                      </p>
+                      <p class="text-xs text-gray-600 mb-2">
+                        <span th:if="${statistics.overdueTasks > 0}">Needs attention</span>
+                        <span th:if="${statistics.overdueTasks == 0}" class="text-green-600">All on schedule</span>
+                      </p>
+                      <div class="flex items-center gap-1.5">
+                        <span th:if="${statistics.overdueTasks > 0}" class="text-xs font-medium text-red-600">🔽 +2 this week</span>
+                        <span th:if="${statistics.overdueTasks == 0}" class="text-xs font-medium text-green-600">🔼 -100% this week</span>
+                      </div>
+                    </div>
+                    <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span class="text-3xl">⚠️</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 h-12 relative">
+                    <canvas id="sparklineOverdue" class="w-full h-full"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT COLUMN: TOP MEMBERS + PIE CHART -->
+            <div class="space-y-6 h-full flex flex-col">
+              <!-- TOP MEMBERS BY TASK COUNT -->
+              <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex-1">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                  Top Members by Task Count
+                </h2>
+                <div
+                  th:if="${#lists.isEmpty(statistics.topMembers)}"
+                  class="text-gray-500 text-sm italic text-center py-8"
+                >
+                  No members with assigned tasks yet.
+                </div>
+                <div th:if="${!#lists.isEmpty(statistics.topMembers)}" class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="text-gray-600 bg-gray-50 border-b border-gray-200">
+                        <th class="py-3 px-4 text-left">Rank</th>
+                        <th class="py-3 px-4 text-left">Member</th>
+                        <th class="py-3 px-4 text-left">Email</th>
+                        <th class="py-3 px-4 text-center">Task Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        th:each="member, iterStat : ${statistics.topMembers}"
+                        class="border-b border-gray-100 hover:bg-blue-50 transition"
+                      >
+                        <td class="py-3 px-4">
+                          <span
+                            class="inline-flex items-center justify-center w-8 h-8 rounded-full font-semibold"
+                            th:class="${iterStat.index < 3} ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'"
+                            th:text="${iterStat.index + 1}"
+                          >
+                            1
+                          </span>
+                        </td>
+                        <td class="py-3 px-4 font-medium text-gray-900" th:text="${member.name}">
+                          John Doe
+                        </td>
+                        <td class="py-3 px-4 text-gray-600" th:text="${member.email}">
+                          john@example.com
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                          <span
+                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700"
+                            th:text="${member.taskCount}"
+                          >
+                            0
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- TASK STATUS BREAKDOWN - PIE CHART -->
+              <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex-1 flex flex-col">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Task Status Breakdown</h2>
+                <div class="flex-1 flex items-center justify-center" style="min-height: 280px;">
+                  <div class="w-full" style="position: relative; height: 280px; max-width: 350px;">
+                    <canvas id="taskStatusChart" width="350" height="280"></canvas>
+                  </div>
+                </div>
+                <div id="chartLegend" class="flex justify-center gap-6 mt-4 flex-wrap">
+                  <!-- Legend will be generated by JavaScript -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OVERDUE TASKS DETAIL SECTION -->
+          <div
+            th:if="${statistics.overdueTasks > 0}"
+            class="bg-white border border-red-200 rounded-xl p-6 shadow-sm mb-8"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span class="text-red-600">⚠️</span>
+                Overdue Tasks Details
+              </h2>
+              <span
+                class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium"
+                th:text="|${statistics.overdueTasks} task${statistics.overdueTasks > 1 ? 's' : ''} overdue|"
+              >
+                2 tasks overdue
+              </span>
+            </div>
+            <div class="space-y-3">
+              <div
+                th:each="overdueTask : ${statistics.overdueTaskDetails}"
+                class="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition"
+              >
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-1">
+                    <a
+                      th:href="@{'/view/pm/project/board?projectId=' + ${project.projectId} + '&taskId=' + ${overdueTask.taskId}}"
+                      class="font-medium text-gray-900 hover:text-blue-600 transition"
+                      th:text="${overdueTask.title}"
+                    >
+                      Task Title
+                    </a>
+                    <span
+                      class="px-2 py-0.5 bg-red-200 text-red-700 rounded text-xs font-medium"
+                      th:text="|${overdueTask.daysOverdue} day${overdueTask.daysOverdue > 1 ? 's' : ''} overdue|"
+                    >
+                      3 days overdue
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-4 text-sm text-gray-600">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium">Assigned to:</span>
+                      <span
+                        th:if="${overdueTask.assigneeName != null and overdueTask.assigneeName != 'Unassigned'}"
+                        class="text-gray-900 font-medium"
+                        th:text="${overdueTask.assigneeName}"
+                      >
+                        Member Name
+                      </span>
+                      <span
+                        th:if="${overdueTask.assigneeName == null or overdueTask.assigneeName == 'Unassigned'}"
+                        class="text-gray-500 italic"
+                      >
+                        Unassigned
+                      </span>
+                      <span
+                        th:if="${overdueTask.assigneeEmail != null}"
+                        class="text-gray-500"
+                        th:text="|(${overdueTask.assigneeEmail})|"
+                      >
+                        (email@example.com)
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium">Deadline:</span>
+                      <span
+                        th:text="${#temporals.format(overdueTask.deadline, 'dd MMM yyyy')}"
+                      >
+                        15 Jan 2025
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <a
+                  th:href="@{'/view/pm/project/board?projectId=' + ${project.projectId} + '&taskId=' + ${overdueTask.taskId}}"
+                  class="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
+                >
+                  View Task
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUMMARY SECTION -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Summary</h2>
+            <div class="space-y-3 text-base text-gray-700">
+              <p>
+                This project has a total of
+                <span class="font-semibold" th:text="${statistics.totalTasks}">0</span>
+                tasks, with
+                <span class="font-semibold text-green-600" th:text="${statistics.completedTasks}">0</span>
+                completed and
+                <span class="font-semibold text-yellow-600" th:text="${statistics.incompleteTasks}">0</span>
+                still in progress.
+              </p>
+              <p>
+                The total time spent across all tasks is approximately
+                <span class="font-semibold" th:text="${#numbers.formatDecimal(statistics.totalHours, 0, 1)}">0</span>
+                hours.
+              </p>
+              <p th:if="${statistics.overdueTasks > 0}" class="text-red-600 font-medium">
+                ⚠️ There are
+                <span th:text="${statistics.overdueTasks}">0</span>
+                overdue tasks that require attention.
+              </p>
+              <p th:if="${statistics.overdueTasks == 0}" class="text-green-600 font-medium">
+                ✅ All tasks are on schedule!
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Chatbox -->
+    <div th:replace="fragments/chatbox :: chatbox"></div>
+    <script th:src="@{/js/chatbox.js}"></script>
+
+    <script th:inline="javascript">
+      // Task Status Pie Chart with Animation
+      function initChart() {
+        // Wait for Chart.js to be available
+        if (typeof Chart === 'undefined') {
+          console.error('Chart.js is not loaded, retrying...');
+          setTimeout(initChart, 100);
+          return;
+        }
+
+        const completedTasks = /*[[${statistics.completedTasks}]]*/ 0;
+        const incompleteTasks = /*[[${statistics.incompleteTasks}]]*/ 0;
+        const overdueTasks = /*[[${statistics.overdueTasks}]]*/ 0;
+        const totalTasks = /*[[${statistics.totalTasks}]]*/ 0;
+
+        console.log('Chart Data:', {
+          completedTasks: completedTasks,
+          incompleteTasks: incompleteTasks,
+          overdueTasks: overdueTasks,
+          totalTasks: totalTasks
+        });
+
+        const canvas = document.getElementById('taskStatusChart');
+        if (!canvas) {
+          console.error('Canvas element not found');
+          return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          console.error('Could not get 2d context from canvas');
+          return;
+        }
+
+        // Always show all three categories: Completed, Incomplete, Overdue
+        const chartData = [completedTasks, incompleteTasks, overdueTasks];
+        const chartLabels = ['Completed', 'Incomplete', 'Overdue'];
+        const chartColors = ['#22c55e', '#eab308', '#ef4444']; // green, yellow, red
+
+        console.log('Chart will render with:', {
+          data: chartData,
+          labels: chartLabels,
+          colors: chartColors
+        });
+
+        // Destroy existing chart if it exists
+        if (window.taskStatusChart && typeof window.taskStatusChart.destroy === 'function') {
+          window.taskStatusChart.destroy();
+        }
+
+        try {
+          window.taskStatusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: chartLabels,
+              datasets: [{
+                data: chartData,
+                backgroundColor: chartColors,
+                borderColor: '#ffffff',
+                borderWidth: 3,
+                hoverOffset: 8
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '65%',
+              animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 1500,
+                easing: 'easeOutQuart'
+              },
+              plugins: {
+                legend: {
+                  display: false
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  titleColor: '#fff',
+                  bodyColor: '#fff',
+                  borderColor: '#fff',
+                  borderWidth: 1,
+                  padding: 12,
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.parsed || 0;
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                      return `${label}: ${value} tasks (${percentage}%)`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+          console.log('Chart created successfully!');
+        } catch (error) {
+          console.error('Error creating chart:', error);
+        }
+
+        // Generate custom legend
+        const legendContainer = document.getElementById('chartLegend');
+        if (legendContainer && chartLabels.length > 0) {
+          legendContainer.innerHTML = chartLabels.map((label, index) => {
+            const value = chartData[index];
+            const percentage = totalTasks > 0 ? Math.round((value / totalTasks) * 100) : 0;
+            return `
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded-full" style="background-color: ${chartColors[index]}"></div>
+                <span class="text-sm text-gray-700">
+                  <span class="font-semibold">${label}:</span> ${value} (${percentage}%)
+                </span>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Initialize Sparkline Charts for KPI Cards
+      function initSparklines() {
+        if (typeof Chart === 'undefined') {
+          setTimeout(initSparklines, 100);
+          return;
+        }
+
+        // Placeholder data for sparklines (weekly trend)
+        const sparklineData = {
+          totalTasks: [2, 4, 5, 3, 6, 8, 7],
+          totalHours: [10, 12, 15, 11, 14, 16, 18],
+          completed: [1, 2, 3, 2, 4, 5, 6],
+          incomplete: [5, 4, 3, 4, 2, 3, 1],
+          overdue: [2, 1, 2, 1, 2, 1, 2]
+        };
+
+        const sparklineConfig = {
+          type: 'line',
+          data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+              data: [],
+              borderColor: '#3b82f6',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              pointRadius: 0,
+              pointHoverRadius: 0,
+              tension: 0.4,
+              fill: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false }
+            },
+            scales: {
+              x: { display: false },
+              y: { display: false }
+            },
+            elements: {
+              point: { radius: 0 }
+            }
+          }
+        };
+
+        // Total Tasks Sparkline
+        const ctx1 = document.getElementById('sparklineTotalTasks');
+        if (ctx1) {
+          const config1 = JSON.parse(JSON.stringify(sparklineConfig));
+          config1.data.datasets[0].data = sparklineData.totalTasks;
+          config1.data.datasets[0].borderColor = '#3b82f6';
+          new Chart(ctx1.getContext('2d'), config1);
+        }
+
+        // Total Hours Sparkline
+        const ctx2 = document.getElementById('sparklineTotalHours');
+        if (ctx2) {
+          const config2 = JSON.parse(JSON.stringify(sparklineConfig));
+          config2.data.datasets[0].data = sparklineData.totalHours;
+          config2.data.datasets[0].borderColor = '#10b981';
+          new Chart(ctx2.getContext('2d'), config2);
+        }
+
+        // Completed Sparkline
+        const ctx3 = document.getElementById('sparklineCompleted');
+        if (ctx3) {
+          const config3 = JSON.parse(JSON.stringify(sparklineConfig));
+          config3.data.datasets[0].data = sparklineData.completed;
+          config3.data.datasets[0].borderColor = '#22c55e';
+          new Chart(ctx3.getContext('2d'), config3);
+        }
+
+        // Incomplete Sparkline
+        const ctx4 = document.getElementById('sparklineIncomplete');
+        if (ctx4) {
+          const config4 = JSON.parse(JSON.stringify(sparklineConfig));
+          config4.data.datasets[0].data = sparklineData.incomplete;
+          config4.data.datasets[0].borderColor = '#eab308';
+          new Chart(ctx4.getContext('2d'), config4);
+        }
+
+        // Overdue Sparkline
+        const ctx5 = document.getElementById('sparklineOverdue');
+        if (ctx5) {
+          const config5 = JSON.parse(JSON.stringify(sparklineConfig));
+          config5.data.datasets[0].data = sparklineData.overdue;
+          config5.data.datasets[0].borderColor = '#ef4444';
+          new Chart(ctx5.getContext('2d'), config5);
+        }
+      }
+
+      // Try multiple ways to ensure chart loads
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(initChart, 100);
+          setTimeout(initSparklines, 200);
+        });
+      } else {
+        setTimeout(initChart, 100);
+        setTimeout(initSparklines, 200);
+      }
+
+      // Also try on window load as fallback
+      window.addEventListener('load', function() {
+        if (!window.taskStatusChart) {
+          setTimeout(initChart, 200);
+        }
+        setTimeout(initSparklines, 300);
+      });
+    </script>
+  </body>
+</html>
+
+

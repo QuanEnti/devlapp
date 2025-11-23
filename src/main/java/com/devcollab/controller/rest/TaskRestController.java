@@ -20,6 +20,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -101,6 +102,15 @@ public class TaskRestController {
     @PutMapping("/{taskId}/assign/{userId}")
     public ResponseEntity<Map<String, String>> assignMember(@PathVariable Long taskId,
             @PathVariable Long userId) {
+        // Set assignee_id in Task table
+        try {
+            taskService.assignTask(taskId, userId);
+        } catch (Exception e) {
+            // Log but don't fail if assignee update fails
+            System.err.println("Failed to set assignee: " + e.getMessage());
+        }
+        
+        // Also add to followers
         boolean added = taskFollowerService.assignMember(taskId, userId);
         if (added) {
             return ResponseEntity.ok(Map.of("message", " Member assigned successfully"));
@@ -113,6 +123,21 @@ public class TaskRestController {
     @PutMapping("/{taskId}/unassign/{userId}")
     public ResponseEntity<Map<String, String>> unassignMember(@PathVariable Long taskId,
             @PathVariable Long userId) {
+        // Check if this user is the current assignee and clear assignee_id if so
+        try {
+            Task task = taskService.getById(taskId);
+            if (task.getAssignee() != null && task.getAssignee().getUserId().equals(userId)) {
+                // Clear assignee by setting it to null
+                task.setAssignee(null);
+                task.setUpdatedAt(LocalDateTime.now());
+                taskService.updateTask(taskId, task);
+            }
+        } catch (Exception e) {
+            // Log but don't fail if assignee clear fails
+            System.err.println("Failed to clear assignee: " + e.getMessage());
+        }
+        
+        // Remove from followers
         boolean removed = taskFollowerService.unassignMember(taskId, userId);
         if (removed) {
             return ResponseEntity.ok(Map.of("message", " Member unassigned"));

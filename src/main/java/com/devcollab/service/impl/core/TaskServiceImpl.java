@@ -1032,5 +1032,153 @@ public class TaskServiceImpl implements TaskService {
         return TaskDetailDTO.fromEntity(task, followers, comments, attachments);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectStatisticsDTO getProjectStatistics(Long projectId) {
+        // Load tasks với followers để tránh lazy loading exception
+        List<Task> allTasks = taskRepository.findByProject_ProjectIdAndArchivedFalseWithFollowers(projectId);
+        
+        // Tổng số task
+        long totalTasks = allTasks.size();
+        
+        // Tính tổng số giờ
+        double totalHours = 0.0;
+        LocalDateTime now = LocalDateTime.now();
+        
+        for (Task task : allTasks) {
+            LocalDateTime startTime = task.getCreatedAt();
+            LocalDateTime endTime;
+            
+            if (task.getStatus() != null && task.getStatus().equals("DONE") && task.getClosedAt() != null) {
+                // Task đã hoàn thành: tính từ lúc hoàn thành đến lúc tạo
+                endTime = task.getClosedAt();
+            } else {
+                // Task chưa hoàn thành: tính từ giờ hiện tại đến lúc tạo
+                endTime = now;
+            }
+            
+            if (startTime != null && endTime != null) {
+                long hours = java.time.Duration.between(startTime, endTime).toHours();
+                totalHours += hours;
+            }
+        }
+        
+        // Đếm task đã xong và chưa xong
+        long completedTasks = allTasks.stream()
+                .filter(t -> t.getStatus() != null && t.getStatus().equals("DONE"))
+                .count();
+        long incompleteTasks = totalTasks - completedTasks;
+        
+        // Đếm task trễ hạn
+        long overdueTasks = taskRepository.countOverdue(projectId, now);
+        
+        // Lấy danh sách chi tiết task bị overdue với assignee
+        List<Task> overdueTaskList = taskRepository.findOverdueTasksWithAssignee(projectId, now);
+        
+        // Force initialize assignee để tránh lazy loading exception
+        for (Task task : overdueTaskList) {
+            if (task.getAssignee() != null) {
+                Hibernate.initialize(task.getAssignee());
+                // Log để debug
+                log.debug("Overdue task {} has assignee: {} ({})", 
+                    task.getTaskId(), 
+                    task.getAssignee().getName(), 
+                    task.getAssignee().getEmail());
+            } else {
+                log.debug("Overdue task {} has no assignee", task.getTaskId());
+            }
+        }
+        
+        List<OverdueTaskDTO> overdueTaskDetails = overdueTaskList.stream()
+                .map(task -> {
+                    long daysOverdue = java.time.Duration.between(
+                            task.getDeadline(),
+                            now
+                    ).toDays();
+                    
+                    String assigneeName = "Unassigned";
+                    String assigneeEmail = null;
+                    
+                    User assignee = task.getAssignee();
+                    if (assignee != null) {
+                        // Lấy name, nếu null thì dùng email
+                        assigneeName = assignee.getName();
+                        if (assigneeName == null || assigneeName.trim().isEmpty()) {
+                            assigneeName = assignee.getEmail() != null 
+                                    ? assignee.getEmail() 
+                                    : "Unassigned";
+                        }
+                        assigneeEmail = assignee.getEmail();
+                    }
+                    
+                    return new OverdueTaskDTO(
+                            task.getTaskId(),
+                            task.getTitle(),
+                            assigneeName,
+                            assigneeEmail,
+                            task.getDeadline(),
+                            daysOverdue
+                    );
+                })
+                .collect(Collectors.toList());
+        
+        // Thống kê nhân viên làm nhiều task nhất
+        // Chỉ đếm task đã hoàn thành (DONE) và chỉ đếm assignee + followers (không đếm createdBy)
+        // Mỗi user chỉ được đếm 1 lần cho mỗi task (dù có nhiều vai trò)
+        Map<User, Set<Long>> memberTaskMap = new HashMap<>();
+        
+        for (Task task : allTasks) {
+            // Chỉ đếm task đã hoàn thành
+            if (task.getStatus() == null || !task.getStatus().equals("DONE")) {
+                continue;
+            }
+            
+            Long taskId = task.getTaskId();
+            
+            // Đếm assignee (người được gán task)
+            if (task.getAssignee() != null) {
+                memberTaskMap.computeIfAbsent(task.getAssignee(), k -> new HashSet<>()).add(taskId);
+            }
+            
+            // Đếm followers (người theo dõi task)
+            if (task.getFollowers() != null) {
+                for (TaskFollower follower : task.getFollowers()) {
+                    if (follower.getUser() != null) {
+                        memberTaskMap.computeIfAbsent(follower.getUser(), k -> new HashSet<>()).add(taskId);
+                    }
+                }
+            }
+            
+            // KHÔNG đếm createdBy để tránh PM được tính vào tất cả task
+        }
+        
+        // Chuyển từ Set<Long> sang Long (số lượng task unique)
+        Map<User, Long> memberTaskCount = new HashMap<>();
+        for (Map.Entry<User, Set<Long>> entry : memberTaskMap.entrySet()) {
+            memberTaskCount.put(entry.getKey(), (long) entry.getValue().size());
+        }
+        
+        List<MemberTaskCountDTO> topMembers = memberTaskCount.entrySet().stream()
+                .sorted(Map.Entry.<User, Long>comparingByValue().reversed())
+                .limit(10) // Top 10 nhân viên
+                .map(entry -> new MemberTaskCountDTO(
+                        entry.getKey().getUserId(),
+                        entry.getKey().getName(),
+                        entry.getKey().getEmail(),
+                        entry.getValue()
+                ))
+                .collect(Collectors.toList());
+        
+        return new ProjectStatisticsDTO(
+                totalTasks,
+                totalHours,
+                completedTasks,
+                incompleteTasks,
+                overdueTasks,
+                topMembers,
+                overdueTaskDetails
+        );
+    }
+
 
 }
